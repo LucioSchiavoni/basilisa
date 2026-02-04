@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm build:*)",
+      "Bash(curl:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(find:*)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}
