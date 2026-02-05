@@ -94,9 +94,18 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
     }
   }
 
+  function onInvalid(errors: Record<string, unknown>) {
+    const firstKey = Object.keys(errors)[0]
+    const firstError = errors[firstKey] as { message?: string } | undefined
+    setStatus({
+      error: firstError?.message || "Revisa los campos del formulario",
+    })
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
         {status.error && (
           <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md dark:bg-red-900/20">
             {status.error}

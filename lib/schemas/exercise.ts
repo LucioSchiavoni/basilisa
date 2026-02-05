@@ -2,7 +2,8 @@ import { z } from "zod"
 
 const optionalUrl = z
   .string()
-  .transform((val) => (val === "" ? null : val))
+  .nullish()
+  .transform((val) => (!val ? null : val))
   .pipe(z.string().url("URL invalida").nullable())
 
 const multipleChoiceOptionSchema = z.object({
@@ -24,7 +25,8 @@ const multipleChoiceQuestionSchema = z
     correct_option_id: z.string().min(1, "Debes seleccionar la opcion correcta"),
     explanation: z
       .string()
-      .transform((val) => (val === "" ? null : val))
+      .nullish()
+      .transform((val) => (!val ? null : val))
       .pipe(z.string().nullable()),
     points: z.coerce.number().int().min(1).default(1),
   })

@@ -59,7 +59,33 @@ export async function login(
     return { error: "Credenciales inválidas" };
   }
 
-  redirect("/dashboard");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No se pudo obtener el usuario" };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_profile_complete")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_profile_complete && profile?.role !== "patient") {
+    redirect("/completar-perfil");
+  }
+
+  if (profile?.role === "admin") {
+    redirect("/admin");
+  }
+
+  if (profile?.role === "expert") {
+    redirect("/pacientes");
+  }
+
+  redirect("/ejercicios");
 }
 
 export async function register(

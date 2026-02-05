@@ -43,6 +43,7 @@ export function QuestionCard({
   const correctOptionId = form.watch(
     `${basePath}.${questionIndex}.correct_option_id`
   )
+  const watchedOptions = form.watch(optionsPath) as Array<{ id: string }> | undefined
 
   function handleAddOption() {
     if (optionFields.length >= 6) return
@@ -53,7 +54,8 @@ export function QuestionCard({
     })
   }
 
-  function handleSelectCorrect(optionId: string) {
+  function handleSelectCorrect(optionIndex: number) {
+    const optionId = form.getValues(`${optionsPath}.${optionIndex}.id`) as string
     form.setValue(
       `${basePath}.${questionIndex}.correct_option_id`,
       optionId,
@@ -183,15 +185,17 @@ export function QuestionCard({
               </FormItem>
             )}
           />
-          {optionFields.map((optionField, optionIndex) => (
+          {optionFields.map((optionField, optionIndex) => {
+            const actualOptionId = watchedOptions?.[optionIndex]?.id
+            return (
             <div key={optionField.id} className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleSelectCorrect(optionField.id)}
+                onClick={() => handleSelectCorrect(optionIndex)}
                 className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
                 title="Marcar como correcta"
               >
-                {correctOptionId === optionField.id ? (
+                {correctOptionId === actualOptionId ? (
                   <CircleDot className="h-5 w-5 text-green-600" />
                 ) : (
                   <Circle className="h-5 w-5" />
@@ -243,7 +247,8 @@ export function QuestionCard({
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-          ))}
+            )
+          })}
 
           <Button
             type="button"

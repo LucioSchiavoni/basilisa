@@ -133,7 +133,7 @@ export async function createExercise(
   });
 
   if (error) {
-    return { error: "Error al crear el ejercicio" };
+    return { error: `Error al crear el ejercicio: ${error.message}` };
   }
 
   revalidatePath("/admin/ejercicios");

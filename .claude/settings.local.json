@@ -10,7 +10,9 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(find:*)",
       "WebSearch",
-      "WebFetch(domain:ui.shadcn.com)"
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)"
     ]
   },
   "enabledMcpjsonServers": [

@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
     const url = request.nextUrl.clone();
 
-    if (!profile?.is_profile_complete) {
+    if (!profile?.is_profile_complete && profile?.role !== "patient") {
       url.pathname = "/completar-perfil";
     } else if (profile?.role === "admin") {
       url.pathname = "/admin";

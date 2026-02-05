@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
   let redirectPath = "/ejercicios";
 
-  if (!profile.is_profile_complete) {
+  if (!profile.is_profile_complete && profile.role !== "patient") {
     redirectPath = "/completar-perfil";
   } else if (profile.role === "admin") {
     redirectPath = "/admin";
