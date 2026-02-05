@@ -8,12 +8,12 @@ export default async function AdminUsersPage() {
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
-  const { data: users } = await supabase
+  const { data: authUsers } = await adminClient.auth.admin.listUsers();
+
+  const { data: users } = await adminClient
     .from("profiles")
     .select("id, full_name, role, created_at, is_profile_complete")
     .order("created_at", { ascending: false });
-
-  const { data: authUsers } = await adminClient.auth.admin.listUsers();
 
   const usersWithEmail = users?.map((user) => {
     const authUser = authUsers?.users?.find((au) => au.id === user.id);

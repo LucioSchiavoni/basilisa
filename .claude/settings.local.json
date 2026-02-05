@@ -8,7 +8,9 @@
       "Bash(pnpm build:*)",
       "Bash(curl:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:ui.shadcn.com)"
     ]
   },
   "enabledMcpjsonServers": [

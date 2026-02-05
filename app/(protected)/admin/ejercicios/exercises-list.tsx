@@ -3,34 +3,39 @@
 import { useState } from "react";
 import { deleteExercise } from "../actions";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type Exercise = {
   id: string;
   title: string;
-  description: string;
-  category: string;
-  difficulty: string;
-  instructions: string | null;
+  instructions: string;
+  difficulty_level: number;
+  estimated_time_minutes: number;
+  is_active: boolean;
   created_at: string;
 };
 
-const difficultyLabels: Record<string, string> = {
-  easy: "Fácil",
-  medium: "Media",
-  hard: "Difícil",
+const difficultyLabels: Record<number, string> = {
+  1: "Muy facil",
+  2: "Facil",
+  3: "Intermedio",
+  4: "Dificil",
+  5: "Muy dificil",
 };
 
-const difficultyColors: Record<string, string> = {
-  easy: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  hard: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+const difficultyColors: Record<number, string> = {
+  1: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  2: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  3: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  4: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  5: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Estás seguro de que deseas eliminar este ejercicio?")) {
+    if (!confirm("¿Estas seguro de que deseas eliminar este ejercicio?")) {
       return;
     }
 
@@ -63,20 +68,21 @@ export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
               <p className="font-medium">{exercise.title}</p>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${
-                  difficultyColors[exercise.difficulty] || difficultyColors.easy
+                  difficultyColors[exercise.difficulty_level] || difficultyColors[3]
                 }`}
               >
-                {difficultyLabels[exercise.difficulty] || exercise.difficulty}
+                {difficultyLabels[exercise.difficulty_level] || `Nivel ${exercise.difficulty_level}`}
               </span>
+              {!exercise.is_active && (
+                <Badge variant="secondary">Inactivo</Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {exercise.description}
+              {exercise.instructions}
             </p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-                {exercise.category}
-              </span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {exercise.estimated_time_minutes} min
+            </p>
           </div>
           <Button
             variant="destructive"

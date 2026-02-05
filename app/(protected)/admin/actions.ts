@@ -4,24 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import {
+  createExerciseSchema,
+  type CreateExerciseInput,
+} from "@/lib/schemas/exercise";
+import type { Json } from "@/types/database.types";
 
 const createUserSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   full_name: z.string().min(2, "El nombre es requerido"),
   role: z.enum(["patient", "admin", "expert"], {
-    errorMap: () => ({ message: "Rol inválido" }),
+    message: "Rol inválido",
   }),
-});
-
-const createExerciseSchema = z.object({
-  title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
-  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
-  category: z.string().min(2, "La categoría es requerida"),
-  difficulty: z.enum(["easy", "medium", "hard"], {
-    errorMap: () => ({ message: "Dificultad inválida" }),
-  }),
-  instructions: z.string().optional(),
 });
 
 export type CreateUserState = {
@@ -65,7 +60,7 @@ export async function createUser(
   const validatedFields = createUserSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
-    return { error: validatedFields.error.errors[0].message };
+    return { error: validatedFields.error.issues[0].message };
   }
 
   const { email, password, full_name, role } = validatedFields.data;
@@ -85,14 +80,14 @@ export async function createUser(
   }
 
   if (authData.user) {
-    const { error: profileError } = await supabase
+    const { error: profileError } = await adminClient
       .from("profiles")
-      .update({
+      .upsert({
+        id: authData.user.id,
         full_name,
         role,
         is_profile_complete: true,
-      })
-      .eq("id", authData.user.id);
+      });
 
     if (profileError) {
       return { error: "Usuario creado pero hubo un error al actualizar el perfil" };
@@ -104,8 +99,7 @@ export async function createUser(
 }
 
 export async function createExercise(
-  prevState: CreateExerciseState,
-  formData: FormData
+  data: CreateExerciseInput
 ): Promise<CreateExerciseState> {
   const supabase = await createClient();
 
@@ -114,33 +108,28 @@ export async function createExercise(
     return { error: "No autorizado" };
   }
 
-  const { data: adminProfile } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (adminProfile?.role !== "admin") {
+  if (!profile || (profile.role !== "admin" && profile.role !== "expert")) {
     return { error: "No tienes permisos para crear ejercicios" };
   }
 
-  const rawData = {
-    title: formData.get("title") as string,
-    description: formData.get("description") as string,
-    category: formData.get("category") as string,
-    difficulty: formData.get("difficulty") as string,
-    instructions: formData.get("instructions") as string || undefined,
-  };
-
-  const validatedFields = createExerciseSchema.safeParse(rawData);
-
-  if (!validatedFields.success) {
-    return { error: validatedFields.error.errors[0].message };
+  const validated = createExerciseSchema.safeParse(data);
+  if (!validated.success) {
+    return { error: validated.error.issues[0].message };
   }
 
+  const { exercise_type_name, content, ...baseData } = validated.data;
+
   const { error } = await supabase.from("exercises").insert({
-    ...validatedFields.data,
+    ...baseData,
+    content: content as unknown as Json,
     created_by: user.id,
+    is_active: true,
   });
 
   if (error) {

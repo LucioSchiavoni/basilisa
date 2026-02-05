@@ -10,7 +10,7 @@ export default async function PacientesPage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
-    .eq("id", user?.id)
+    .eq("id", user!.id)
     .single();
 
   return (
