@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
 const PROTECTED_ROUTES = ["/dashboard", "/ejercicios", "/pacientes", "/completar-perfil", "/admin"];
 const ADMIN_ROUTES = ["/admin"];
+const REDIRECT_BY_ROLE_ROUTES = ["/", "/dashboard"];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -41,6 +42,29 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
+  const isRedirectByRoleRoute = REDIRECT_BY_ROLE_ROUTES.includes(pathname);
+
+  if (isRedirectByRoleRoute && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, is_profile_complete")
+      .eq("id", user.id)
+      .single();
+
+    const url = request.nextUrl.clone();
+
+    if (!profile?.is_profile_complete && profile?.role !== "patient") {
+      url.pathname = "/completar-perfil";
+    } else if (profile?.role === "admin") {
+      url.pathname = "/admin";
+    } else if (profile?.role === "expert") {
+      url.pathname = "/pacientes";
+    } else {
+      url.pathname = "/ejercicios";
+    }
+
+    return NextResponse.redirect(url);
+  }
 
   if (isAuthRoute && user) {
     const { data: profile } = await supabase
