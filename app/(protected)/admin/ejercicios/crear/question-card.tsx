@@ -3,6 +3,7 @@
 import { useFieldArray, type UseFormReturn } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   FormField,
   FormItem,
@@ -98,6 +99,25 @@ export function QuestionCard({
 
         {variant === "multiple_choice" && (
           <>
+            <FormField
+              control={form.control}
+              name={`${basePath}.${questionIndex}.description`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripcion (opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="Descripcion o contexto adicional (opcional)"
+                      className="min-h-[60px] resize-y"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

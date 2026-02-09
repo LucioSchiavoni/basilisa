@@ -2,19 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ExercisePlayer } from "./exercise-player";
 
-type ExerciseData = {
-  id: string;
-  title: string;
-  instructions: string;
-  instructions_audio_url: string | null;
-  difficulty_level: number;
-  estimated_time_minutes: number;
-  content: Record<string, unknown>;
-  exercise_types: {
-    name: string;
-    display_name: string;
-  } | null;
-};
+function stripAnswers(content: Record<string, unknown>): Record<string, unknown> {
+  const questions =
+    (content.questions as Array<Record<string, unknown>>) || [];
+
+  return {
+    ...content,
+    questions: questions.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ({ correct_option_id, explanation, ...rest }) => rest
+    ),
+  };
+}
 
 export default async function ExercisePage({
   params,
@@ -27,7 +26,7 @@ export default async function ExercisePage({
   const { data: exercise } = await supabase
     .from("exercises")
     .select(
-      "id, title, instructions, instructions_audio_url, difficulty_level, estimated_time_minutes, content, exercise_types(name, display_name)"
+      "id, title, instructions, instructions_audio_url, difficulty_level, estimated_time_seconds, content, exercise_types(name, display_name)"
     )
     .eq("id", id)
     .eq("is_active", true)
@@ -55,8 +54,8 @@ export default async function ExercisePage({
         instructions: exercise.instructions,
         instructionsAudioUrl: exercise.instructions_audio_url,
         difficultyLevel: exercise.difficulty_level,
-        estimatedTimeMinutes: exercise.estimated_time_minutes,
-        content: exercise.content as Record<string, unknown>,
+        estimatedTimeSeconds: exercise.estimated_time_seconds,
+        content: stripAnswers(exercise.content as Record<string, unknown>),
         typeName,
         typeDisplayName,
       }}

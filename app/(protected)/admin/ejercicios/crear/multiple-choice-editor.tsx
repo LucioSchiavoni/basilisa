@@ -31,6 +31,7 @@ export function MultipleChoiceEditor({ form }: MultipleChoiceEditorProps) {
     append({
       id: crypto.randomUUID(),
       text: "",
+      description: "",
       image_url: "",
       audio_url: "",
       options: [

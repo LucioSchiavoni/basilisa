@@ -73,16 +73,16 @@ export async function login(
     .eq("id", user.id)
     .single();
 
+  if (user.user_metadata?.must_change_password === true) {
+    redirect("/change-password");
+  }
+
   if (!profile?.is_profile_complete && profile?.role !== "patient") {
     redirect("/completar-perfil");
   }
 
   if (profile?.role === "admin") {
     redirect("/admin");
-  }
-
-  if (profile?.role === "expert") {
-    redirect("/pacientes");
   }
 
   redirect("/ejercicios");

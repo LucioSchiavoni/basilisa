@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const initialState: AuthState = {};
 
@@ -15,7 +16,10 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Iniciar Sesión</CardTitle>
@@ -75,6 +79,9 @@ export default function LoginPage() {
                   Regístrate
                 </Link>
               </p>
+              <Link href="/patient-login" className="text-primary hover:underline block">
+                Soy paciente
+              </Link>
             </div>
           </CardFooter>
         </form>

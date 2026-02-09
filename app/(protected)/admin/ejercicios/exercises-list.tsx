@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { deleteExercise } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatTime } from "@/lib/utils";
 
 type Exercise = {
   id: string;
   title: string;
   instructions: string;
   difficulty_level: number;
-  estimated_time_minutes: number;
+  estimated_time_seconds: number;
   is_active: boolean;
   created_at: string;
 };
@@ -63,7 +65,10 @@ export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
           key={exercise.id}
           className="flex items-start justify-between p-4 border rounded-lg"
         >
-          <div className="space-y-2 flex-1">
+          <Link
+            href={`/admin/ejercicios/${exercise.id}`}
+            className="space-y-2 flex-1 hover:opacity-70 transition-opacity"
+          >
             <div className="flex items-center gap-2">
               <p className="font-medium">{exercise.title}</p>
               <span
@@ -81,13 +86,16 @@ export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
               {exercise.instructions}
             </p>
             <p className="text-xs text-muted-foreground">
-              {exercise.estimated_time_minutes} min
+              {formatTime(exercise.estimated_time_seconds)}
             </p>
-          </div>
+          </Link>
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => handleDelete(exercise.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(exercise.id);
+            }}
             disabled={deleting === exercise.id}
             className="ml-4"
           >

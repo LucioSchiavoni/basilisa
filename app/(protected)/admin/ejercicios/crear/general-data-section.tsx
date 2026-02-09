@@ -118,16 +118,48 @@ export function GeneralDataSection({
 
         <FormField
           control={form.control}
-          name="estimated_time_minutes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tiempo estimado (minutos)</FormLabel>
-              <FormControl>
-                <Input {...field} type="number" min={1} max={180} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          name="estimated_time_seconds"
+          render={() => {
+            const totalSeconds = form.watch("estimated_time_seconds") as number
+            const minutes = Math.floor(totalSeconds / 60)
+            const seconds = totalSeconds % 60
+            return (
+              <FormItem>
+                <FormLabel>Tiempo estimado</FormLabel>
+                <div className="flex items-center gap-2">
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={180}
+                      value={minutes}
+                      onChange={(e) => {
+                        const m = Math.max(0, Math.min(180, Number(e.target.value) || 0))
+                        form.setValue("estimated_time_seconds", m * 60 + seconds, { shouldValidate: true })
+                      }}
+                      placeholder="Min"
+                    />
+                  </FormControl>
+                  <span className="text-sm text-muted-foreground shrink-0">min</span>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={seconds}
+                      onChange={(e) => {
+                        const s = Math.max(0, Math.min(59, Number(e.target.value) || 0))
+                        form.setValue("estimated_time_seconds", minutes * 60 + s, { shouldValidate: true })
+                      }}
+                      placeholder="Seg"
+                    />
+                  </FormControl>
+                  <span className="text-sm text-muted-foreground shrink-0">seg</span>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
         />
       </div>
 

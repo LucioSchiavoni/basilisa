@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const errorParam = requestUrl.searchParams.get("error");
 
   if (errorParam) {
-    return NextResponse.redirect(new URL(`/login?error=${errorParam}`, requestUrl.origin));
+    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(errorParam)}`, requestUrl.origin));
   }
 
   if (!code) {
@@ -66,8 +66,6 @@ export async function GET(request: NextRequest) {
     redirectPath = "/completar-perfil";
   } else if (profile.role === "admin") {
     redirectPath = "/admin";
-  } else if (profile.role === "expert") {
-    redirectPath = "/pacientes";
   }
 
   const redirectUrl = new URL(redirectPath, requestUrl.origin);

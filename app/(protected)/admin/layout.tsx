@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
+import { AdminBottomNav } from "@/components/admin-bottom-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function AdminLayout({
   children,
@@ -27,8 +29,8 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-card border-r">
+    <div className="min-h-screen lg:flex">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-card border-r">
         <div className="p-6">
           <h2 className="text-xl font-bold">Panel Admin</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -104,7 +106,10 @@ export default async function AdminLayout({
             Usuarios
           </Link>
         </nav>
-        <div className="absolute bottom-0 w-64 p-4 border-t">
+        <div className="mt-auto p-4 border-t space-y-3">
+          <div className="flex justify-center">
+            <ThemeToggle />
+          </div>
           <form action={logout}>
             <Button variant="outline" type="submit" className="w-full">
               Cerrar Sesión
@@ -112,9 +117,21 @@ export default async function AdminLayout({
           </form>
         </div>
       </aside>
-      <main className="flex-1 p-8">
+      <div className="flex-1 flex flex-col lg:hidden">
+        <div className="flex items-center justify-between p-4 border-b bg-card">
+          <div>
+            <h2 className="text-lg font-bold">Panel Admin</h2>
+            <p className="text-xs text-muted-foreground">
+              {profile?.full_name || user.email}
+            </p>
+          </div>
+          <ThemeToggle />
+        </div>
+      </div>
+      <main className="flex-1 p-4 pb-20 lg:p-8 lg:pb-8">
         {children}
       </main>
+      <AdminBottomNav />
     </div>
   );
 }

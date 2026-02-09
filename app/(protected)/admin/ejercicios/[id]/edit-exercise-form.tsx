@@ -8,57 +8,59 @@ import {
   createExerciseSchema,
   type CreateExerciseInput,
 } from "@/lib/schemas/exercise"
-import { createExercise } from "../../actions"
+import { updateExercise } from "../../actions"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Form } from "@/components/ui/form"
-import { GeneralDataSection } from "./general-data-section"
-import { MultipleChoiceEditor } from "./multiple-choice-editor"
-import { ReadingComprehensionEditor } from "./reading-comprehension-editor"
+import { GeneralDataSection } from "../crear/general-data-section"
+import { MultipleChoiceEditor } from "../crear/multiple-choice-editor"
+import { ReadingComprehensionEditor } from "../crear/reading-comprehension-editor"
 import type { ExerciseType } from "@/types/exercises"
+import type { Json } from "@/types/database.types"
 
-interface CreateExerciseFormProps {
+interface EditExerciseFormProps {
+  exercise: {
+    id: string
+    title: string
+    instructions: string
+    instructions_audio_url: string | null
+    difficulty_level: number
+    estimated_time_seconds: number
+    target_age_min: number
+    target_age_max: number
+    exercise_type_id: string
+    content: Json
+    exercise_types: { name: string; display_name: string } | null
+  }
   exerciseTypes: ExerciseType[]
 }
 
-const multipleChoiceDefaults = {
-  exercise_type_name: "multiple_choice" as const,
-  content: {
-    shuffle_options: true,
-    shuffle_questions: false,
-    show_feedback: true,
-    questions: [],
-  },
-}
-
-const readingComprehensionDefaults = {
-  exercise_type_name: "reading_comprehension" as const,
-  content: {
-    reading_text: "",
-    reading_audio_url: "",
-    word_count: 0,
-    hide_text_during_questions: false,
-    questions: [],
-  },
-}
-
-export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
+export function EditExerciseForm({
+  exercise,
+  exerciseTypes,
+}: EditExerciseFormProps) {
   const [status, setStatus] = useState<{ error?: string; success?: string }>({})
   const router = useRouter()
-  const prevTypeId = useRef("")
+  const prevTypeId = useRef(exercise.exercise_type_id)
+  const initialTypeId = useRef(exercise.exercise_type_id)
+
+  const exerciseTypeName = exercise.exercise_types?.name as
+    | "multiple_choice"
+    | "reading_comprehension"
 
   const form = useForm<CreateExerciseInput>({
     resolver: zodResolver(createExerciseSchema) as Resolver<CreateExerciseInput>,
     defaultValues: {
-      title: "",
-      instructions: "",
-      instructions_audio_url: "",
-      difficulty_level: 1,
-      estimated_time_seconds: 600,
-      target_age_min: 5,
-      target_age_max: 12,
-      exercise_type_id: "",
-      ...multipleChoiceDefaults,
+      title: exercise.title,
+      instructions: exercise.instructions,
+      instructions_audio_url: exercise.instructions_audio_url,
+      difficulty_level: exercise.difficulty_level,
+      estimated_time_seconds: exercise.estimated_time_seconds,
+      target_age_min: exercise.target_age_min,
+      target_age_max: exercise.target_age_max,
+      exercise_type_id: exercise.exercise_type_id,
+      exercise_type_name: exerciseTypeName,
+      content: exercise.content as CreateExerciseInput["content"],
     },
   })
 
@@ -70,21 +72,34 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
     if (!selectedTypeId || selectedTypeId === prevTypeId.current) return
     prevTypeId.current = selectedTypeId
 
+    if (selectedTypeId === initialTypeId.current) return
+
     const type = exerciseTypes.find((t) => t.id === selectedTypeId)
     if (!type) return
 
     if (type.name === "multiple_choice") {
-      form.setValue("exercise_type_name", multipleChoiceDefaults.exercise_type_name)
-      form.setValue("content", multipleChoiceDefaults.content as CreateExerciseInput["content"])
+      form.setValue("exercise_type_name", "multiple_choice")
+      form.setValue("content", {
+        shuffle_options: true,
+        shuffle_questions: false,
+        show_feedback: true,
+        questions: [],
+      } as CreateExerciseInput["content"])
     } else if (type.name === "reading_comprehension") {
-      form.setValue("exercise_type_name", readingComprehensionDefaults.exercise_type_name)
-      form.setValue("content", readingComprehensionDefaults.content as CreateExerciseInput["content"])
+      form.setValue("exercise_type_name", "reading_comprehension")
+      form.setValue("content", {
+        reading_text: "",
+        reading_audio_url: "",
+        word_count: 0,
+        hide_text_during_questions: false,
+        questions: [],
+      } as CreateExerciseInput["content"])
     }
   }, [selectedTypeId, exerciseTypes, form])
 
   async function onSubmit(data: CreateExerciseInput) {
     setStatus({})
-    const result = await createExercise(data)
+    const result = await updateExercise(exercise.id, data)
     if (result.error) {
       setStatus({ error: result.error })
       window.scrollTo({ top: 0, behavior: "smooth" })
@@ -136,7 +151,7 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
           className="w-full"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? "Creando..." : "Crear Ejercicio"}
+          {form.formState.isSubmitting ? "Guardando..." : "Guardar Cambios"}
         </Button>
       </form>
     </Form>

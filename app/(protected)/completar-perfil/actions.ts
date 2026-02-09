@@ -72,9 +72,5 @@ export async function completeProfile(
     redirect("/admin");
   }
 
-  if (profile?.role === "expert") {
-    redirect("/pacientes");
-  }
-
   redirect("/ejercicios");
 }

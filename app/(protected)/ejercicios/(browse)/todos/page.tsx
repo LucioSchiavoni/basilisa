@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatTime } from "@/lib/utils";
 
 const difficultyLabels: Record<number, string> = {
   1: "Muy fácil",
@@ -24,7 +25,7 @@ export default async function TodosEjerciciosPage() {
 
   const { data: exercises } = await supabase
     .from("exercises")
-    .select("id, title, instructions, difficulty_level, estimated_time_minutes, exercise_type_id, exercise_types(display_name)")
+    .select("id, title, instructions, difficulty_level, estimated_time_seconds, exercise_type_id, exercise_types(display_name)")
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
@@ -76,7 +77,7 @@ export default async function TodosEjerciciosPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-xs text-muted-foreground">
-                      {exercise.estimated_time_minutes} min estimados
+                      {formatTime(exercise.estimated_time_seconds)} estimados
                     </p>
                   </CardContent>
                 </Card>

@@ -1,25 +1,29 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserForm } from "./create-user-form";
 import { UsersList } from "./users-list";
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient();
   const adminClient = createAdminClient();
 
   const { data: authUsers } = await adminClient.auth.admin.listUsers();
 
-  const { data: users } = await adminClient
+  const { data: profiles } = await adminClient
     .from("profiles")
     .select("id, full_name, role, created_at, is_profile_complete")
     .order("created_at", { ascending: false });
 
-  const usersWithEmail = users?.map((user) => {
-    const authUser = authUsers?.users?.find((au) => au.id === user.id);
+  const usersWithDetails = (profiles ?? []).map((profile) => {
+    const authUser = authUsers?.users?.find((au) => au.id === profile.id);
+    const email = authUser?.email ?? "N/A";
+    const isPatient = email.endsWith("@basilisa.internal");
+
     return {
-      ...user,
-      email: authUser?.email || "N/A",
+      ...profile,
+      email,
+      is_patient: isPatient,
+      username: isPatient ? email.replace("@basilisa.internal", "") : null,
+      must_change_password: authUser?.user_metadata?.must_change_password === true,
     };
   });
 
@@ -31,9 +35,9 @@ export default async function AdminUsersPage() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Crear Usuario</CardTitle>
+              <CardTitle>Crear Cuenta</CardTitle>
               <CardDescription>
-                Añade un nuevo usuario al sistema
+                Añade un nuevo usuario o paciente al sistema
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -47,11 +51,11 @@ export default async function AdminUsersPage() {
             <CardHeader>
               <CardTitle>Lista de Usuarios</CardTitle>
               <CardDescription>
-                {usersWithEmail?.length || 0} usuarios registrados
+                {usersWithDetails.length} usuarios registrados
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <UsersList users={usersWithEmail || []} />
+              <UsersList users={usersWithDetails} />
             </CardContent>
           </Card>
         </div>

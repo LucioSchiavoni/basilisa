@@ -12,7 +12,13 @@
       "WebSearch",
       "WebFetch(domain:ui.shadcn.com)",
       "Bash(cat:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(npx next build:*)",
+      "Bash(npx supabase:*)",
+      "Bash(supabase:*)",
+      "Bash(node -e:*)",
+      "Bash(node:*)"
     ]
   },
   "enabledMcpjsonServers": [

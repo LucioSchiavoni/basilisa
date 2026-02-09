@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useTransition, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import {
   ArrowLeft,
   Clock,
@@ -13,17 +13,26 @@ import {
   XCircle,
   Trophy,
   ChevronRight,
+  Loader2,
+  Gem,
 } from "lucide-react";
+import { checkAnswer, completeExercise } from "./actions";
+import type { AnswerResult } from "./actions";
 
 type Option = { id: string; text: string };
 
 type Question = {
   id: string;
   text: string;
+  description?: string | null;
   options: Option[];
-  correct_option_id: string;
-  explanation?: string | null;
   points: number;
+};
+
+type CheckResult = {
+  isCorrect: boolean;
+  correctOptionId: string;
+  explanation: string | null;
 };
 
 type ExerciseProps = {
@@ -33,7 +42,7 @@ type ExerciseProps = {
     instructions: string;
     instructionsAudioUrl: string | null;
     difficultyLevel: number;
-    estimatedTimeMinutes: number;
+    estimatedTimeSeconds: number;
     content: Record<string, unknown>;
     typeName: string;
     typeDisplayName: string;
@@ -87,10 +96,15 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [isChecked, setIsChecked] = useState(false);
+  const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [earnedPoints, setEarnedPoints] = useState(0);
+  const [isPending, startTransition] = useTransition();
+  const [gemsAwarded, setGemsAwarded] = useState<number | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const answersRef = useRef<AnswerResult[]>([]);
+  const startedAtRef = useRef(0);
 
   const questions = getQuestions(exercise.content);
   const isReadingComprehension = exercise.typeName === "reading_comprehension";
@@ -99,13 +113,14 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
     : "";
 
   const currentQuestion = questions[currentIndex];
-  const isCorrect =
-    isChecked && selectedOptionId === currentQuestion?.correct_option_id;
+  const isChecked = checkResult !== null;
+  const isCorrect = checkResult?.isCorrect ?? false;
   const isLastQuestion = currentIndex === questions.length - 1;
   const progress =
     questions.length > 0 ? ((currentIndex + (isChecked ? 1 : 0)) / questions.length) * 100 : 0;
 
   const handleStart = useCallback(() => {
+    startedAtRef.current = Date.now();
     if (isReadingComprehension) {
       setPhase("reading");
     } else {
@@ -115,24 +130,55 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
 
   const handleCheck = useCallback(() => {
     if (!selectedOptionId || !currentQuestion) return;
-    setIsChecked(true);
-    const pts = currentQuestion.points || 1;
-    setTotalPoints((p) => p + pts);
-    if (selectedOptionId === currentQuestion.correct_option_id) {
-      setCorrectCount((c) => c + 1);
-      setEarnedPoints((p) => p + pts);
-    }
-  }, [selectedOptionId, currentQuestion]);
+
+    startTransition(async () => {
+      const result = await checkAnswer(
+        exercise.id,
+        currentQuestion.id,
+        selectedOptionId
+      );
+      setCheckResult(result);
+
+      answersRef.current.push({
+        questionId: currentQuestion.id,
+        selectedOptionId,
+        correctOptionId: result.correctOptionId,
+        isCorrect: result.isCorrect,
+      });
+
+      const pts = currentQuestion.points || 1;
+      setTotalPoints((p) => p + pts);
+      if (result.isCorrect) {
+        setCorrectCount((c) => c + 1);
+        setEarnedPoints((p) => p + pts);
+      }
+    });
+  }, [selectedOptionId, currentQuestion, exercise.id, currentIndex]);
 
   const handleNext = useCallback(() => {
     if (isLastQuestion) {
       setPhase("results");
+      setIsCompleting(true);
+      const durationSeconds = Math.round(
+        (Date.now() - startedAtRef.current) / 1000
+      );
+      const currentAnswers = answersRef.current;
+      completeExercise({
+        exerciseId: exercise.id,
+        answers: currentAnswers,
+        totalQuestions: questions.length,
+        correctAnswers: currentAnswers.filter((a) => a.isCorrect).length,
+        durationSeconds,
+      })
+        .then((result) => setGemsAwarded(result.gemsAwarded))
+        .catch(() => setGemsAwarded(0))
+        .finally(() => setIsCompleting(false));
     } else {
       setCurrentIndex((i) => i + 1);
       setSelectedOptionId(null);
-      setIsChecked(false);
+      setCheckResult(null);
     }
-  }, [isLastQuestion]);
+  }, [isLastQuestion, exercise.id, questions.length]);
 
   if (phase === "intro") {
     return (
@@ -162,7 +208,7 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             <div className="flex justify-center gap-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4" />
-                {exercise.estimatedTimeMinutes} min
+                {formatTime(exercise.estimatedTimeSeconds)}
               </span>
               <span
                 className={cn(
@@ -265,6 +311,26 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             </div>
           )}
 
+          <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-200 dark:border-yellow-800 p-4">
+            {isCompleting ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                <p className="text-sm text-muted-foreground">
+                  Calculando gemas...
+                </p>
+              </div>
+            ) : gemsAwarded && gemsAwarded > 0 ? (
+              <p className="text-2xl font-bold text-center">
+                <Gem className="inline h-5 w-5 mr-1 text-yellow-500" />
+                +{gemsAwarded} gemas
+              </p>
+            ) : (
+              <p className="text-sm text-center text-muted-foreground">
+                Sin gemas esta vez
+              </p>
+            )}
+          </div>
+
           <div className="space-y-3">
             <Button size="lg" className="w-full text-base h-12" asChild>
               <Link href="/ejercicios/todos">Volver a ejercicios</Link>
@@ -312,11 +378,15 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             {currentQuestion?.text}
           </h2>
 
+          {currentQuestion?.description && (
+            <p className="text-muted-foreground">{currentQuestion.description}</p>
+          )}
+
           <div className="space-y-3" role="radiogroup" aria-label="Opciones de respuesta">
             {currentQuestion?.options.map((option) => {
               const isSelected = selectedOptionId === option.id;
               const isCorrectOption =
-                option.id === currentQuestion.correct_option_id;
+                isChecked && option.id === checkResult?.correctOptionId;
 
               let variant = "default";
               if (isChecked) {
@@ -333,7 +403,7 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                   type="button"
                   role="radio"
                   aria-checked={isSelected}
-                  disabled={isChecked}
+                  disabled={isChecked || isPending}
                   onClick={() => setSelectedOptionId(option.id)}
                   className={cn(
                     "w-full text-left p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px] text-sm sm:text-base",
@@ -348,7 +418,7 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                       "border-red-500 bg-red-50 dark:bg-red-950/30",
                     variant === "dimmed" &&
                       "border-border opacity-50",
-                    isChecked && "cursor-default"
+                    (isChecked || isPending) && "cursor-default"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -391,9 +461,9 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
               <p className="font-semibold mb-1">
                 {isCorrect ? "¡Correcto!" : "Incorrecto"}
               </p>
-              {!isCorrect && currentQuestion?.explanation && (
+              {!isCorrect && checkResult?.explanation && (
                 <p className="text-xs opacity-80">
-                  {currentQuestion.explanation}
+                  {checkResult.explanation}
                 </p>
               )}
             </div>
@@ -407,10 +477,17 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             <Button
               size="lg"
               className="w-full text-base h-12"
-              disabled={!selectedOptionId}
+              disabled={!selectedOptionId || isPending}
               onClick={handleCheck}
             >
-              Verificar
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                "Verificar"
+              )}
             </Button>
           ) : (
             <Button

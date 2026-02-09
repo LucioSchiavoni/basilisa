@@ -10,7 +10,7 @@ export default async function AdminExercisesPage() {
 
   const { data: exercises } = await supabase
     .from("exercises")
-    .select("*")
+    .select("id, title, instructions, difficulty_level, estimated_time_seconds, is_active, created_at")
     .order("created_at", { ascending: false });
 
   return (

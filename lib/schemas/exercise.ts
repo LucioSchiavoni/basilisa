@@ -16,6 +16,7 @@ const multipleChoiceQuestionSchema = z
   .object({
     id: z.string().uuid(),
     text: z.string().min(1, "El texto de la pregunta es requerido"),
+    description: z.string().nullish().transform(val => !val ? null : val).pipe(z.string().nullable()),
     image_url: optionalUrl,
     audio_url: optionalUrl,
     options: z
@@ -89,11 +90,11 @@ const baseExerciseSchema = z.object({
     .min(10, "Las instrucciones deben tener al menos 10 caracteres"),
   instructions_audio_url: optionalUrl,
   difficulty_level: z.coerce.number().int().min(1).max(5),
-  estimated_time_minutes: z.coerce
+  estimated_time_seconds: z.coerce
     .number()
     .int()
-    .min(1, "Debe ser al menos 1 minuto")
-    .max(180, "Maximo 180 minutos"),
+    .min(1)
+    .max(10800),
   target_age_min: z.coerce.number().int().min(1).max(100),
   target_age_max: z.coerce.number().int().min(1).max(100),
   exercise_type_id: z.string().uuid("Selecciona un tipo de ejercicio"),
