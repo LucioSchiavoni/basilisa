@@ -20,7 +20,7 @@ function getDefaultPathForRole(role: string | undefined, isProfileComplete: bool
   return "/ejercicios";
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });

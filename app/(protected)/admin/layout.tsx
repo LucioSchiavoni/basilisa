@@ -84,6 +84,26 @@ export default async function AdminLayout({
             Ejercicios
           </Link>
           <Link
+            href="/admin/pacientes"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+              <path d="m7 11 4-4 4 4 5-5" />
+            </svg>
+            Seguimiento
+          </Link>
+          <Link
             href="/admin/usuarios"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors"
           >
