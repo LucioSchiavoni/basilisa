@@ -80,24 +80,29 @@ const readingComprehensionContentSchema = z.object({
     .min(1, "Debes agregar al menos una pregunta"),
 })
 
+const timedReadingContentSchema = z.object({
+  reading_text: z
+    .string()
+    .min(10, "El texto debe tener al menos 10 caracteres")
+    .max(10000, "El texto no puede exceder 10000 caracteres"),
+  reading_audio_url: optionalUrl,
+  word_count: z.coerce.number().int().min(1),
+  show_timer: z.boolean().default(true),
+})
+
 const baseExerciseSchema = z.object({
   title: z
     .string()
     .min(3, "El titulo debe tener al menos 3 caracteres")
     .max(200, "El titulo es demasiado largo"),
-  instructions: z
-    .string()
-    .min(10, "Las instrucciones deben tener al menos 10 caracteres"),
+  instructions: z.string().min(1, "Las instrucciones son requeridas"),
   instructions_audio_url: optionalUrl,
   difficulty_level: z.coerce.number().int().min(1).max(5),
-  estimated_time_seconds: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(10800),
+  estimated_time_seconds: z.coerce.number().int().default(0),
   target_age_min: z.coerce.number().int().min(1).max(100),
   target_age_max: z.coerce.number().int().min(1).max(100),
   exercise_type_id: z.string().uuid("Selecciona un tipo de ejercicio"),
+  tags: z.array(z.string().min(1).max(50)).max(10).default([]),
 })
 
 const createMultipleChoiceSchema = baseExerciseSchema
@@ -120,17 +125,30 @@ const createReadingComprehensionSchema = baseExerciseSchema
     path: ["target_age_max"],
   })
 
+const createTimedReadingSchema = baseExerciseSchema
+  .extend({
+    exercise_type_name: z.literal("timed_reading"),
+    content: timedReadingContentSchema,
+  })
+  .refine((data) => data.target_age_min <= data.target_age_max, {
+    message: "La edad minima no puede ser mayor que la maxima",
+    path: ["target_age_max"],
+  })
+
 export const createExerciseSchema = z.discriminatedUnion("exercise_type_name", [
   createMultipleChoiceSchema,
   createReadingComprehensionSchema,
+  createTimedReadingSchema,
 ])
 
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>
 export type MultipleChoiceContent = z.infer<typeof multipleChoiceContentSchema>
 export type ReadingComprehensionContent = z.infer<typeof readingComprehensionContentSchema>
+export type TimedReadingContent = z.infer<typeof timedReadingContentSchema>
 
 export {
   multipleChoiceContentSchema,
   readingComprehensionContentSchema,
+  timedReadingContentSchema,
   baseExerciseSchema,
 }

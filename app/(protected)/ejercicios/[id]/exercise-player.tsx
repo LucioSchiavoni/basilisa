@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useCallback, useTransition, useRef } from "react";
+import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn, formatTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   ArrowLeft,
+  BookOpen,
   Clock,
   BarChart3,
   CheckCircle2,
@@ -16,7 +24,7 @@ import {
   Loader2,
   Gem,
 } from "lucide-react";
-import { checkAnswer, completeExercise } from "./actions";
+import { checkAnswer, completeExercise, completeTimedReading } from "./actions";
 import type { AnswerResult } from "./actions";
 
 type Option = { id: string; text: string };
@@ -42,7 +50,6 @@ type ExerciseProps = {
     instructions: string;
     instructionsAudioUrl: string | null;
     difficultyLevel: number;
-    estimatedTimeSeconds: number;
     content: Record<string, unknown>;
     typeName: string;
     typeDisplayName: string;
@@ -92,6 +99,32 @@ function getResultEmoji(percentage: number): string {
   return "🎯";
 }
 
+function getWordCount(content: Record<string, unknown>): number {
+  return (content.word_count as number) || 0;
+}
+
+function getWpmMessage(wpm: number): string {
+  if (wpm >= 200) return "¡Velocidad impresionante!";
+  if (wpm >= 150) return "¡Muy buena velocidad!";
+  if (wpm >= 100) return "¡Buen ritmo de lectura!";
+  if (wpm >= 60) return "¡Vas muy bien! Sigue practicando";
+  return "¡Excelente concentración! La velocidad mejora con la práctica";
+}
+
+function getWpmEmoji(wpm: number): string {
+  if (wpm >= 200) return "🚀";
+  if (wpm >= 150) return "🌟";
+  if (wpm >= 100) return "💪";
+  if (wpm >= 60) return "📖";
+  return "🐢";
+}
+
+function formatTimer(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 export function ExercisePlayer({ exercise }: ExerciseProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -103,14 +136,26 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
   const [isPending, startTransition] = useTransition();
   const [gemsAwarded, setGemsAwarded] = useState<number | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [finalTimeSeconds, setFinalTimeSeconds] = useState(0);
+  const [wordsPerMinute, setWordsPerMinute] = useState(0);
   const answersRef = useRef<AnswerResult[]>([]);
   const startedAtRef = useRef(0);
 
   const questions = getQuestions(exercise.content);
   const isReadingComprehension = exercise.typeName === "reading_comprehension";
-  const readingText = isReadingComprehension
-    ? getReadingText(exercise.content)
-    : "";
+  const isTimedReading = exercise.typeName === "timed_reading";
+  const readingText =
+    isReadingComprehension || isTimedReading
+      ? getReadingText(exercise.content)
+      : "";
+  const wordCount = isTimedReading ? getWordCount(exercise.content) : 0;
+  const showTimer = isTimedReading
+    ? (exercise.content.show_timer as boolean) !== false
+    : false;
+  const hideTextDuringQuestions = isReadingComprehension
+    ? (exercise.content.hide_text_during_questions as boolean) === true
+    : true;
 
   const currentQuestion = questions[currentIndex];
   const isChecked = checkResult !== null;
@@ -121,12 +166,39 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
 
   const handleStart = useCallback(() => {
     startedAtRef.current = Date.now();
-    if (isReadingComprehension) {
+    if (isReadingComprehension || isTimedReading) {
       setPhase("reading");
     } else {
       setPhase("questions");
     }
-  }, [isReadingComprehension]);
+  }, [isReadingComprehension, isTimedReading]);
+
+  useEffect(() => {
+    if (phase !== "reading" || !isTimedReading) return;
+    const interval = setInterval(() => {
+      setTimerSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase, isTimedReading]);
+
+  const handleFinishReading = useCallback(() => {
+    const elapsed = Math.round((Date.now() - startedAtRef.current) / 1000);
+    const timeForCalc = Math.max(elapsed, 1);
+    const wpm = Math.round((wordCount / timeForCalc) * 60);
+    setFinalTimeSeconds(elapsed);
+    setWordsPerMinute(wpm);
+    setPhase("results");
+    setIsCompleting(true);
+    completeTimedReading({
+      exerciseId: exercise.id,
+      timeSeconds: elapsed,
+      wordCount,
+      wordsPerMinute: wpm,
+    })
+      .then((result) => setGemsAwarded(result.gemsAwarded))
+      .catch(() => setGemsAwarded(0))
+      .finally(() => setIsCompleting(false));
+  }, [exercise.id, wordCount]);
 
   const handleCheck = useCallback(() => {
     if (!selectedOptionId || !currentQuestion) return;
@@ -206,10 +278,6 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             </div>
 
             <div className="flex justify-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
-                {formatTime(exercise.estimatedTimeSeconds)}
-              </span>
               <span
                 className={cn(
                   "flex items-center gap-1.5",
@@ -219,9 +287,15 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                 <BarChart3 className="h-4 w-4" />
                 {difficultyLabels[exercise.difficultyLevel]}
               </span>
-              <span className="flex items-center gap-1.5">
-                {questions.length} pregunta{questions.length !== 1 && "s"}
-              </span>
+              {isTimedReading ? (
+                <span className="flex items-center gap-1.5">
+                  {wordCount} palabra{wordCount !== 1 && "s"}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  {questions.length} pregunta{questions.length !== 1 && "s"}
+                </span>
+              )}
             </div>
 
             <Button size="lg" className="w-full max-w-xs text-base h-12" onClick={handleStart}>
@@ -239,9 +313,25 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
       <div className="min-h-screen flex flex-col">
         <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4">
           <div className="max-w-lg mx-auto">
-            <p className="text-sm font-medium text-center text-muted-foreground">
-              Lee el siguiente texto con atención
-            </p>
+            {isTimedReading ? (
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Lee a tu ritmo
+                </p>
+                {showTimer && (
+                  <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span className="text-lg font-mono font-semibold tabular-nums">
+                      {formatTimer(timerSeconds)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-center text-muted-foreground">
+                Lee el siguiente texto con atención
+              </p>
+            )}
           </div>
         </header>
 
@@ -257,14 +347,25 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
 
         <footer className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4">
           <div className="max-w-lg mx-auto">
-            <Button
-              size="lg"
-              className="w-full text-base h-12"
-              onClick={() => setPhase("questions")}
-            >
-              Continuar a las preguntas
-              <ChevronRight className="h-5 w-5 ml-1" />
-            </Button>
+            {isTimedReading ? (
+              <Button
+                size="lg"
+                className="w-full text-base h-14"
+                onClick={handleFinishReading}
+              >
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                Terminé de leer
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="w-full text-base h-12"
+                onClick={() => setPhase("questions")}
+              >
+                Continuar a las preguntas
+                <ChevronRight className="h-5 w-5 ml-1" />
+              </Button>
+            )}
           </div>
         </footer>
       </div>
@@ -272,6 +373,71 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
   }
 
   if (phase === "results") {
+    if (isTimedReading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="w-full max-w-lg text-center space-y-8">
+            <div className="text-6xl">{getWpmEmoji(wordsPerMinute)}</div>
+
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-bold">
+                {getWpmMessage(wordsPerMinute)}
+              </h1>
+              <p className="text-muted-foreground">{exercise.title}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl bg-muted p-4 space-y-1">
+                <p className="text-3xl font-bold">
+                  {formatTimer(finalTimeSeconds)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Tiempo de lectura
+                </p>
+              </div>
+              <div className="rounded-2xl bg-muted p-4 space-y-1">
+                <p className="text-3xl font-bold">{wordsPerMinute}</p>
+                <p className="text-xs text-muted-foreground">
+                  Palabras por minuto
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-muted p-4 space-y-1">
+              <p className="text-2xl font-bold">{wordCount}</p>
+              <p className="text-xs text-muted-foreground">Palabras leídas</p>
+            </div>
+
+            <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-200 dark:border-yellow-800 p-4">
+              {isCompleting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                  <p className="text-sm text-muted-foreground">
+                    Calculando gemas...
+                  </p>
+                </div>
+              ) : gemsAwarded && gemsAwarded > 0 ? (
+                <p className="text-2xl font-bold text-center">
+                  <Gem className="inline h-5 w-5 mr-1 text-yellow-500" />
+                  +{gemsAwarded} gemas
+                </p>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground">
+                  Sin gemas esta vez
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Button size="lg" className="w-full text-base h-12" asChild>
+                <Link href="/ejercicios/todos">Volver a ejercicios</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const percentage =
       questions.length > 0
         ? Math.round((correctCount / questions.length) * 100)
@@ -353,9 +519,35 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             >
               <XCircle className="h-6 w-6" />
             </Link>
-            <span className="text-sm text-muted-foreground">
-              {currentIndex + 1} / {questions.length}
-            </span>
+            <div className="flex items-center gap-3">
+              {isReadingComprehension && !hideTextDuringQuestions && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20 active:scale-95 transition-all"
+                      aria-label="Ver texto de lectura"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Ver texto
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle>Texto de lectura</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4">
+                      <p className="text-base leading-relaxed whitespace-pre-wrap">
+                        {readingText}
+                      </p>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
+              <span className="text-sm text-muted-foreground">
+                {currentIndex + 1} / {questions.length}
+              </span>
+            </div>
           </div>
           <div
             className="h-2 rounded-full bg-muted overflow-hidden"

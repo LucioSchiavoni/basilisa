@@ -267,14 +267,61 @@ export async function deleteExercise(id: string): Promise<{ error?: string; succ
     return { error: "No tienes permisos para eliminar ejercicios" };
   }
 
-  const { error } = await supabase.from("exercises").delete().eq("id", parsed.data);
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("exercises")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", parsed.data)
+    .is("deleted_at", null);
 
   if (error) {
+    console.error("Soft delete exercise error:", error);
     return { error: "Error al eliminar el ejercicio" };
   }
 
   revalidatePath("/admin/ejercicios");
   return { success: "Ejercicio eliminado exitosamente" };
+}
+
+export async function restoreExercise(id: string): Promise<{ error?: string; success?: string }> {
+  const parsed = z.string().uuid("ID de ejercicio inválido").safeParse(id);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (adminProfile?.role !== "admin") {
+    return { error: "No tienes permisos para restaurar ejercicios" };
+  }
+
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("exercises")
+    .update({ deleted_at: null })
+    .eq("id", parsed.data)
+    .not("deleted_at", "is", null);
+
+  if (error) {
+    console.error("Restore exercise error:", error);
+    return { error: "Error al restaurar el ejercicio" };
+  }
+
+  revalidatePath("/admin/ejercicios");
+  return { success: "Ejercicio restaurado exitosamente" };
 }
 
 export async function deleteUser(id: string): Promise<{ error?: string; success?: string }> {
@@ -435,6 +482,55 @@ export async function resetPatientPassword(id: string): Promise<{ error?: string
 
   revalidatePath("/admin/usuarios");
   return { success: "Contraseña reseteada. Nueva contraseña: Basilisa2025" };
+}
+
+export async function updateUserRole(
+  userId: string,
+  newRole: string
+): Promise<{ error?: string; success?: string }> {
+  const parsed = z.string().uuid("ID de usuario inválido").safeParse(userId);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const roleValidation = z.enum(["patient", "admin"]).safeParse(newRole);
+  if (!roleValidation.success) {
+    return { error: "Rol inválido" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (adminProfile?.role !== "admin") {
+    return { error: "No tienes permisos para cambiar roles" };
+  }
+
+  if (parsed.data === user.id) {
+    return { error: "No puedes cambiar tu propio rol" };
+  }
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
+    .from("profiles")
+    .update({ role: roleValidation.data })
+    .eq("id", parsed.data);
+
+  if (error) {
+    return { error: "Error al actualizar el rol" };
+  }
+
+  revalidatePath("/admin/usuarios");
+  return { success: `Rol actualizado a ${roleValidation.data === "admin" ? "Administrador" : "Paciente"}` };
 }
 
 export async function createAccount(

@@ -1,8 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { type UseFormReturn } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { X } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -37,6 +40,34 @@ export function GeneralDataSection({
   form,
   exerciseTypes,
 }: GeneralDataSectionProps) {
+  const [tagInput, setTagInput] = useState("")
+  const tags = (form.watch("tags") as string[]) || []
+
+  function addTag(value: string) {
+    const tag = value.trim()
+    if (!tag || tags.includes(tag) || tags.length >= 10) return
+    form.setValue("tags", [...tags, tag], { shouldValidate: true })
+  }
+
+  function removeTag(index: number) {
+    form.setValue(
+      "tags",
+      tags.filter((_, i) => i !== index),
+      { shouldValidate: true }
+    )
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault()
+      addTag(tagInput)
+      setTagInput("")
+    }
+    if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+      removeTag(tags.length - 1)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Datos Generales</h3>
@@ -87,81 +118,33 @@ export function GeneralDataSection({
         )}
       />
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="difficulty_level"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nivel de dificultad</FormLabel>
-              <Select
-                value={String(field.value)}
-                onValueChange={(val) => field.onChange(Number(val))}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(difficultyLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="estimated_time_seconds"
-          render={() => {
-            const totalSeconds = form.watch("estimated_time_seconds") as number
-            const minutes = Math.floor(totalSeconds / 60)
-            const seconds = totalSeconds % 60
-            return (
-              <FormItem>
-                <FormLabel>Tiempo estimado</FormLabel>
-                <div className="flex items-center gap-2">
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={180}
-                      value={minutes}
-                      onChange={(e) => {
-                        const m = Math.max(0, Math.min(180, Number(e.target.value) || 0))
-                        form.setValue("estimated_time_seconds", m * 60 + seconds, { shouldValidate: true })
-                      }}
-                      placeholder="Min"
-                    />
-                  </FormControl>
-                  <span className="text-sm text-muted-foreground shrink-0">min</span>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={59}
-                      value={seconds}
-                      onChange={(e) => {
-                        const s = Math.max(0, Math.min(59, Number(e.target.value) || 0))
-                        form.setValue("estimated_time_seconds", minutes * 60 + s, { shouldValidate: true })
-                      }}
-                      placeholder="Seg"
-                    />
-                  </FormControl>
-                  <span className="text-sm text-muted-foreground shrink-0">seg</span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="difficulty_level"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nivel de dificultad</FormLabel>
+            <Select
+              value={String(field.value)}
+              onValueChange={(val) => field.onChange(Number(val))}
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {Object.entries(difficultyLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <FormField
@@ -213,6 +196,49 @@ export function GeneralDataSection({
                 ))}
               </SelectContent>
             </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="tags"
+        render={() => (
+          <FormItem>
+            <FormLabel>Etiquetas (opcional)</FormLabel>
+            <div className="flex flex-wrap gap-2 min-h-[40px] rounded-md border border-input bg-background px-3 py-2 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+              {tags.map((tag, index) => (
+                <Badge key={index} variant="secondary" className="gap-1">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(index)}
+                    className="ml-0.5 rounded-full hover:bg-muted-foreground/20"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={() => {
+                  if (tagInput.trim()) {
+                    addTag(tagInput)
+                    setTagInput("")
+                  }
+                }}
+                placeholder={tags.length === 0 ? "Escribe y presiona Enter" : ""}
+                className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                disabled={tags.length >= 10}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Presiona Enter o coma para agregar. Maximo 10 etiquetas.
+            </p>
             <FormMessage />
           </FormItem>
         )}

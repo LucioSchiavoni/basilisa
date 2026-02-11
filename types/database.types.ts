@@ -57,7 +57,9 @@ export interface Database {
           target_age_min: number;
           target_age_max: number;
           content: Json;
+          tags: string[];
           is_active: boolean;
+          deleted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -73,7 +75,9 @@ export interface Database {
           target_age_min: number;
           target_age_max: number;
           content: Json;
+          tags?: string[];
           is_active?: boolean;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -87,7 +91,9 @@ export interface Database {
           target_age_min?: number;
           target_age_max?: number;
           content?: Json;
+          tags?: string[];
           is_active?: boolean;
+          deleted_at?: string | null;
           updated_at?: string;
         };
         Relationships: [

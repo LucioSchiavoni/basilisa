@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { deleteUser, resetPatientPassword } from "../actions";
+import { deleteUser, resetPatientPassword, updateUserRole } from "../actions";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type User = {
   id: string;
@@ -21,9 +28,31 @@ const roleLabels: Record<string, string> = {
   admin: "Administrador",
 };
 
-export function UsersList({ users }: { users: User[] }) {
+export function UsersList({
+  users,
+  currentUserId,
+}: {
+  users: User[];
+  currentUserId: string;
+}) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
+  const [roleSuccess, setRoleSuccess] = useState<string | null>(null);
+
+  async function handleRoleChange(userId: string, newRole: string) {
+    setChangingRole(userId);
+    setRoleSuccess(null);
+    const result = await updateUserRole(userId, newRole);
+    setChangingRole(null);
+
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setRoleSuccess(userId);
+      setTimeout(() => setRoleSuccess(null), 2000);
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
@@ -74,15 +103,33 @@ export function UsersList({ users }: { users: User[] }) {
               {user.is_patient ? `@${user.username}` : user.email}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  user.role === "admin"
-                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                    : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                }`}
-              >
-                {roleLabels[user.role || "patient"] || user.role}
-              </span>
+              {user.id === currentUserId ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                  {roleLabels[user.role || "patient"] || user.role} (tú)
+                </span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Select
+                    defaultValue={user.role || "patient"}
+                    onValueChange={(value) => handleRoleChange(user.id, value)}
+                    disabled={changingRole === user.id}
+                  >
+                    <SelectTrigger className="h-7 text-xs w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="patient">Paciente</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {changingRole === user.id && (
+                    <span className="text-xs text-muted-foreground">Guardando...</span>
+                  )}
+                  {roleSuccess === user.id && (
+                    <span className="text-xs text-green-600 dark:text-green-400">Rol actualizado</span>
+                  )}
+                </div>
+              )}
               {user.is_patient && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                   Sin correo

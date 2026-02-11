@@ -15,6 +15,7 @@ import { Form } from "@/components/ui/form"
 import { GeneralDataSection } from "./general-data-section"
 import { MultipleChoiceEditor } from "./multiple-choice-editor"
 import { ReadingComprehensionEditor } from "./reading-comprehension-editor"
+import { TimedReadingEditor } from "./timed-reading-editor"
 import type { ExerciseType } from "@/types/exercises"
 
 interface CreateExerciseFormProps {
@@ -42,6 +43,16 @@ const readingComprehensionDefaults = {
   },
 }
 
+const timedReadingDefaults = {
+  exercise_type_name: "timed_reading" as const,
+  content: {
+    reading_text: "",
+    reading_audio_url: "",
+    word_count: 0,
+    show_timer: true,
+  },
+}
+
 export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
   const [status, setStatus] = useState<{ error?: string; success?: string }>({})
   const router = useRouter()
@@ -54,10 +65,11 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
       instructions: "",
       instructions_audio_url: "",
       difficulty_level: 1,
-      estimated_time_seconds: 600,
+      estimated_time_seconds: 0,
       target_age_min: 5,
       target_age_max: 12,
       exercise_type_id: "",
+      tags: [],
       ...multipleChoiceDefaults,
     },
   })
@@ -79,6 +91,9 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
     } else if (type.name === "reading_comprehension") {
       form.setValue("exercise_type_name", readingComprehensionDefaults.exercise_type_name)
       form.setValue("content", readingComprehensionDefaults.content as CreateExerciseInput["content"])
+    } else if (type.name === "timed_reading") {
+      form.setValue("exercise_type_name", timedReadingDefaults.exercise_type_name)
+      form.setValue("content", timedReadingDefaults.content as CreateExerciseInput["content"])
     }
   }, [selectedTypeId, exerciseTypes, form])
 
@@ -127,6 +142,9 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
             )}
             {typeName === "reading_comprehension" && (
               <ReadingComprehensionEditor form={form} />
+            )}
+            {typeName === "timed_reading" && (
+              <TimedReadingEditor form={form} />
             )}
           </>
         )}

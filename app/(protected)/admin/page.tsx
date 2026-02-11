@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { Users, BookOpen, UserCheck } from "lucide-react";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -11,65 +11,50 @@ export default async function AdminDashboardPage() {
     { count: patientsCount },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("exercises").select("*", { count: "exact", head: true }),
+    supabase.from("exercises").select("*", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "patient"),
   ]);
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardDescription>Total Usuarios</CardDescription>
-            <CardTitle className="text-4xl">{usersCount || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Pacientes</CardDescription>
-            <CardTitle className="text-4xl">{patientsCount || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Ejercicios</CardDescription>
-            <CardTitle className="text-4xl">{exercisesCount || 0}</CardTitle>
-          </CardHeader>
-        </Card>
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-col items-center gap-1 rounded-xl border bg-card p-3">
+          <BookOpen className="h-5 w-5 text-primary" />
+          <span className="text-2xl font-bold">{exercisesCount || 0}</span>
+          <span className="text-[11px] text-muted-foreground">Ejercicios</span>
+        </div>
+        <div className="flex flex-col items-center gap-1 rounded-xl border bg-card p-3">
+          <UserCheck className="h-5 w-5 text-primary" />
+          <span className="text-2xl font-bold">{patientsCount || 0}</span>
+          <span className="text-[11px] text-muted-foreground">Pacientes</span>
+        </div>
+        <div className="flex flex-col items-center gap-1 rounded-xl border bg-card p-3">
+          <Users className="h-5 w-5 text-primary" />
+          <span className="text-2xl font-bold">{usersCount || 0}</span>
+          <span className="text-[11px] text-muted-foreground">Usuarios</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Link href="/admin/usuarios">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
-            <CardHeader>
-              <CardTitle>Gestionar Usuarios</CardTitle>
-              <CardDescription>
-                Crear y administrar cuentas de pacientes y administradores
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Crea nuevos usuarios, asigna roles y gestiona permisos
-              </p>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          href="/admin/usuarios"
+          className="flex flex-col gap-2 rounded-xl border bg-card p-4 hover:border-primary transition-colors"
+        >
+          <Users className="h-5 w-5 text-muted-foreground" />
+          <span className="font-semibold text-sm">Usuarios</span>
+          <span className="text-xs text-muted-foreground leading-snug">
+            Crear y administrar cuentas
+          </span>
         </Link>
-        <Link href="/admin/ejercicios">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
-            <CardHeader>
-              <CardTitle>Gestionar Ejercicios</CardTitle>
-              <CardDescription>
-                Crear y administrar ejercicios para pacientes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Crea ejercicios, define categorías y asigna a pacientes
-              </p>
-            </CardContent>
-          </Card>
+        <Link
+          href="/admin/ejercicios"
+          className="flex flex-col gap-2 rounded-xl border bg-card p-4 hover:border-primary transition-colors"
+        >
+          <BookOpen className="h-5 w-5 text-muted-foreground" />
+          <span className="font-semibold text-sm">Ejercicios</span>
+          <span className="text-xs text-muted-foreground leading-snug">
+            Crear y administrar ejercicios
+          </span>
         </Link>
       </div>
     </div>

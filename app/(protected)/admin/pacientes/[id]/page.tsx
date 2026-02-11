@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PatientStatsCards } from "./patient-stats-cards";
-import { ScoreChart } from "./score-chart";
 import { ExerciseHistory } from "./exercise-history";
 
 type ExerciseContent = {
@@ -144,25 +143,6 @@ export default async function PatientDetailPage({
       ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
       : 0;
 
-  const chartData = (scores ?? [])
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
-    )
-    .map((s) => {
-      const session = sessions?.find((sess) => sess.id === s.session_id);
-      const exerciseTitle = session
-        ? exerciseTitleMap.get(session.exercise_id) || "Ejercicio"
-        : "Ejercicio";
-      const date = new Date(s.completed_at);
-      return {
-        date: `${date.getDate()}/${date.getMonth() + 1}`,
-        score: s.score_percentage,
-        exerciseTitle,
-      };
-    });
-
   const attempts = (sessions ?? []).map((s) => {
     const score = scoreBySession.get(s.id);
     const sessionResults = resultsBySession.get(s.id) ?? [];
@@ -232,8 +212,6 @@ export default async function PatientDetailPage({
         currentStreak={gems?.current_streak ?? 0}
         totalGems={gems?.total_gems ?? 0}
       />
-
-      <ScoreChart data={chartData} />
 
       <ExerciseHistory attempts={attempts} />
     </div>

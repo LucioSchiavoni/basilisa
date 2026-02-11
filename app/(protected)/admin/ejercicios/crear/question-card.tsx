@@ -64,10 +64,9 @@ export function QuestionCard({
     )
   }
 
-  function handleRemoveQuestion() {
-    if (confirm("¿Eliminar esta pregunta?")) {
-      onRemove()
-    }
+  function handleRemoveQuestion(e: React.MouseEvent) {
+    e.stopPropagation()
+    onRemove()
   }
 
   return (
@@ -287,7 +286,7 @@ export function QuestionCard({
             type="button"
             variant="destructive"
             size="sm"
-            onClick={handleRemoveQuestion}
+            onClick={(e) => handleRemoveQuestion(e)}
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Eliminar pregunta

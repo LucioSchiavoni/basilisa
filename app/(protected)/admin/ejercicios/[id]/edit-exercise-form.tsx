@@ -15,6 +15,7 @@ import { Form } from "@/components/ui/form"
 import { GeneralDataSection } from "../crear/general-data-section"
 import { MultipleChoiceEditor } from "../crear/multiple-choice-editor"
 import { ReadingComprehensionEditor } from "../crear/reading-comprehension-editor"
+import { TimedReadingEditor } from "../crear/timed-reading-editor"
 import type { ExerciseType } from "@/types/exercises"
 import type { Json } from "@/types/database.types"
 
@@ -30,6 +31,7 @@ interface EditExerciseFormProps {
     target_age_max: number
     exercise_type_id: string
     content: Json
+    tags: string[]
     exercise_types: { name: string; display_name: string } | null
   }
   exerciseTypes: ExerciseType[]
@@ -47,6 +49,7 @@ export function EditExerciseForm({
   const exerciseTypeName = exercise.exercise_types?.name as
     | "multiple_choice"
     | "reading_comprehension"
+    | "timed_reading"
 
   const form = useForm<CreateExerciseInput>({
     resolver: zodResolver(createExerciseSchema) as Resolver<CreateExerciseInput>,
@@ -59,9 +62,10 @@ export function EditExerciseForm({
       target_age_min: exercise.target_age_min,
       target_age_max: exercise.target_age_max,
       exercise_type_id: exercise.exercise_type_id,
+      tags: exercise.tags || [],
       exercise_type_name: exerciseTypeName,
       content: exercise.content as CreateExerciseInput["content"],
-    },
+    } as CreateExerciseInput,
   })
 
   const selectedTypeId = form.watch("exercise_type_id")
@@ -93,6 +97,14 @@ export function EditExerciseForm({
         word_count: 0,
         hide_text_during_questions: false,
         questions: [],
+      } as CreateExerciseInput["content"])
+    } else if (type.name === "timed_reading") {
+      form.setValue("exercise_type_name", "timed_reading")
+      form.setValue("content", {
+        reading_text: "",
+        reading_audio_url: "",
+        word_count: 0,
+        show_timer: true,
       } as CreateExerciseInput["content"])
     }
   }, [selectedTypeId, exerciseTypes, form])
@@ -142,6 +154,9 @@ export function EditExerciseForm({
             )}
             {typeName === "reading_comprehension" && (
               <ReadingComprehensionEditor form={form} />
+            )}
+            {typeName === "timed_reading" && (
+              <TimedReadingEditor form={form} />
             )}
           </>
         )}

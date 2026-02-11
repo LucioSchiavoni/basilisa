@@ -26,10 +26,11 @@ export default async function ExercisePage({
   const { data: exercise } = await supabase
     .from("exercises")
     .select(
-      "id, title, instructions, instructions_audio_url, difficulty_level, estimated_time_seconds, content, exercise_types(name, display_name)"
+      "id, title, instructions, instructions_audio_url, difficulty_level, content, exercise_types(name, display_name)"
     )
     .eq("id", id)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .single();
 
   if (!exercise) {
@@ -54,7 +55,6 @@ export default async function ExercisePage({
         instructions: exercise.instructions,
         instructionsAudioUrl: exercise.instructions_audio_url,
         difficultyLevel: exercise.difficulty_level,
-        estimatedTimeSeconds: exercise.estimated_time_seconds,
         content: stripAnswers(exercise.content as Record<string, unknown>),
         typeName,
         typeDisplayName,

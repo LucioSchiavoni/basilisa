@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import {
   Card,
@@ -7,6 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { TriangleAlert } from "lucide-react"
 import { EditExerciseForm } from "./edit-exercise-form"
 
 export default async function EditExercisePage({
@@ -31,6 +35,30 @@ export default async function EditExercisePage({
 
   if (!exercise) {
     notFound()
+  }
+
+  if (exercise.deleted_at) {
+    return (
+      <div className="max-w-3xl">
+        <h1 className="text-3xl font-bold mb-8">Editar Ejercicio</h1>
+        <Alert variant="destructive">
+          <TriangleAlert className="h-4 w-4" />
+          <AlertTitle>Ejercicio eliminado</AlertTitle>
+          <AlertDescription>
+            Este ejercicio fue eliminado el{" "}
+            {new Date(exercise.deleted_at).toLocaleDateString("es", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+            . Para editarlo, primero restauralo desde la lista de ejercicios eliminados.
+          </AlertDescription>
+        </Alert>
+        <Button variant="outline" className="mt-4" asChild>
+          <Link href="/admin/ejercicios?show=deleted">Ver ejercicios eliminados</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (

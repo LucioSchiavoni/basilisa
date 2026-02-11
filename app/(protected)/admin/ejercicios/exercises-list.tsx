@@ -2,19 +2,31 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { deleteExercise } from "../actions";
+import { deleteExercise, restoreExercise } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatTime } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2, Loader2, RotateCcw } from "lucide-react";
 
 type Exercise = {
   id: string;
   title: string;
   instructions: string;
   difficulty_level: number;
-  estimated_time_seconds: number;
   is_active: boolean;
   created_at: string;
+  tags: string[];
+  deleted_at: string | null;
 };
 
 const difficultyLabels: Record<number, string> = {
@@ -33,20 +45,29 @@ const difficultyColors: Record<number, string> = {
   5: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
-  const [deleting, setDeleting] = useState<string | null>(null);
+export function ExercisesList({ exercises, showDeleted = false }: { exercises: Exercise[]; showDeleted?: boolean }) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Estas seguro de que deseas eliminar este ejercicio?")) {
-      return;
-    }
-
-    setDeleting(id);
+    setLoading(id);
+    setError(null);
     const result = await deleteExercise(id);
-    setDeleting(null);
+    setLoading(null);
 
     if (result.error) {
-      alert(result.error);
+      setError(result.error);
+    }
+  }
+
+  async function handleRestore(id: string) {
+    setLoading(id);
+    setError(null);
+    const result = await restoreExercise(id);
+    setLoading(null);
+
+    if (result.error) {
+      setError(result.error);
     }
   }
 
@@ -60,6 +81,12 @@ export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md dark:bg-red-900/20">
+          {error}
+        </div>
+      )}
+
       {exercises.map((exercise) => (
         <div
           key={exercise.id}
@@ -85,22 +112,66 @@ export function ExercisesList({ exercises }: { exercises: Exercise[] }) {
             <p className="text-sm text-muted-foreground line-clamp-2">
               {exercise.instructions}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {formatTime(exercise.estimated_time_seconds)}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {exercise.tags?.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </Link>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(exercise.id);
-            }}
-            disabled={deleting === exercise.id}
-            className="ml-4"
-          >
-            {deleting === exercise.id ? "Eliminando..." : "Eliminar"}
-          </Button>
+
+          {showDeleted ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="ml-4 shrink-0"
+              disabled={loading === exercise.id}
+              onClick={() => handleRestore(exercise.id)}
+            >
+              {loading === exercise.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="ml-4 shrink-0"
+                  disabled={loading === exercise.id}
+                >
+                  {loading === exercise.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md rounded-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Eliminar ejercicio</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Vas a eliminar <span className="font-semibold text-foreground">{exercise.title}</span>. El ejercicio se podra restaurar despues.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                  <AlertDialogCancel className="w-full sm:w-auto">
+                    Cancelar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(exercise.id)}
+                    className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       ))}
     </div>
