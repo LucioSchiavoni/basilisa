@@ -1,7 +1,6 @@
 "use client"
 
 import { type UseFormReturn } from "react-hook-form"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -73,24 +72,6 @@ export function TimedReadingEditor({ form }: TimedReadingEditorProps) {
                 Si está activado, el paciente verá el cronómetro mientras lee
               </FormDescription>
             </div>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="content.reading_audio_url"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>URL de audio del texto (opcional)</FormLabel>
-            <FormControl>
-              <Input
-                value={(field.value as string) ?? ""}
-                onChange={field.onChange}
-                placeholder="https://..."
-              />
-            </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />

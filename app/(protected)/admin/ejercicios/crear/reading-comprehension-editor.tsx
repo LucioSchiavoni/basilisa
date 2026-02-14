@@ -1,8 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { useFieldArray, type UseFormReturn } from "react-hook-form"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -13,18 +13,22 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form"
-import { Accordion } from "@/components/ui/accordion"
-import { Plus } from "lucide-react"
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { AudioUpload } from "@/components/admin/audio-upload"
 import { QuestionCard } from "./question-card"
 
 interface ReadingComprehensionEditorProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<any>
+  exerciseId?: string
 }
 
 export function ReadingComprehensionEditor({
   form,
+  exerciseId,
 }: ReadingComprehensionEditorProps) {
+  const [activeQuestion, setActiveQuestion] = useState(0)
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "content.questions",
@@ -40,14 +44,24 @@ export function ReadingComprehensionEditor({
     append({
       id: crypto.randomUUID(),
       text: "",
+      question_image_url: "",
+      question_audio_url: "",
       type: "multiple_choice" as const,
       options: [
-        { id: optionId1, text: "" },
-        { id: optionId2, text: "" },
+        { id: optionId1, text: "", image_url: "" },
+        { id: optionId2, text: "", image_url: "" },
       ],
       correct_option_id: "",
       points: 1,
     })
+    setActiveQuestion(fields.length)
+  }
+
+  function handleRemoveQuestion(index: number) {
+    remove(index)
+    setActiveQuestion((prev) =>
+      Math.min(prev, Math.max(fields.length - 2, 0))
+    )
   }
 
   function handleReadingTextChange(value: string) {
@@ -58,10 +72,6 @@ export function ReadingComprehensionEditor({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">
-        Contenido: Comprension Lectora
-      </h3>
-
       <FormField
         control={form.control}
         name="content.reading_text"
@@ -89,14 +99,12 @@ export function ReadingComprehensionEditor({
         name="content.reading_audio_url"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>URL de audio del texto (opcional)</FormLabel>
-            <FormControl>
-              <Input
-                value={(field.value as string) ?? ""}
-                onChange={field.onChange}
-                placeholder="https://..."
-              />
-            </FormControl>
+            <AudioUpload
+              value={field.value ?? ""}
+              onChange={(url) => field.onChange(url || null)}
+              path={`reading/${exerciseId ?? "temp"}/`}
+              label="Audio del texto (opcional)"
+            />
             <FormMessage />
           </FormItem>
         )}
@@ -131,24 +139,72 @@ export function ReadingComprehensionEditor({
       />
 
       {fields.length > 0 && (
-        <Accordion type="multiple" className="space-y-2">
-          {fields.map((field, index) => (
-            <QuestionCard
-              key={field.id}
-              form={form}
-              questionIndex={index}
-              basePath="content.questions"
-              variant="reading_comprehension"
-              onRemove={() => remove(index)}
-            />
-          ))}
-        </Accordion>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setActiveQuestion((i) => i - 1)}
+              disabled={activeQuestion === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium">
+              Pregunta {activeQuestion + 1} de {fields.length}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setActiveQuestion((i) => i + 1)}
+              disabled={activeQuestion >= fields.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {fields.length > 1 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {fields.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActiveQuestion(i)}
+                  className={cn(
+                    "h-8 w-8 rounded-full text-xs font-medium shrink-0 transition-colors",
+                    i === activeQuestion
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted hover:bg-muted-foreground/20"
+                  )}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <QuestionCard
+            key={fields[activeQuestion]?.id}
+            form={form}
+            questionIndex={activeQuestion}
+            basePath="content.questions"
+            variant="reading_comprehension"
+            exerciseId={exerciseId}
+            onRemove={() => handleRemoveQuestion(activeQuestion)}
+          />
+        </div>
       )}
 
-      <Button type="button" variant="outline" onClick={handleAddQuestion}>
-        <Plus className="h-4 w-4 mr-2" />
-        Agregar pregunta
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button type="button" variant="outline" onClick={handleAddQuestion}>
+          <Plus className="h-4 w-4 mr-2" />
+          Agregar pregunta
+        </Button>
+        <Button type="submit" disabled={form.formState.isSubmitting} className="sm:ml-auto">
+          {form.formState.isSubmitting ? "Guardando..." : "Guardar ejercicio"}
+        </Button>
+      </div>
     </div>
   )
 }

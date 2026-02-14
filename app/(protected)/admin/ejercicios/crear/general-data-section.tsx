@@ -106,20 +106,6 @@ export function GeneralDataSection({
 
       <FormField
         control={form.control}
-        name="instructions_audio_url"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>URL de audio de instrucciones (opcional)</FormLabel>
-            <FormControl>
-              <Input {...field} value={field.value ?? ""} placeholder="https://..." />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
         name="difficulty_level"
         render={({ field }) => (
           <FormItem>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useFieldArray, type UseFormReturn } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,16 +11,18 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form"
-import { Accordion } from "@/components/ui/accordion"
-import { Plus } from "lucide-react"
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { QuestionCard } from "./question-card"
 
 interface MultipleChoiceEditorProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<any>
+  exerciseId?: string
 }
 
-export function MultipleChoiceEditor({ form }: MultipleChoiceEditorProps) {
+export function MultipleChoiceEditor({ form, exerciseId }: MultipleChoiceEditorProps) {
+  const [activeQuestion, setActiveQuestion] = useState(0)
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "content.questions",
@@ -34,6 +37,8 @@ export function MultipleChoiceEditor({ form }: MultipleChoiceEditorProps) {
       description: "",
       image_url: "",
       audio_url: "",
+      question_image_url: "",
+      question_audio_url: "",
       options: [
         { id: optionId1, text: "", image_url: "" },
         { id: optionId2, text: "", image_url: "" },
@@ -42,12 +47,18 @@ export function MultipleChoiceEditor({ form }: MultipleChoiceEditorProps) {
       explanation: "",
       points: 1,
     })
+    setActiveQuestion(fields.length)
+  }
+
+  function handleRemoveQuestion(index: number) {
+    remove(index)
+    setActiveQuestion((prev) =>
+      Math.min(prev, Math.max(fields.length - 2, 0))
+    )
   }
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Contenido: Opcion Multiple</h3>
-
       <div className="flex flex-wrap gap-6">
         <FormField
           control={form.control}
@@ -109,24 +120,72 @@ export function MultipleChoiceEditor({ form }: MultipleChoiceEditorProps) {
       />
 
       {fields.length > 0 && (
-        <Accordion type="multiple" className="space-y-2">
-          {fields.map((field, index) => (
-            <QuestionCard
-              key={field.id}
-              form={form}
-              questionIndex={index}
-              basePath="content.questions"
-              variant="multiple_choice"
-              onRemove={() => remove(index)}
-            />
-          ))}
-        </Accordion>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setActiveQuestion((i) => i - 1)}
+              disabled={activeQuestion === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium">
+              Pregunta {activeQuestion + 1} de {fields.length}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setActiveQuestion((i) => i + 1)}
+              disabled={activeQuestion >= fields.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {fields.length > 1 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {fields.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActiveQuestion(i)}
+                  className={cn(
+                    "h-8 w-8 rounded-full text-xs font-medium shrink-0 transition-colors",
+                    i === activeQuestion
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted hover:bg-muted-foreground/20"
+                  )}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <QuestionCard
+            key={fields[activeQuestion]?.id}
+            form={form}
+            questionIndex={activeQuestion}
+            basePath="content.questions"
+            variant="multiple_choice"
+            exerciseId={exerciseId}
+            onRemove={() => handleRemoveQuestion(activeQuestion)}
+          />
+        </div>
       )}
 
-      <Button type="button" variant="outline" onClick={handleAddQuestion}>
-        <Plus className="h-4 w-4 mr-2" />
-        Agregar pregunta
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button type="button" variant="outline" onClick={handleAddQuestion}>
+          <Plus className="h-4 w-4 mr-2" />
+          Agregar pregunta
+        </Button>
+        <Button type="submit" disabled={form.formState.isSubmitting} className="sm:ml-auto">
+          {form.formState.isSubmitting ? "Guardando..." : "Guardar ejercicio"}
+        </Button>
+      </div>
     </div>
   )
 }

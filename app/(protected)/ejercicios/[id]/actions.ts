@@ -17,6 +17,13 @@ export type AnswerResult = {
   isCorrect: boolean;
 };
 
+export type LetterGapAnswerResult = {
+  questionId: string;
+  patientAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+};
+
 export async function checkAnswer(
   exerciseId: string,
   questionId: string,
@@ -294,6 +301,169 @@ export async function completeTimedReading(input: {
       incorrect_answers: 0,
       score_percentage: 100,
       total_time_seconds: Math.max(0, input.timeSeconds),
+    });
+
+  if (scoreError) throw new Error("Error al guardar puntaje");
+
+  if (isAssigned) {
+    await admin
+      .from("patient_assignments")
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", assignmentId);
+  }
+
+  const gemResult = await awardExerciseGems(session.id, patientId);
+
+  return { gemsAwarded: gemResult.totalAwarded };
+}
+
+export async function checkLetterGapAnswer(
+  exerciseId: string,
+  sentenceId: string,
+  answer: string
+): Promise<{ isCorrect: boolean; correctAnswer: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autorizado");
+
+  const { data: exercise } = await supabase
+    .from("exercises")
+    .select("content")
+    .eq("id", exerciseId)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .single();
+
+  if (!exercise) throw new Error("Ejercicio no encontrado");
+
+  const content = exercise.content as Record<string, unknown>;
+  const sentences =
+    (content.sentences as Array<{ id: string; correct_answer: string }>) || [];
+  const sentence = sentences.find((s) => s.id === sentenceId);
+
+  if (!sentence) throw new Error("Frase no encontrada");
+
+  return {
+    isCorrect:
+      answer.trim().toLowerCase() ===
+      sentence.correct_answer.trim().toLowerCase(),
+    correctAnswer: sentence.correct_answer,
+  };
+}
+
+export async function completeLetterGap(input: {
+  exerciseId: string;
+  answers: LetterGapAnswerResult[];
+  totalSentences: number;
+  correctAnswers: number;
+  durationSeconds: number;
+}): Promise<{ gemsAwarded: number }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autorizado");
+
+  const admin = createAdminClient();
+  const patientId = user.id;
+
+  const { data: assignment } = await admin
+    .from("patient_assignments")
+    .select("id")
+    .eq("patient_id", patientId)
+    .eq("exercise_id", input.exerciseId)
+    .in("status", ["assigned", "in_progress"])
+    .order("assigned_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  const isAssigned = !!assignment;
+  let assignmentId: string;
+
+  if (isAssigned) {
+    assignmentId = assignment.id;
+  } else {
+    const { data: selfAssignment, error } = await admin
+      .from("patient_assignments")
+      .insert({
+        patient_id: patientId,
+        assigned_by: patientId,
+        exercise_id: input.exerciseId,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error || !selfAssignment)
+      throw new Error("Error al registrar ejercicio");
+    assignmentId = selfAssignment.id;
+  }
+
+  const { count } = await admin
+    .from("assignment_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("exercise_id", input.exerciseId)
+    .eq("patient_id", patientId);
+
+  const attemptNumber = (count ?? 0) + 1;
+
+  const { data: session, error: sessionError } = await admin
+    .from("assignment_sessions")
+    .insert({
+      assignment_id: assignmentId,
+      exercise_id: input.exerciseId,
+      patient_id: patientId,
+      is_assigned: isAssigned,
+      attempt_number: attemptNumber,
+      ended_at: new Date().toISOString(),
+      duration_seconds: Math.max(0, input.durationSeconds),
+      is_completed: true,
+    })
+    .select("id")
+    .single();
+
+  if (sessionError || !session) throw new Error("Error al guardar sesión");
+
+  if (input.answers.length > 0) {
+    const { error: resultsError } = await admin
+      .from("assignment_results")
+      .insert(
+        input.answers.map((a) => ({
+          assignment_id: assignmentId,
+          patient_id: patientId,
+          session_id: session.id,
+          question_id: a.questionId,
+          patient_answer: { selected: a.patientAnswer },
+          correct_answer: { correct: a.correctAnswer },
+          is_correct: a.isCorrect,
+          time_spent_seconds: null,
+          answered_at: new Date().toISOString(),
+        }))
+      );
+    if (resultsError) throw new Error("Error al guardar resultados");
+  }
+
+  const scorePercentage =
+    input.totalSentences > 0
+      ? Math.round((input.correctAnswers / input.totalSentences) * 100)
+      : 0;
+
+  const { error: scoreError } = await admin
+    .from("assignment_scores")
+    .insert({
+      assignment_id: assignmentId,
+      session_id: session.id,
+      patient_id: patientId,
+      total_questions: input.totalSentences,
+      correct_answers: input.correctAnswers,
+      incorrect_answers: input.totalSentences - input.correctAnswers,
+      score_percentage: scorePercentage,
+      total_time_seconds: Math.max(0, input.durationSeconds),
     });
 
   if (scoreError) throw new Error("Error al guardar puntaje");

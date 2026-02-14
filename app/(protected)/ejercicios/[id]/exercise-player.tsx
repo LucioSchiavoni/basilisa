@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { AudioPlayer } from "@/components/ui/audio-player";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -26,13 +28,20 @@ import {
 } from "lucide-react";
 import { checkAnswer, completeExercise, completeTimedReading } from "./actions";
 import type { AnswerResult } from "./actions";
+import { LetterGapPlayer } from "./letter-gap-player";
 
-type Option = { id: string; text: string };
+type Option = {
+  id: string;
+  text: string;
+  image_url?: string | null;
+};
 
 type Question = {
   id: string;
   text: string;
   description?: string | null;
+  question_image_url?: string | null;
+  question_audio_url?: string | null;
   options: Option[];
   points: number;
 };
@@ -83,6 +92,10 @@ function getReadingText(content: Record<string, unknown>): string {
   return (content.reading_text as string) || "";
 }
 
+function getReadingAudioUrl(content: Record<string, unknown>): string | null {
+  return (content.reading_audio_url as string) || null;
+}
+
 function getResultMessage(percentage: number): string {
   if (percentage === 100) return "¡Perfecto! Excelente trabajo";
   if (percentage >= 80) return "¡Muy bien! Casi perfecto";
@@ -126,6 +139,14 @@ function formatTimer(seconds: number): string {
 }
 
 export function ExercisePlayer({ exercise }: ExerciseProps) {
+  if (exercise.typeName === "letter_gap") {
+    return <LetterGapPlayer exercise={exercise} />;
+  }
+
+  return <BaseExercisePlayer exercise={exercise} />;
+}
+
+function BaseExercisePlayer({ exercise }: ExerciseProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -149,6 +170,11 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
     isReadingComprehension || isTimedReading
       ? getReadingText(exercise.content)
       : "";
+  const readingAudioUrl =
+    isReadingComprehension || isTimedReading
+      ? getReadingAudioUrl(exercise.content)
+      : null;
+  const audioContainerRef = useRef<HTMLDivElement>(null);
   const wordCount = isTimedReading ? getWordCount(exercise.content) : 0;
   const showTimer = isTimedReading
     ? (exercise.content.show_timer as boolean) !== false
@@ -180,6 +206,15 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
     }, 1000);
     return () => clearInterval(interval);
   }, [phase, isTimedReading]);
+
+  useEffect(() => {
+    const container = audioContainerRef.current;
+    if (!container) return;
+    const audios = container.querySelectorAll("audio");
+    audios.forEach((audio) => {
+      if (!audio.paused) audio.pause();
+    });
+  }, [currentIndex]);
 
   const handleFinishReading = useCallback(() => {
     const elapsed = Math.round((Date.now() - startedAtRef.current) / 1000);
@@ -275,6 +310,11 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                 {exercise.title}
               </h1>
               <p className="text-muted-foreground">{exercise.instructions}</p>
+              {exercise.instructionsAudioUrl && (
+                <div className="mt-4">
+                  <AudioPlayer src={exercise.instructionsAudioUrl} />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center gap-6 text-sm text-muted-foreground">
@@ -337,6 +377,11 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
 
         <main className="flex-1 p-6">
           <div className="max-w-lg mx-auto">
+            {readingAudioUrl && (
+              <div className="mb-4">
+                <AudioPlayer src={readingAudioUrl} />
+              </div>
+            )}
             <article className="prose prose-lg dark:prose-invert max-w-none">
               <p className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap">
                 {readingText}
@@ -565,7 +610,17 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
       </header>
 
       <main className="flex-1 p-6">
-        <div className="max-w-lg mx-auto space-y-6">
+        <div ref={audioContainerRef} className="max-w-lg mx-auto space-y-6">
+          {currentQuestion?.question_image_url && (
+            <Image
+              src={currentQuestion.question_image_url}
+              alt="Imagen de la pregunta"
+              width={500}
+              height={300}
+              className="w-full max-h-[200px] rounded-lg border object-contain"
+            />
+          )}
+
           <h2 className="text-lg sm:text-xl font-semibold">
             {currentQuestion?.text}
           </h2>
@@ -574,8 +629,12 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
             <p className="text-muted-foreground">{currentQuestion.description}</p>
           )}
 
+          {currentQuestion?.question_audio_url && (
+            <AudioPlayer src={currentQuestion.question_audio_url} />
+          )}
+
           <div className="space-y-3" role="radiogroup" aria-label="Opciones de respuesta">
-            {currentQuestion?.options.map((option) => {
+            {currentQuestion?.options.map((option, index) => {
               const isSelected = selectedOptionId === option.id;
               const isCorrectOption =
                 isChecked && option.id === checkResult?.correctOptionId;
@@ -597,8 +656,10 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                   aria-checked={isSelected}
                   disabled={isChecked || isPending}
                   onClick={() => setSelectedOptionId(option.id)}
+                  style={{ animationDelay: `${index * 80}ms` }}
                   className={cn(
                     "w-full text-left p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px] text-sm sm:text-base",
+                    "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     variant === "default" &&
                       "border-border hover:border-foreground/30 hover:bg-accent active:scale-[0.98]",
@@ -613,7 +674,7 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                     (isChecked || isPending) && "cursor-default"
                   )}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={cn("flex items-center gap-3", option.image_url && "flex-row")}>
                     <span
                       className={cn(
                         "flex shrink-0 items-center justify-center h-6 w-6 rounded-full border-2 text-xs font-bold transition-colors",
@@ -634,6 +695,15 @@ export function ExercisePlayer({ exercise }: ExerciseProps) {
                         <XCircle className="h-4 w-4" />
                       )}
                     </span>
+                    {option.image_url && (
+                      <Image
+                        src={option.image_url}
+                        alt={option.text}
+                        width={200}
+                        height={80}
+                        className="max-h-[80px] w-auto rounded-md object-contain"
+                      />
+                    )}
                     <span className="flex-1">{option.text}</span>
                   </div>
                 </button>

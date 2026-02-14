@@ -8,9 +8,12 @@ const optionalUrl = z
 
 const multipleChoiceOptionSchema = z.object({
   id: z.string().uuid(),
-  text: z.string().min(1, "El texto de la opcion es requerido"),
+  text: z.string().default(""),
   image_url: optionalUrl,
-})
+}).refine(
+  (data) => data.text.trim().length > 0 || (data.image_url !== null && data.image_url !== undefined),
+  { message: "La opcion debe tener texto, imagen o ambos", path: ["text"] }
+)
 
 const multipleChoiceQuestionSchema = z
   .object({
@@ -19,6 +22,8 @@ const multipleChoiceQuestionSchema = z
     description: z.string().nullish().transform(val => !val ? null : val).pipe(z.string().nullable()),
     image_url: optionalUrl,
     audio_url: optionalUrl,
+    question_image_url: optionalUrl,
+    question_audio_url: optionalUrl,
     options: z
       .array(multipleChoiceOptionSchema)
       .min(2, "Minimo 2 opciones")
@@ -48,12 +53,15 @@ const multipleChoiceContentSchema = z.object({
 const readingOptionSchema = z.object({
   id: z.string().uuid(),
   text: z.string().min(1, "El texto de la opcion es requerido"),
+  image_url: optionalUrl,
 })
 
 const readingQuestionSchema = z
   .object({
     id: z.string().uuid(),
     text: z.string().min(1, "El texto de la pregunta es requerido"),
+    question_image_url: optionalUrl,
+    question_audio_url: optionalUrl,
     type: z.literal("multiple_choice"),
     options: z
       .array(readingOptionSchema)
@@ -88,6 +96,33 @@ const timedReadingContentSchema = z.object({
   reading_audio_url: optionalUrl,
   word_count: z.coerce.number().int().min(1),
   show_timer: z.boolean().default(true),
+})
+
+const letterGapSentenceSchema = z.object({
+  id: z.string().uuid(),
+  full_sentence: z.string().min(1, "La frase completa es requerida"),
+  display_sentence: z.string().min(1, "La frase con hueco es requerida"),
+  correct_answer: z.string().min(1, "La palabra correcta es requerida"),
+  hint: z
+    .string()
+    .nullish()
+    .transform((val) => (!val ? null : val))
+    .pipe(z.string().nullable()),
+  points: z.coerce.number().int().min(1).default(10),
+})
+
+const letterGapContentSchema = z.object({
+  reading_text: z
+    .string()
+    .nullish()
+    .transform((val) => (!val ? null : val))
+    .pipe(z.string().nullable()),
+  reading_audio_url: optionalUrl,
+  sentences: z
+    .array(letterGapSentenceSchema)
+    .min(1, "Debes agregar al menos una frase"),
+  distractors: z.array(z.string().min(1)).default([]),
+  shuffle_options: z.boolean().default(true),
 })
 
 const baseExerciseSchema = z.object({
@@ -135,20 +170,33 @@ const createTimedReadingSchema = baseExerciseSchema
     path: ["target_age_max"],
   })
 
+const createLetterGapSchema = baseExerciseSchema
+  .extend({
+    exercise_type_name: z.literal("letter_gap"),
+    content: letterGapContentSchema,
+  })
+  .refine((data) => data.target_age_min <= data.target_age_max, {
+    message: "La edad minima no puede ser mayor que la maxima",
+    path: ["target_age_max"],
+  })
+
 export const createExerciseSchema = z.discriminatedUnion("exercise_type_name", [
   createMultipleChoiceSchema,
   createReadingComprehensionSchema,
   createTimedReadingSchema,
+  createLetterGapSchema,
 ])
 
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>
 export type MultipleChoiceContent = z.infer<typeof multipleChoiceContentSchema>
 export type ReadingComprehensionContent = z.infer<typeof readingComprehensionContentSchema>
 export type TimedReadingContent = z.infer<typeof timedReadingContentSchema>
+export type LetterGapContent = z.infer<typeof letterGapContentSchema>
 
 export {
   multipleChoiceContentSchema,
   readingComprehensionContentSchema,
   timedReadingContentSchema,
+  letterGapContentSchema,
   baseExerciseSchema,
 }

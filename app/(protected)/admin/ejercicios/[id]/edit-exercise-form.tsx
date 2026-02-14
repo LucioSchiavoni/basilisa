@@ -10,12 +10,14 @@ import {
 } from "@/lib/schemas/exercise"
 import { updateExercise } from "../../actions"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { Form } from "@/components/ui/form"
+import { ArrowLeft, ArrowRight } from "lucide-react"
+import { StepIndicator } from "@/components/admin/step-indicator"
 import { GeneralDataSection } from "../crear/general-data-section"
 import { MultipleChoiceEditor } from "../crear/multiple-choice-editor"
 import { ReadingComprehensionEditor } from "../crear/reading-comprehension-editor"
 import { TimedReadingEditor } from "../crear/timed-reading-editor"
+import { LetterGapEditor } from "../crear/letter-gap-editor"
 import type { ExerciseType } from "@/types/exercises"
 import type { Json } from "@/types/database.types"
 
@@ -37,11 +39,17 @@ interface EditExerciseFormProps {
   exerciseTypes: ExerciseType[]
 }
 
+const steps = [
+  { label: "Datos generales" },
+  { label: "Contenido" },
+]
+
 export function EditExerciseForm({
   exercise,
   exerciseTypes,
 }: EditExerciseFormProps) {
   const [status, setStatus] = useState<{ error?: string; success?: string }>({})
+  const [currentStep, setCurrentStep] = useState(0)
   const router = useRouter()
   const prevTypeId = useRef(exercise.exercise_type_id)
   const initialTypeId = useRef(exercise.exercise_type_id)
@@ -50,6 +58,7 @@ export function EditExerciseForm({
     | "multiple_choice"
     | "reading_comprehension"
     | "timed_reading"
+    | "letter_gap"
 
   const form = useForm<CreateExerciseInput>({
     resolver: zodResolver(createExerciseSchema) as Resolver<CreateExerciseInput>,
@@ -106,8 +115,33 @@ export function EditExerciseForm({
         word_count: 0,
         show_timer: true,
       } as CreateExerciseInput["content"])
+    } else if (type.name === "letter_gap") {
+      form.setValue("exercise_type_name", "letter_gap")
+      form.setValue("content", {
+        reading_text: null,
+        reading_audio_url: null,
+        sentences: [],
+        distractors: [],
+        shuffle_options: true,
+      } as CreateExerciseInput["content"])
     }
   }, [selectedTypeId, exerciseTypes, form])
+
+  async function handleNext() {
+    const valid = await form.trigger([
+      "title",
+      "instructions",
+      "difficulty_level",
+      "target_age_min",
+      "target_age_max",
+      "exercise_type_id",
+    ])
+    if (valid) {
+      setStatus({})
+      setCurrentStep(1)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  }
 
   async function onSubmit(data: CreateExerciseInput) {
     setStatus({})
@@ -122,6 +156,15 @@ export function EditExerciseForm({
   }
 
   function onInvalid(errors: Record<string, unknown>) {
+    const generalFields = [
+      "title", "instructions", "difficulty_level",
+      "target_age_min", "target_age_max", "exercise_type_id", "tags",
+    ]
+    const hasGeneralError = generalFields.some((f) => f in errors)
+    if (hasGeneralError) {
+      setCurrentStep(0)
+    }
+
     const firstKey = Object.keys(errors)[0]
     const firstError = errors[firstKey] as { message?: string } | undefined
     setStatus({
@@ -132,7 +175,7 @@ export function EditExerciseForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
         {status.error && (
           <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md dark:bg-red-900/20">
             {status.error}
@@ -144,30 +187,64 @@ export function EditExerciseForm({
           </div>
         )}
 
-        <GeneralDataSection form={form} exerciseTypes={exerciseTypes} />
+        <StepIndicator
+          steps={steps}
+          currentStep={currentStep}
+          onStepClick={(index) => {
+            if (index < currentStep) setCurrentStep(index)
+          }}
+        />
 
-        {typeName && (
+        {currentStep === 0 && (
           <>
-            <Separator />
-            {typeName === "multiple_choice" && (
-              <MultipleChoiceEditor form={form} />
-            )}
-            {typeName === "reading_comprehension" && (
-              <ReadingComprehensionEditor form={form} />
-            )}
-            {typeName === "timed_reading" && (
-              <TimedReadingEditor form={form} />
-            )}
+            <GeneralDataSection form={form} exerciseTypes={exerciseTypes} />
+            <Button
+              type="button"
+              className="w-full"
+              onClick={handleNext}
+              disabled={!selectedTypeId}
+            >
+              Siguiente
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
           </>
         )}
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? "Guardando..." : "Guardar Cambios"}
-        </Button>
+        {currentStep === 1 && (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentStep(0)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Volver a datos generales
+            </Button>
+
+            {typeName === "multiple_choice" && (
+              <MultipleChoiceEditor form={form} exerciseId={exercise.id} />
+            )}
+            {typeName === "reading_comprehension" && (
+              <ReadingComprehensionEditor form={form} exerciseId={exercise.id} />
+            )}
+            {typeName === "timed_reading" && (
+              <>
+                <TimedReadingEditor form={form} />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </>
+            )}
+            {typeName === "letter_gap" && (
+              <LetterGapEditor form={form} exerciseId={exercise.id} />
+            )}
+          </>
+        )}
       </form>
     </Form>
   )
