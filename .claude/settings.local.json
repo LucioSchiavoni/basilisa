@@ -18,7 +18,8 @@
       "Bash(npx supabase:*)",
       "Bash(supabase:*)",
       "Bash(node -e:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(pnpm next build:*)"
     ]
   },
   "enabledMcpjsonServers": [

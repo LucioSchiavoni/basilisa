@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PatientStatsCards } from "./patient-stats-cards";
 import { ExerciseHistory } from "./exercise-history";
+import { AssignExerciseDialog } from "./assign-exercise-dialog";
+import { AssignedExercises } from "./assigned-exercises";
 
 type ExerciseContent = {
   questions: Array<{
@@ -51,10 +53,12 @@ export default async function PatientDetailPage({
     { data: sessions },
     { data: scores },
     { data: results },
+    { data: assignments },
+    { data: availableExercises },
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, date_of_birth, created_at")
+      .select("id, full_name, role, date_of_birth, created_at")
       .eq("id", id)
       .single(),
     supabase
@@ -83,6 +87,19 @@ export default async function PatientDetailPage({
         "session_id, question_id, patient_answer, correct_answer, is_correct, time_spent_seconds"
       )
       .eq("patient_id", id),
+    supabase
+      .from("patient_assignments")
+      .select("id, exercise_id, status, assigned_at, due_date, notes_for_patient, exercises(title)")
+      .eq("patient_id", id)
+      .neq("assigned_by", id)
+      .in("status", ["assigned", "in_progress", "pending", "completed"])
+      .order("assigned_at", { ascending: false }),
+    supabase
+      .from("exercises")
+      .select("id, title, difficulty_level, exercise_types(display_name)")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("title"),
   ]);
 
   if (!profile) {
@@ -180,30 +197,58 @@ export default async function PatientDetailPage({
     };
   });
 
+  const exercisesForDialog = (availableExercises ?? []).map((e) => {
+    const exerciseType = e.exercise_types as { display_name: string } | null;
+    return {
+      id: e.id,
+      title: e.title,
+      exerciseTypeDisplayName: exerciseType?.display_name ?? "Sin tipo",
+      difficultyLevel: e.difficulty_level,
+    };
+  });
+
+  const assignmentsList = (assignments ?? []).map((a) => {
+    const exercise = a.exercises as { title: string } | null;
+    return {
+      id: a.id,
+      exerciseTitle: exercise?.title ?? "Ejercicio",
+      status: a.status ?? "assigned",
+      assignedAt: a.assigned_at,
+      dueDate: a.due_date,
+      notesForPatient: a.notes_for_patient,
+    };
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/pacientes"
-          className="flex h-8 w-8 items-center justify-center rounded-md border hover:bg-accent transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/pacientes"
+            className="flex h-8 w-8 items-center justify-center rounded-md border hover:bg-accent transition-colors"
           >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </Link>
-        <h1 className="text-2xl sm:text-3xl font-bold">
-          {profile.full_name || "Paciente"}
-        </h1>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            {profile.full_name || "Paciente"}
+          </h1>
+        </div>
+        <AssignExerciseDialog
+          patientId={id}
+          exercises={exercisesForDialog}
+        />
       </div>
 
       <PatientStatsCards
@@ -212,6 +257,8 @@ export default async function PatientDetailPage({
         currentStreak={gems?.current_streak ?? 0}
         totalGems={gems?.total_gems ?? 0}
       />
+
+      <AssignedExercises assignments={assignmentsList} patientId={id} />
 
       <ExerciseHistory attempts={attempts} />
     </div>

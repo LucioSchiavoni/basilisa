@@ -545,3 +545,132 @@ export async function createAccount(
 
   return createUser(prevState, formData);
 }
+
+const assignExerciseSchema = z.object({
+  patientId: z.string().uuid("ID de paciente inválido"),
+  exerciseId: z.string().uuid("ID de ejercicio inválido"),
+  dueDate: z.string().nullable().optional(),
+  notesForPatient: z.string().max(500).nullable().optional(),
+});
+
+export type AssignExerciseState = {
+  error?: string;
+  success?: string;
+};
+
+export async function assignExercise(
+  data: z.infer<typeof assignExerciseSchema>
+): Promise<AssignExerciseState> {
+  const validated = assignExerciseSchema.safeParse(data);
+  if (!validated.success) {
+    return { error: validated.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!adminProfile || adminProfile.role !== "admin") {
+    return { error: "No tienes permisos para asignar ejercicios" };
+  }
+
+  const { patientId, exerciseId, dueDate, notesForPatient } = validated.data;
+
+  const adminClient = createAdminClient();
+
+  const { data: patientProfile } = await adminClient
+    .from("profiles")
+    .select("role")
+    .eq("id", patientId)
+    .single();
+
+  if (!patientProfile || patientProfile.role !== "patient") {
+    return { error: "El usuario no es un paciente válido" };
+  }
+
+  const { data: existingAssignment } = await adminClient
+    .from("patient_assignments")
+    .select("id")
+    .eq("patient_id", patientId)
+    .eq("exercise_id", exerciseId)
+    .in("status", ["assigned", "in_progress"])
+    .maybeSingle();
+
+  if (existingAssignment) {
+    return { error: "Este ejercicio ya está asignado al paciente" };
+  }
+
+  const { error } = await adminClient.from("patient_assignments").insert({
+    patient_id: patientId,
+    exercise_id: exerciseId,
+    assigned_by: user.id,
+    status: "assigned",
+    due_date: dueDate || null,
+    notes_for_patient: notesForPatient || null,
+  });
+
+  if (error) {
+    console.error("Assign exercise error:", error);
+    return { error: "Error al asignar el ejercicio" };
+  }
+
+  revalidatePath(`/admin/pacientes/${patientId}`);
+  return { success: "Ejercicio asignado exitosamente" };
+}
+
+export async function cancelAssignment(
+  assignmentId: string,
+  patientId: string
+): Promise<{ error?: string; success?: string }> {
+  const parsedId = z.string().uuid("ID de asignación inválido").safeParse(assignmentId);
+  if (!parsedId.success) {
+    return { error: parsedId.error.issues[0].message };
+  }
+
+  const parsedPatientId = z.string().uuid("ID de paciente inválido").safeParse(patientId);
+  if (!parsedPatientId.success) {
+    return { error: parsedPatientId.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!adminProfile || adminProfile.role !== "admin") {
+    return { error: "No tienes permisos para desasignar ejercicios" };
+  }
+
+  const adminClient = createAdminClient();
+
+  const { error } = await adminClient
+    .from("patient_assignments")
+    .update({ status: "cancelled" })
+    .eq("id", parsedId.data)
+    .in("status", ["assigned", "in_progress", "pending"]);
+
+  if (error) {
+    console.error("Cancel assignment error:", error);
+    return { error: "Error al desasignar el ejercicio" };
+  }
+
+  revalidatePath(`/admin/pacientes/${parsedPatientId.data}`);
+  return { success: "Ejercicio desasignado exitosamente" };
+}
