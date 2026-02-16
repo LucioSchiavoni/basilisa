@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ArrowLeft } from "lucide-react";
 
 const initialState: AuthState = {};
 
@@ -17,6 +18,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 left-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
+      </div>
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>

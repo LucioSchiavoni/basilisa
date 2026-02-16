@@ -1,28 +1,35 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { FloatingParticles } from "@/components/home/floating-particles"
+import { HeroButtons } from "@/components/home/hero-buttons"
+import { ThemeToggle } from "@/components/theme-toggle"
 
-export default async function Home() {
+export default function Page() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-[#fdfcf6]">
-      <div className="text-center space-y-8 px-4">
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-[#b41919e3]">
+    <main className="relative flex min-h-svh flex-col items-center overflow-hidden bg-background px-6 py-8">
+      <FloatingParticles />
+
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto">
+        <div className="animate-slide-up pt-4 sm:pt-6" style={{ animationDelay: "0.1s" }}>
+          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             Basilisa
           </h1>
-          <p className="text-lg text-black font-semibold max-w-md mx-auto">
-            Tu plataforma para gestionar todo de manera simple y eficiente.
+        </div>
+
+        <div className="min-h-[180px] sm:min-h-[200px] md:min-h-[220px]" />
+
+        <div className="animate-slide-up text-center px-2" style={{ animationDelay: "0.35s" }}>
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug text-foreground" style={{ fontFamily: '-apple-system, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' }}>
+            La plataforma donde el aprendizaje se vuelve una aventura
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg" className="border">
-            <Link href="/login">Iniciar Sesión</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="border text-black">
-            <Link href="/register">Crear Cuenta</Link>
-          </Button>
+        <div className="animate-slide-up w-full max-w-xs sm:max-w-sm mx-auto mt-5" style={{ animationDelay: "0.55s" }}>
+          <HeroButtons />
         </div>
       </div>
     </main>
-  );
+  )
 }
