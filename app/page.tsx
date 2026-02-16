@@ -14,7 +14,7 @@ export default function Page() {
       <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto">
         <div className="animate-slide-up pt-4 sm:pt-6" style={{ animationDelay: "0.1s" }}>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            Basilisa
+            LISA
           </h1>
         </div>
 
