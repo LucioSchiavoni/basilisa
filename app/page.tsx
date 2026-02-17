@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { FloatingParticles } from "@/components/home/floating-particles"
 import { HeroButtons } from "@/components/home/hero-buttons"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -13,9 +14,14 @@ export default function Page() {
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto">
         <div className="animate-slide-up pt-4 sm:pt-6" style={{ animationDelay: "0.1s" }}>
-          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            LISA
-          </h1>
+          <Image
+            src="/logos/Logotipo Lisa color simple.png"
+            alt="LISA"
+            width={400}
+            height={150}
+            className="w-auto h-20 sm:h-24 object-contain"
+            priority
+          />
         </div>
 
         <div className="min-h-[180px] sm:min-h-[200px] md:min-h-[220px]" />

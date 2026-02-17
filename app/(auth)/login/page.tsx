@@ -28,14 +28,14 @@ export default function LoginPage() {
         <div className="absolute top-1/3 left-1/4 w-48 h-48 bg-fuchsia-200/20 dark:bg-fuchsia-500/5 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
       </div>
 
-      <div className="absolute top-4 left-4 z-10">
+      <div className="absolute top-4 left-4 z-50">
         <Button variant="ghost" size="icon" asChild className="rounded-full bg-white/60 dark:bg-white/10 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-white/20 hover:scale-110 transition-all">
           <Link href="/">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
       </div>
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
       </div>
 
