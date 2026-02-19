@@ -46,6 +46,7 @@ const readingComprehensionDefaults = {
     reading_audio_url: "",
     word_count: 0,
     hide_text_during_questions: false,
+    text_difficulty: "simple" as const,
     questions: [],
   },
 }
@@ -89,6 +90,7 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
       target_age_max: 12,
       exercise_type_id: "",
       tags: [],
+      world_id: "medieval",
       ...multipleChoiceDefaults,
     },
   })
@@ -189,7 +191,10 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
 
         {currentStep === 0 && (
           <>
-            <GeneralDataSection form={form} exerciseTypes={exerciseTypes} />
+            <GeneralDataSection
+              form={form}
+              exerciseTypes={exerciseTypes}
+            />
             <Button
               type="button"
               className="w-full"

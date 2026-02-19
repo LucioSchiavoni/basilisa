@@ -3,6 +3,102 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { awardExerciseGems } from "@/lib/gems";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+type UnlockedWorld = { name: string; displayName: string };
+
+async function updateWorldProgress(
+  admin: SupabaseClient,
+  exerciseId: string,
+  patientId: string
+): Promise<UnlockedWorld | null> {
+  const { data: worldExercise } = await admin
+    .from("world_exercises")
+    .select("world_id, position, is_bonus")
+    .eq("exercise_id", exerciseId)
+    .maybeSingle();
+
+  if (!worldExercise) return null;
+
+  const { world_id, position, is_bonus } = worldExercise;
+
+  const { data: existing } = await admin
+    .from("player_world_progress")
+    .select("id, last_completed_position, total_exercises_completed")
+    .eq("player_id", patientId)
+    .eq("world_id", world_id)
+    .maybeSingle();
+
+  let newLastPosition: number;
+
+  if (!existing) {
+    newLastPosition = is_bonus ? 0 : position;
+    await admin.from("player_world_progress").insert({
+      player_id: patientId,
+      world_id,
+      last_completed_position: newLastPosition,
+      total_exercises_completed: 1,
+    });
+  } else {
+    newLastPosition =
+      !is_bonus && position === existing.last_completed_position + 1
+        ? position
+        : existing.last_completed_position;
+
+    await admin
+      .from("player_world_progress")
+      .update({
+        last_completed_position: newLastPosition,
+        total_exercises_completed: existing.total_exercises_completed + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id);
+  }
+
+  const { data: nonBonusExercises } = await admin
+    .from("world_exercises")
+    .select("position")
+    .eq("world_id", world_id)
+    .eq("is_bonus", false);
+
+  if (!nonBonusExercises || nonBonusExercises.length === 0) return null;
+
+  const maxPosition = Math.max(...nonBonusExercises.map((e) => e.position));
+
+  if (newLastPosition < maxPosition) return null;
+
+  const { data: currentWorld } = await admin
+    .from("worlds")
+    .select("sort_order")
+    .eq("id", world_id)
+    .single();
+
+  if (!currentWorld) return null;
+
+  const { data: nextWorld } = await admin
+    .from("worlds")
+    .select("id, name, display_name")
+    .eq("is_active", true)
+    .eq("sort_order", currentWorld.sort_order + 1)
+    .maybeSingle();
+
+  if (!nextWorld) return null;
+
+  const { data: alreadyUnlocked } = await admin
+    .from("world_unlocks")
+    .select("id")
+    .eq("user_id", patientId)
+    .eq("world_id", nextWorld.id)
+    .maybeSingle();
+
+  if (alreadyUnlocked) return null;
+
+  await admin
+    .from("world_unlocks")
+    .insert({ user_id: patientId, world_id: nextWorld.id });
+
+  return { name: nextWorld.name, displayName: nextWorld.display_name };
+}
 
 type CheckAnswerResult = {
   isCorrect: boolean;
@@ -78,7 +174,7 @@ export async function completeExercise(input: {
   totalQuestions: number;
   correctAnswers: number;
   durationSeconds: number;
-}): Promise<{ gemsAwarded: number }> {
+}): Promise<{ gemsAwarded: number; unlockedWorld?: UnlockedWorld }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -194,9 +290,10 @@ export async function completeExercise(input: {
       .eq("id", assignmentId);
   }
 
+  const unlockedWorld = await updateWorldProgress(admin, input.exerciseId, patientId);
   const gemResult = await awardExerciseGems(session.id, patientId);
 
-  return { gemsAwarded: gemResult.totalAwarded };
+  return { gemsAwarded: gemResult.totalAwarded, unlockedWorld: unlockedWorld ?? undefined };
 }
 
 export async function completeTimedReading(input: {
@@ -204,7 +301,7 @@ export async function completeTimedReading(input: {
   timeSeconds: number;
   wordCount: number;
   wordsPerMinute: number;
-}): Promise<{ gemsAwarded: number }> {
+}): Promise<{ gemsAwarded: number; unlockedWorld?: UnlockedWorld }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -315,9 +412,10 @@ export async function completeTimedReading(input: {
       .eq("id", assignmentId);
   }
 
+  const unlockedWorld = await updateWorldProgress(admin, input.exerciseId, patientId);
   const gemResult = await awardExerciseGems(session.id, patientId);
 
-  return { gemsAwarded: gemResult.totalAwarded };
+  return { gemsAwarded: gemResult.totalAwarded, unlockedWorld: unlockedWorld ?? undefined };
 }
 
 export async function checkLetterGapAnswer(
@@ -362,7 +460,7 @@ export async function completeLetterGap(input: {
   totalSentences: number;
   correctAnswers: number;
   durationSeconds: number;
-}): Promise<{ gemsAwarded: number }> {
+}): Promise<{ gemsAwarded: number; unlockedWorld?: UnlockedWorld }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -478,7 +576,8 @@ export async function completeLetterGap(input: {
       .eq("id", assignmentId);
   }
 
+  const unlockedWorld = await updateWorldProgress(admin, input.exerciseId, patientId);
   const gemResult = await awardExerciseGems(session.id, patientId);
 
-  return { gemsAwarded: gemResult.totalAwarded };
+  return { gemsAwarded: gemResult.totalAwarded, unlockedWorld: unlockedWorld ?? undefined };
 }

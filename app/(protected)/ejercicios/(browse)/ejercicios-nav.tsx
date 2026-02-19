@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/ejercicios", label: "Mis Ejercicios" },
-  { href: "/ejercicios/todos", label: "Todos los Ejercicios" },
+  { href: "/ejercicios/mundos", label: "Mundos" },
 ];
 
 export function EjerciciosNav() {

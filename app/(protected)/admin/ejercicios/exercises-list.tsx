@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2, RotateCcw } from "lucide-react";
+import { Trash2, Loader2, RotateCcw, Globe } from "lucide-react";
 
 type Exercise = {
   id: string;
@@ -27,22 +27,25 @@ type Exercise = {
   created_at: string;
   tags: string[];
   deleted_at: string | null;
+  world_name: string | null;
 };
 
 const difficultyLabels: Record<number, string> = {
   1: "Muy facil",
   2: "Facil",
   3: "Intermedio",
-  4: "Dificil",
-  5: "Muy dificil",
+  4: "Intermedio-Alto",
+  5: "Dificil",
+  6: "Muy dificil",
 };
 
 const difficultyColors: Record<number, string> = {
   1: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   2: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   3: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  4: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  4: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
   5: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  6: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 export function ExercisesList({ exercises, showDeleted = false }: { exercises: Exercise[]; showDeleted?: boolean }) {
@@ -105,6 +108,16 @@ export function ExercisesList({ exercises, showDeleted = false }: { exercises: E
               >
                 {difficultyLabels[exercise.difficulty_level] || `Nivel ${exercise.difficulty_level}`}
               </span>
+              {exercise.world_name ? (
+                <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400">
+                  <Globe className="h-3 w-3" />
+                  {exercise.world_name}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                  Sin mundo
+                </Badge>
+              )}
               {!exercise.is_active && (
                 <Badge variant="secondary">Inactivo</Badge>
               )}

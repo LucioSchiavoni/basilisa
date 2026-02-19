@@ -13,6 +13,13 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AudioUpload } from "@/components/admin/audio-upload"
@@ -89,6 +96,32 @@ export function ReadingComprehensionEditor({
                 className="min-h-[200px] resize-y"
               />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="content.text_difficulty"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Dificultad del texto</FormLabel>
+            <Select
+              value={field.value as string}
+              onValueChange={field.onChange}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona la dificultad del texto" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="simple">Simple</SelectItem>
+                <SelectItem value="moderado">Moderado</SelectItem>
+                <SelectItem value="complejo">Complejo</SelectItem>
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}

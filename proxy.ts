@@ -108,12 +108,6 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (!mustChangePassword && pathname.startsWith("/change-password")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/ejercicios";
-      return NextResponse.redirect(url);
-    }
-
     const matchedRoute = Object.keys(ROLE_RESTRICTED_ROUTES).find((route) =>
       pathname.startsWith(route)
     );

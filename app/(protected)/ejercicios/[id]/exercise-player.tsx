@@ -24,11 +24,14 @@ import {
   Trophy,
   ChevronRight,
   Loader2,
-  Gem,
 } from "lucide-react";
+import { GemIcon } from "@/components/gem-icon";
+import { WorldUnlockNotification } from "@/components/world-unlock-notification";
 import { checkAnswer, completeExercise, completeTimedReading } from "./actions";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
+import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes";
+import { getWorldConfig } from "@/lib/worlds";
 
 type Option = {
   id: string;
@@ -62,7 +65,11 @@ type ExerciseProps = {
     content: Record<string, unknown>;
     typeName: string;
     typeDisplayName: string;
+    worldId?: string | null;
   };
+  worldId?: string;
+  worldName?: string;
+  backHref: string;
 };
 
 type Phase = "intro" | "reading" | "questions" | "results";
@@ -81,6 +88,18 @@ const difficultyColors: Record<number, string> = {
   3: "text-yellow-600",
   4: "text-red-600",
   5: "text-red-600",
+};
+
+const textDifficultyLabels: Record<string, string> = {
+  simple: "Texto: Simple",
+  moderado: "Texto: Moderado",
+  complejo: "Texto: Complejo",
+};
+
+const textDifficultyColors: Record<string, string> = {
+  simple: "text-green-600",
+  moderado: "text-yellow-600",
+  complejo: "text-red-600",
 };
 
 function getQuestions(content: Record<string, unknown>): Question[] {
@@ -138,15 +157,15 @@ function formatTimer(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export function ExercisePlayer({ exercise }: ExerciseProps) {
+export function ExercisePlayer({ exercise, worldId, worldName, backHref }: ExerciseProps) {
   if (exercise.typeName === "letter_gap") {
-    return <LetterGapPlayer exercise={exercise} />;
+    return <LetterGapPlayer exercise={exercise} worldId={worldId} worldName={worldName} backHref={backHref} />;
   }
 
-  return <BaseExercisePlayer exercise={exercise} />;
+  return <BaseExercisePlayer exercise={exercise} worldId={worldId} worldName={worldName} backHref={backHref} />;
 }
 
-function BaseExercisePlayer({ exercise }: ExerciseProps) {
+function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: ExerciseProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -157,9 +176,11 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
   const [isPending, startTransition] = useTransition();
   const [gemsAwarded, setGemsAwarded] = useState<number | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [unlockedWorld, setUnlockedWorld] = useState<{ name: string; displayName: string } | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [finalTimeSeconds, setFinalTimeSeconds] = useState(0);
   const [wordsPerMinute, setWordsPerMinute] = useState(0);
+  const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
   const answersRef = useRef<AnswerResult[]>([]);
   const startedAtRef = useRef(0);
 
@@ -182,6 +203,9 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
   const hideTextDuringQuestions = isReadingComprehension
     ? (exercise.content.hide_text_during_questions as boolean) === true
     : true;
+
+  const worldScheme = worldName ? getScheme(worldName) : null;
+  const worldConfig = worldName ? getWorldConfig(worldName) : null;
 
   const currentQuestion = questions[currentIndex];
   const isChecked = checkResult !== null;
@@ -230,7 +254,10 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
       wordCount,
       wordsPerMinute: wpm,
     })
-      .then((result) => setGemsAwarded(result.gemsAwarded))
+      .then((result) => {
+        setGemsAwarded(result.gemsAwarded);
+        if (result.unlockedWorld) setUnlockedWorld(result.unlockedWorld);
+      })
       .catch(() => setGemsAwarded(0))
       .finally(() => setIsCompleting(false));
   }, [exercise.id, wordCount]);
@@ -277,7 +304,10 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
         correctAnswers: currentAnswers.filter((a) => a.isCorrect).length,
         durationSeconds,
       })
-        .then((result) => setGemsAwarded(result.gemsAwarded))
+        .then((result) => {
+          setGemsAwarded(result.gemsAwarded);
+          if (result.unlockedWorld) setUnlockedWorld(result.unlockedWorld);
+        })
         .catch(() => setGemsAwarded(0))
         .finally(() => setIsCompleting(false));
     } else {
@@ -290,26 +320,55 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
   if (phase === "intro") {
     return (
       <div className="min-h-screen flex flex-col">
+        {worldScheme && (
+          <>
+            <div
+              className="fixed inset-0 -z-10 pointer-events-none"
+              style={{
+                background: worldScheme.background.startsWith("/")
+                  ? `url(${worldScheme.background}) center/cover no-repeat`
+                  : worldScheme.background,
+              }}
+            />
+            <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
+          </>
+        )}
         <header className="p-4">
           <Link
-            href="/ejercicios/todos"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            href={backHref}
+            className="inline-flex items-center gap-1 text-sm transition-colors"
+            style={{ color: "rgba(255,255,255,0.70)" }}
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
           </Link>
         </header>
 
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-lg text-center space-y-8">
+        <main className="flex-1 flex items-center justify-center px-6 pb-6 pt-0">
+          <div className="w-full max-w-lg text-center space-y-4">
+            {worldConfig && (
+              <div className="flex justify-center -mt-8 -mb-1">
+                <Image
+                  src={worldConfig.characterImage}
+                  alt=""
+                  width={240}
+                  height={240}
+                  className="w-[190px] h-[190px] sm:w-[230px] sm:h-[230px] object-contain animate-fade-in-up drop-shadow-2xl"
+                />
+              </div>
+            )}
+
             <div className="space-y-3">
-              <Badge variant="outline" className="text-xs">
+              <span
+                className="inline-block text-xs font-medium px-2.5 py-1 rounded-full border"
+                style={{ color: "rgba(255,255,255,0.85)", borderColor: "rgba(255,255,255,0.30)" }}
+              >
                 {exercise.typeDisplayName}
-              </Badge>
-              <h1 className="text-2xl sm:text-3xl font-bold">
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: "white" }}>
                 {exercise.title}
               </h1>
-              <p className="text-muted-foreground">{exercise.instructions}</p>
+              <p className="font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>{exercise.instructions}</p>
               {exercise.instructionsAudioUrl && (
                 <div className="mt-4">
                   <AudioPlayer src={exercise.instructionsAudioUrl} />
@@ -317,16 +376,17 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
               )}
             </div>
 
-            <div className="flex justify-center gap-6 text-sm text-muted-foreground">
-              <span
-                className={cn(
-                  "flex items-center gap-1.5",
-                  difficultyColors[exercise.difficultyLevel]
-                )}
-              >
+            <div className="flex flex-wrap justify-center gap-4 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+              <span className="flex items-center gap-1.5">
                 <BarChart3 className="h-4 w-4" />
                 {difficultyLabels[exercise.difficultyLevel]}
               </span>
+              {isReadingComprehension && !!exercise.content.text_difficulty && (
+                <span className="flex items-center gap-1.5">
+                  <BookOpen className="h-4 w-4" />
+                  {textDifficultyLabels[exercise.content.text_difficulty as string] ?? String(exercise.content.text_difficulty)}
+                </span>
+              )}
               {isTimedReading ? (
                 <span className="flex items-center gap-1.5">
                   {wordCount} palabra{wordCount !== 1 && "s"}
@@ -350,53 +410,77 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
 
   if (phase === "reading") {
     return (
-      <div className="min-h-screen flex flex-col">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4">
-          <div className="max-w-lg mx-auto">
+      <div className="min-h-screen flex flex-col bg-white text-gray-900">
+        <header className="sticky top-0 z-10 bg-white border-b p-4">
+          <div className="max-w-prose mx-auto flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setPhase("intro")}
+              className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </button>
             {isTimedReading ? (
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <p className="text-sm font-medium text-gray-700">
                   Lee a tu ritmo
                 </p>
                 {showTimer && (
-                  <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span className="text-lg font-mono font-semibold tabular-nums">
+                  <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5">
+                    <Clock className="h-4 w-4 text-gray-700" />
+                    <span className="text-lg font-mono font-semibold tabular-nums text-gray-900">
                       {formatTimer(timerSeconds)}
                     </span>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-sm font-medium text-center text-muted-foreground">
+              <p className="text-sm font-medium text-gray-900">
                 Lee el siguiente texto con atención
               </p>
             )}
           </div>
         </header>
 
-        <main className="flex-1 p-6">
-          <div className="max-w-lg mx-auto">
+        <main className="flex-1 p-4 sm:p-6">
+          <div className="max-w-prose mx-auto space-y-4">
             {readingAudioUrl && (
-              <div className="mb-4">
-                <AudioPlayer src={readingAudioUrl} />
-              </div>
+              <AudioPlayer src={readingAudioUrl} />
             )}
-            <article className="prose prose-lg dark:prose-invert max-w-none">
-              <p className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap">
-                {readingText}
-              </p>
-            </article>
+            <div
+              className="space-y-5"
+              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+            >
+              {readingText.split(/\n+/).filter(Boolean).map((paragraph, idx) => (
+                <div key={idx} className="relative">
+                  <p
+                    onClick={() => setActiveParagraph(idx === activeParagraph ? null : idx)}
+                    onTouchStart={() => setActiveParagraph(idx === activeParagraph ? null : idx)}
+                    className={cn(
+                      "text-lg sm:text-xl leading-loose tracking-wide cursor-pointer px-1 py-1 transition-colors duration-200 select-none",
+                      idx === activeParagraph ? "text-gray-900" : "text-gray-700"
+                    )}
+                  >
+                    {paragraph}
+                  </p>
+                  {idx === activeParagraph && (
+                    <div className="h-[3px] rounded-full bg-amber-400 animate-underline-slide" />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </main>
 
         <footer className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4">
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-prose mx-auto">
             {isTimedReading ? (
               <Button
                 size="lg"
                 className="w-full text-base h-14"
                 onClick={handleFinishReading}
+                style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: "#fff" } : undefined}
               >
                 <CheckCircle2 className="h-5 w-5 mr-2" />
                 Terminé de leer
@@ -406,6 +490,7 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
                 size="lg"
                 className="w-full text-base h-12"
                 onClick={() => setPhase("questions")}
+                style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: "#fff" } : undefined}
               >
                 Continuar a las preguntas
                 <ChevronRight className="h-5 w-5 ml-1" />
@@ -418,9 +503,19 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
   }
 
   if (phase === "results") {
+    const unlockNotification = unlockedWorld ? (
+      <WorldUnlockNotification
+        worldName={unlockedWorld.name}
+        worldDisplayName={unlockedWorld.displayName}
+        onDismiss={() => setUnlockedWorld(null)}
+      />
+    ) : null;
+
     if (isTimedReading) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-6">
+        <>
+          {unlockNotification}
+          <div className="min-h-screen flex items-center justify-center p-6">
           <div className="w-full max-w-lg text-center space-y-8">
             <div className="text-6xl">{getWpmEmoji(wordsPerMinute)}</div>
 
@@ -462,10 +557,10 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
                   </p>
                 </div>
               ) : gemsAwarded && gemsAwarded > 0 ? (
-                <p className="text-2xl font-bold text-center">
-                  <Gem className="inline h-5 w-5 mr-1 text-yellow-500" />
+                <div className="text-2xl font-bold text-center flex items-center justify-center gap-2">
+                  <GemIcon size={48} />
                   +{gemsAwarded} gemas
-                </p>
+                </div>
               ) : (
                 <p className="text-sm text-center text-muted-foreground">
                   Sin gemas esta vez
@@ -475,11 +570,12 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
 
             <div className="space-y-3">
               <Button size="lg" className="w-full text-base h-12" asChild>
-                <Link href="/ejercicios/todos">Volver a ejercicios</Link>
+                <Link href={backHref}>Volver a ejercicios</Link>
               </Button>
             </div>
           </div>
         </div>
+        </>
       );
     }
 
@@ -489,7 +585,9 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
         : 0;
 
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <>
+        {unlockNotification}
+        <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-lg text-center space-y-8">
           <div className="text-6xl">{getResultEmoji(percentage)}</div>
 
@@ -531,10 +629,10 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
                 </p>
               </div>
             ) : gemsAwarded && gemsAwarded > 0 ? (
-              <p className="text-2xl font-bold text-center">
-                <Gem className="inline h-5 w-5 mr-1 text-yellow-500" />
+              <div className="text-2xl font-bold text-center flex items-center justify-center gap-1">
+                <GemIcon size={20} className="mr-1" />
                 +{gemsAwarded} gemas
-              </p>
+              </div>
             ) : (
               <p className="text-sm text-center text-muted-foreground">
                 Sin gemas esta vez
@@ -544,21 +642,35 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
 
           <div className="space-y-3">
             <Button size="lg" className="w-full text-base h-12" asChild>
-              <Link href="/ejercicios/todos">Volver a ejercicios</Link>
+              <Link href={backHref}>Volver a ejercicios</Link>
             </Button>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
+      {worldScheme && (
+        <>
+          <div
+            className="fixed inset-0 -z-10 pointer-events-none"
+            style={{
+              background: worldScheme.background.startsWith("/")
+                ? `url(${worldScheme.background}) center/cover no-repeat`
+                : worldScheme.background,
+            }}
+          />
+          <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
+        </>
+      )}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
         <div className="max-w-lg mx-auto p-4 space-y-3">
           <div className="flex items-center justify-between">
             <Link
-              href="/ejercicios/todos"
+              href={backHref}
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Salir del ejercicio"
             >
@@ -577,14 +689,16 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
                       Ver texto
                     </button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                  <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
                     <SheetHeader>
                       <SheetTitle>Texto de lectura</SheetTitle>
                     </SheetHeader>
-                    <div className="mt-4">
-                      <p className="text-base leading-relaxed whitespace-pre-wrap">
-                        {readingText}
-                      </p>
+                    <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-4">
+                      <div className="bg-white text-gray-900 rounded-2xl p-6 shadow-lg">
+                        <p className="text-lg leading-loose tracking-wide font-medium whitespace-pre-wrap">
+                          {readingText}
+                        </p>
+                      </div>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -609,28 +723,77 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
         </div>
       </header>
 
-      <main className="flex-1 p-6">
-        <div ref={audioContainerRef} className="max-w-lg mx-auto space-y-6">
+      <main className="flex-1 p-4 sm:p-6">
+        <div ref={audioContainerRef} className="max-w-lg mx-auto space-y-5">
+
+          {worldConfig ? (
+            <div className="flex items-start gap-3">
+              <div
+                key={`char-${currentIndex}`}
+                className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 animate-in slide-in-from-left-6 fade-in duration-500"
+              >
+                <Image
+                  src={worldConfig.characterImage}
+                  alt="personaje"
+                  fill
+                  className="object-contain drop-shadow-xl"
+                  sizes="(min-width: 640px) 96px, 80px"
+                />
+              </div>
+
+              <div
+                key={currentIndex}
+                className="relative flex-1 rounded-2xl rounded-bl-sm p-4 sm:p-5 animate-in fade-in slide-in-from-left-4 duration-500"
+                style={{
+                  background: "rgba(255,255,255,0.95)",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
+                }}
+              >
+                <div
+                  className="absolute -left-2 bottom-4 w-0 h-0"
+                  style={{
+                    borderTop: "8px solid transparent",
+                    borderBottom: "8px solid transparent",
+                    borderRight: "10px solid rgba(255,255,255,0.95)",
+                  }}
+                />
+                <p className="text-sm sm:text-base font-semibold text-gray-900 leading-snug">
+                  {currentQuestion?.text}
+                </p>
+                {currentQuestion?.description && (
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1.5 leading-relaxed">
+                    {currentQuestion.description}
+                  </p>
+                )}
+                {currentQuestion?.question_audio_url && (
+                  <div className="mt-3">
+                    <AudioPlayer src={currentQuestion.question_audio_url} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="text-lg sm:text-xl font-semibold">
+                {currentQuestion?.text}
+              </h2>
+              {currentQuestion?.description && (
+                <p className="text-muted-foreground">{currentQuestion.description}</p>
+              )}
+              {currentQuestion?.question_audio_url && (
+                <AudioPlayer src={currentQuestion.question_audio_url} />
+              )}
+            </>
+          )}
+
           {currentQuestion?.question_image_url && (
             <Image
               src={currentQuestion.question_image_url}
               alt="Imagen de la pregunta"
-              width={500}
-              height={300}
-              className="w-full max-h-[200px] rounded-lg border object-contain"
+              width={400}
+              height={200}
+              className="w-full max-h-[120px] rounded-lg object-contain"
             />
-          )}
-
-          <h2 className="text-lg sm:text-xl font-semibold">
-            {currentQuestion?.text}
-          </h2>
-
-          {currentQuestion?.description && (
-            <p className="text-muted-foreground">{currentQuestion.description}</p>
-          )}
-
-          {currentQuestion?.question_audio_url && (
-            <AudioPlayer src={currentQuestion.question_audio_url} />
           )}
 
           <div className="space-y-3" role="radiogroup" aria-label="Opciones de respuesta">
@@ -658,19 +821,19 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
                   onClick={() => setSelectedOptionId(option.id)}
                   style={{ animationDelay: `${index * 80}ms` }}
                   className={cn(
-                    "w-full text-left p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px] text-sm sm:text-base",
+                    "w-full text-left p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px] text-sm sm:text-base bg-white text-gray-900",
                     "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     variant === "default" &&
-                      "border-border hover:border-foreground/30 hover:bg-accent active:scale-[0.98]",
+                    "border-gray-200 hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98]",
                     variant === "selected" &&
-                      "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
+                    "border-blue-500 bg-blue-50",
                     variant === "correct" &&
-                      "border-green-500 bg-green-50 dark:bg-green-950/30",
+                    "border-green-500 bg-green-50",
                     variant === "incorrect" &&
-                      "border-red-500 bg-red-50 dark:bg-red-950/30",
+                    "border-red-500 bg-red-50",
                     variant === "dimmed" &&
-                      "border-border opacity-50",
+                    "border-gray-200 opacity-50",
                     (isChecked || isPending) && "cursor-default"
                   )}
                 >
@@ -678,13 +841,13 @@ function BaseExercisePlayer({ exercise }: ExerciseProps) {
                     <span
                       className={cn(
                         "flex shrink-0 items-center justify-center h-6 w-6 rounded-full border-2 text-xs font-bold transition-colors",
-                        variant === "default" && "border-muted-foreground/40",
+                        variant === "default" && "border-gray-300",
                         variant === "selected" &&
-                          "border-blue-500 bg-blue-500 text-white",
+                        "border-blue-500 bg-blue-500 text-white",
                         variant === "correct" &&
-                          "border-green-500 bg-green-500 text-white",
+                        "border-green-500 bg-green-500 text-white",
                         variant === "incorrect" &&
-                          "border-red-500 bg-red-500 text-white",
+                        "border-red-500 bg-red-500 text-white",
                         variant === "dimmed" && "border-muted-foreground/20"
                       )}
                     >

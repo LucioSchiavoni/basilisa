@@ -58,6 +58,7 @@ export interface Database {
           target_age_max: number;
           content: Json;
           tags: string[];
+          world_id: string | null;
           is_active: boolean;
           deleted_at: string | null;
           created_at: string;
@@ -76,6 +77,7 @@ export interface Database {
           target_age_max: number;
           content: Json;
           tags?: string[];
+          world_id?: string | null;
           is_active?: boolean;
           deleted_at?: string | null;
           created_at?: string;
@@ -92,6 +94,7 @@ export interface Database {
           target_age_max?: number;
           content?: Json;
           tags?: string[];
+          world_id?: string | null;
           is_active?: boolean;
           deleted_at?: string | null;
           updated_at?: string;
@@ -448,6 +451,170 @@ export interface Database {
             columns: ["patient_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      worlds: {
+        Row: {
+          id: string;
+          name: string;
+          display_name: string;
+          description: string | null;
+          icon_url: string | null;
+          character_image_url: string | null;
+          difficulty_level: number;
+          difficulty_label: string | null;
+          therapeutic_description: string | null;
+          background_config: Json | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          display_name: string;
+          description?: string | null;
+          icon_url?: string | null;
+          character_image_url?: string | null;
+          difficulty_level: number;
+          difficulty_label?: string | null;
+          therapeutic_description?: string | null;
+          background_config?: Json | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          display_name?: string;
+          description?: string | null;
+          icon_url?: string | null;
+          character_image_url?: string | null;
+          difficulty_level?: number;
+          difficulty_label?: string | null;
+          therapeutic_description?: string | null;
+          background_config?: Json | null;
+          sort_order?: number;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      world_unlocks: {
+        Row: {
+          id: string;
+          user_id: string;
+          world_id: string;
+          unlocked_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          world_id: string;
+          unlocked_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          world_id?: string;
+          unlocked_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "world_unlocks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "world_unlocks_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      world_exercises: {
+        Row: {
+          id: string;
+          world_id: string;
+          exercise_id: string;
+          position: number;
+          is_bonus: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          world_id: string;
+          exercise_id: string;
+          position: number;
+          is_bonus?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          world_id?: string;
+          exercise_id?: string;
+          position?: number;
+          is_bonus?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "world_exercises_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "world_exercises_exercise_id_fkey";
+            columns: ["exercise_id"];
+            isOneToOne: false;
+            referencedRelation: "exercises";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      player_world_progress: {
+        Row: {
+          id: string;
+          player_id: string;
+          world_id: string;
+          last_completed_position: number;
+          total_exercises_completed: number;
+          started_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          world_id: string;
+          last_completed_position?: number;
+          total_exercises_completed?: number;
+          started_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          player_id?: string;
+          world_id?: string;
+          last_completed_position?: number;
+          total_exercises_completed?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "player_world_progress_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "player_world_progress_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
             referencedColumns: ["id"];
           },
         ];

@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, User, Calendar, Phone } from "lucide-react";
+import { ArrowLeft, User, Calendar, Phone, KeyRound } from "lucide-react";
+import { FloatingParticles } from "@/components/home/floating-particles";
 import { createClient } from "@/lib/supabase/client";
 
 const initialState: ProfileState = {};
@@ -98,7 +99,8 @@ export default function CompletarPerfilPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-background overflow-hidden">
+        <FloatingParticles />
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="flex items-center justify-center">
@@ -113,7 +115,8 @@ export default function CompletarPerfilPage() {
   // Si el perfil está completo, mostrar los datos
   if (profileData?.is_profile_complete) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-background overflow-hidden">
+        <FloatingParticles />
         <Card className="w-full max-w-md relative">
           <Button
             type="button"
@@ -166,6 +169,15 @@ export default function CompletarPerfilPage() {
             <Button
               type="button"
               variant="outline"
+              className="w-full flex items-center gap-2"
+              onClick={() => router.push("/change-password")}
+            >
+              <KeyRound className="h-4 w-4" />
+              Cambiar contraseña
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               className="w-full"
               onClick={() => router.push("/dashboard")}
             >
@@ -179,7 +191,8 @@ export default function CompletarPerfilPage() {
 
   // Si el perfil no está completo, mostrar el formulario
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-background overflow-hidden">
+      <FloatingParticles />
       <Card className="w-full max-w-md relative">
         <Button
           type="button"
@@ -250,6 +263,15 @@ export default function CompletarPerfilPage() {
             </div>
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Guardando..." : "Continuar"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full flex items-center gap-2"
+              onClick={() => router.push("/change-password")}
+            >
+              <KeyRound className="h-4 w-4" />
+              Cambiar contraseña
             </Button>
           </CardContent>
         </form>

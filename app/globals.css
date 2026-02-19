@@ -44,6 +44,7 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --breakpoint-tablet: 900px;
 }
 
 :root {
@@ -143,4 +144,42 @@
 .animate-slide-up {
   opacity: 0;
   animation: slide-up 0.6s ease-out forwards;
+}
+
+@keyframes worldFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes underlineSlide {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-underline-slide {
+  transform-origin: left center;
+  animation: underlineSlide 0.5s ease-out forwards;
 }

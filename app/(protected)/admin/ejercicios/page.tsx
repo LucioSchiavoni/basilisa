@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ExercisesList } from "./exercises-list";
 import { Plus } from "lucide-react";
+import { WORLDS } from "@/lib/worlds";
 
 export default async function AdminExercisesPage({
   searchParams,
@@ -16,7 +17,7 @@ export default async function AdminExercisesPage({
 
   let query = supabase
     .from("exercises")
-    .select("id, title, instructions, difficulty_level, is_active, created_at, tags, deleted_at")
+    .select("id, title, instructions, difficulty_level, is_active, created_at, tags, deleted_at, world_id")
     .order("created_at", { ascending: false });
 
   if (showDeleted) {
@@ -56,7 +57,13 @@ export default async function AdminExercisesPage({
           </div>
         </CardHeader>
         <CardContent>
-          <ExercisesList exercises={exercises || []} showDeleted={showDeleted} />
+          <ExercisesList
+            exercises={(exercises || []).map((e) => ({
+              ...e,
+              world_name: e.world_id ? (WORLDS[e.world_id]?.displayName ?? null) : null,
+            }))}
+            showDeleted={showDeleted}
+          />
         </CardContent>
       </Card>
     </div>

@@ -83,6 +83,7 @@ const readingComprehensionContentSchema = z.object({
   reading_audio_url: optionalUrl,
   word_count: z.coerce.number().int().min(1),
   hide_text_during_questions: z.boolean().default(false),
+  text_difficulty: z.enum(["simple", "moderado", "complejo"]).default("simple"),
   questions: z
     .array(readingQuestionSchema)
     .min(1, "Debes agregar al menos una pregunta"),
@@ -132,12 +133,13 @@ const baseExerciseSchema = z.object({
     .max(200, "El titulo es demasiado largo"),
   instructions: z.string().min(1, "Las instrucciones son requeridas"),
   instructions_audio_url: optionalUrl,
-  difficulty_level: z.coerce.number().int().min(1).max(5),
+  difficulty_level: z.coerce.number().int().min(1).max(6),
   estimated_time_seconds: z.coerce.number().int().default(0),
   target_age_min: z.coerce.number().int().min(1).max(100),
   target_age_max: z.coerce.number().int().min(1).max(100),
   exercise_type_id: z.string().uuid("Selecciona un tipo de ejercicio"),
   tags: z.array(z.string().min(1).max(50)).max(10).default([]),
+  world_id: z.string().nullable().optional(),
 })
 
 const createMultipleChoiceSchema = baseExerciseSchema

@@ -9,6 +9,7 @@ import {
   type CreateExerciseInput,
 } from "@/lib/schemas/exercise";
 import type { Json } from "@/types/database.types";
+import { getWorldByDifficulty } from "@/lib/worlds";
 
 const createUserSchema = z
   .object({
@@ -49,6 +50,7 @@ export type CreateAccountState = {
 export type CreateExerciseState = {
   error?: string;
   success?: string;
+  exerciseId?: string;
 };
 
 const createPatientSchema = z.object({
@@ -177,21 +179,23 @@ export async function createExercise(
   }
 
   const { exercise_type_name, content, ...baseData } = validated.data;
+  const worldId = getWorldByDifficulty(baseData.difficulty_level);
 
-  const { error } = await supabase.from("exercises").insert({
+  const { data: inserted, error } = await supabase.from("exercises").insert({
     ...baseData,
+    world_id: worldId,
     content: content as unknown as Json,
     created_by: user.id,
     is_active: true,
-  });
+  }).select("id").single();
 
-  if (error) {
+  if (error || !inserted) {
     console.error("Supabase insert error:", error);
     return { error: "Error al crear el ejercicio" };
   }
 
   revalidatePath("/admin/ejercicios");
-  return { success: "Ejercicio creado exitosamente" };
+  return { success: "Ejercicio creado exitosamente", exerciseId: inserted.id };
 }
 
 export async function updateExercise(
@@ -226,11 +230,13 @@ export async function updateExercise(
   }
 
   const { exercise_type_name, content, ...baseData } = validated.data;
+  const worldId = getWorldByDifficulty(baseData.difficulty_level);
 
   const { error } = await supabase
     .from("exercises")
     .update({
       ...baseData,
+      world_id: worldId,
       content: content as unknown as Json,
     })
     .eq("id", parsed.data);

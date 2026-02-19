@@ -34,6 +34,7 @@ interface EditExerciseFormProps {
     exercise_type_id: string
     content: Json
     tags: string[]
+    world_id: string | null
     exercise_types: { name: string; display_name: string } | null
   }
   exerciseTypes: ExerciseType[]
@@ -72,6 +73,7 @@ export function EditExerciseForm({
       target_age_max: exercise.target_age_max,
       exercise_type_id: exercise.exercise_type_id,
       tags: exercise.tags || [],
+      world_id: exercise.world_id ?? null,
       exercise_type_name: exerciseTypeName,
       content: exercise.content as CreateExerciseInput["content"],
     } as CreateExerciseInput,
@@ -105,6 +107,7 @@ export function EditExerciseForm({
         reading_audio_url: "",
         word_count: 0,
         hide_text_during_questions: false,
+        text_difficulty: "simple",
         questions: [],
       } as CreateExerciseInput["content"])
     } else if (type.name === "timed_reading") {
@@ -197,7 +200,10 @@ export function EditExerciseForm({
 
         {currentStep === 0 && (
           <>
-            <GeneralDataSection form={form} exerciseTypes={exerciseTypes} />
+            <GeneralDataSection
+              form={form}
+              exerciseTypes={exerciseTypes}
+            />
             <Button
               type="button"
               className="w-full"

@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { KeyRound } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -30,6 +31,8 @@ function getInitials(fullName: string | null, email: string) {
 }
 
 export function ProfileButton({ fullName, email, isProfileComplete }: ProfileButtonProps) {
+  const router = useRouter();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -39,32 +42,17 @@ export function ProfileButton({ fullName, email, isProfileComplete }: ProfileBut
               {getInitials(fullName, email)}
             </AvatarFallback>
           </Avatar>
-          {!isProfileComplete && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
-              !
-            </span>
-          )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <div className="px-2 py-1.5">
-          <p className="text-sm font-medium">{fullName || "Paciente"}</p>
-          <p className="text-xs text-muted-foreground">{email}</p>
-        </div>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem
+          className="cursor-pointer flex items-center gap-2"
+          onSelect={() => router.push("/change-password")}
+        >
+          <KeyRound className="h-4 w-4" />
+          Cambiar contraseña
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {!isProfileComplete && (
-          <>
-            <DropdownMenuItem asChild>
-              <Link href="/completar-perfil" className="cursor-pointer">
-                <span className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-destructive" />
-                  Completar perfil
-                </span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
         <DropdownMenuItem asChild>
           <form action={logout} className="w-full">
             <button type="submit" className="w-full text-left cursor-pointer">
