@@ -154,17 +154,15 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="text-sm text-center space-y-2 pt-2">
+              <div className="text-sm text-center space-y-3 pt-2">
                 <Link href="/forgot-password" className="text-[#b7205a] dark:text-fuchsia-400 hover:text-[#9a1a4c] dark:hover:text-fuchsia-300 hover:underline block transition-colors">
                   ¿Olvidaste tu contraseña?
                 </Link>
-                <p className="text-[#455a64] dark:text-gray-400">
-                  ¿No tienes cuenta?{" "}
-                  <Link href="/register" className="text-[#b7205a] dark:text-fuchsia-400 hover:text-[#9a1a4c] dark:hover:text-fuchsia-300 font-semibold hover:underline transition-colors">
-                    Regístrate
-                  </Link>
-                </p>
-                <Link href="/patient-login" className="text-[#b7205a] dark:text-fuchsia-400 hover:text-[#9a1a4c] dark:hover:text-fuchsia-300 hover:underline block transition-colors">
+                <Link
+                  href="/patient-login"
+                  className="flex items-center justify-center gap-2 w-full h-11 rounded-xl border-2 border-[#b7205a]/40 dark:border-[#b7205a]/50 text-[#b7205a] dark:text-fuchsia-400 font-semibold hover:bg-[#b7205a]/8 dark:hover:bg-[#b7205a]/15 hover:border-[#b7205a] dark:hover:border-fuchsia-400 transition-all duration-200"
+                >
+                  <span className="text-base">🎮</span>
                   Soy paciente
                 </Link>
               </div>
