@@ -624,7 +624,13 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      increment_user_gems: {
+        Args: {
+          p_user_id: string;
+          p_amount: number;
+        };
+        Returns: void;
+      };
     };
     Enums: {
       [_ in never]: never;
