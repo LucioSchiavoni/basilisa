@@ -26,7 +26,6 @@ import {
   RotateCcw,
 } from "lucide-react"
 import { GemIcon } from "@/components/gem-icon"
-import { WorldUnlockNotification } from "@/components/world-unlock-notification"
 import { checkLetterGapAnswer, completeLetterGap } from "./actions"
 import type { LetterGapAnswerResult } from "./actions"
 import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes"
@@ -144,7 +143,6 @@ export function LetterGapPlayer({ exercise, worldId, worldName, backHref }: Lett
   const [isPending, startTransition] = useTransition()
   const [gemsAwarded, setGemsAwarded] = useState<number | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
-  const [unlockedWorld, setUnlockedWorld] = useState<{ name: string; displayName: string } | null>(null)
   const [showHint, setShowHint] = useState(false)
 
   const [incorrectIndices, setIncorrectIndices] = useState<number[]>([])
@@ -273,7 +271,6 @@ export function LetterGapPlayer({ exercise, worldId, worldName, backHref }: Lett
     })
       .then((result) => {
         setGemsAwarded(result.gemsAwarded)
-        if (result.unlockedWorld) setUnlockedWorld(result.unlockedWorld)
       })
       .catch(() => setGemsAwarded(0))
       .finally(() => setIsCompleting(false))
@@ -574,13 +571,6 @@ export function LetterGapPlayer({ exercise, worldId, worldName, backHref }: Lett
 
     return (
       <>
-        {unlockedWorld && (
-          <WorldUnlockNotification
-            worldName={unlockedWorld.name}
-            worldDisplayName={unlockedWorld.displayName}
-            onDismiss={() => setUnlockedWorld(null)}
-          />
-        )}
         <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-lg text-center space-y-8">
           <div className="text-6xl">{getResultEmoji(percentage)}</div>

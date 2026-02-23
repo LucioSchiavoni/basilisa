@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { AudioPlayer } from "@/components/ui/audio-player";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -24,9 +23,9 @@ import {
   Trophy,
   ChevronRight,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { GemIcon } from "@/components/gem-icon";
-import { WorldUnlockNotification } from "@/components/world-unlock-notification";
 import { checkAnswer, completeExercise, completeTimedReading } from "./actions";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
@@ -72,7 +71,7 @@ type ExerciseProps = {
   backHref: string;
 };
 
-type Phase = "intro" | "reading" | "questions" | "results";
+type Phase = "intro" | "reading" | "questions" | "review-intro" | "review" | "results";
 
 const difficultyLabels: Record<number, string> = {
   1: "Muy fácil",
@@ -82,29 +81,14 @@ const difficultyLabels: Record<number, string> = {
   5: "Muy difícil",
 };
 
-const difficultyColors: Record<number, string> = {
-  1: "text-green-600",
-  2: "text-green-600",
-  3: "text-yellow-600",
-  4: "text-red-600",
-  5: "text-red-600",
-};
-
 const textDifficultyLabels: Record<string, string> = {
   simple: "Texto: Simple",
   moderado: "Texto: Moderado",
   complejo: "Texto: Complejo",
 };
 
-const textDifficultyColors: Record<string, string> = {
-  simple: "text-green-600",
-  moderado: "text-yellow-600",
-  complejo: "text-red-600",
-};
-
 function getQuestions(content: Record<string, unknown>): Question[] {
-  const questions = (content.questions as Question[]) || [];
-  return questions;
+  return (content.questions as Question[]) || [];
 }
 
 function getReadingText(content: Record<string, unknown>): string {
@@ -161,7 +145,6 @@ export function ExercisePlayer({ exercise, worldId, worldName, backHref }: Exerc
   if (exercise.typeName === "letter_gap") {
     return <LetterGapPlayer exercise={exercise} worldId={worldId} worldName={worldName} backHref={backHref} />;
   }
-
   return <BaseExercisePlayer exercise={exercise} worldId={worldId} worldName={worldName} backHref={backHref} />;
 }
 
@@ -176,11 +159,17 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
   const [isPending, startTransition] = useTransition();
   const [gemsAwarded, setGemsAwarded] = useState<number | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [unlockedWorld, setUnlockedWorld] = useState<{ name: string; displayName: string } | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [finalTimeSeconds, setFinalTimeSeconds] = useState(0);
   const [wordsPerMinute, setWordsPerMinute] = useState(0);
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
+
+  const [reviewQueue, setReviewQueue] = useState<Question[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [isFirstReviewRound, setIsFirstReviewRound] = useState(true);
+  const [reviewReadingActive, setReviewReadingActive] = useState(false);
+  const reviewFailedRef = useRef<string[]>([]);
+
   const answersRef = useRef<AnswerResult[]>([]);
   const startedAtRef = useRef(0);
 
@@ -188,13 +177,9 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
   const isReadingComprehension = exercise.typeName === "reading_comprehension";
   const isTimedReading = exercise.typeName === "timed_reading";
   const readingText =
-    isReadingComprehension || isTimedReading
-      ? getReadingText(exercise.content)
-      : "";
+    isReadingComprehension || isTimedReading ? getReadingText(exercise.content) : "";
   const readingAudioUrl =
-    isReadingComprehension || isTimedReading
-      ? getReadingAudioUrl(exercise.content)
-      : null;
+    isReadingComprehension || isTimedReading ? getReadingAudioUrl(exercise.content) : null;
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const wordCount = isTimedReading ? getWordCount(exercise.content) : 0;
   const showTimer = isTimedReading
@@ -213,6 +198,11 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
   const isLastQuestion = currentIndex === questions.length - 1;
   const progress =
     questions.length > 0 ? ((currentIndex + (isChecked ? 1 : 0)) / questions.length) * 100 : 0;
+
+  const currentReviewQuestion = reviewQueue[reviewIndex] ?? null;
+  const reviewProgress =
+    reviewQueue.length > 0 ? ((reviewIndex + (isChecked ? 1 : 0)) / reviewQueue.length) * 100 : 0;
+  const isLastReviewQuestion = reviewIndex === reviewQueue.length - 1;
 
   const handleStart = useCallback(() => {
     startedAtRef.current = Date.now();
@@ -238,7 +228,26 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
     audios.forEach((audio) => {
       if (!audio.paused) audio.pause();
     });
-  }, [currentIndex]);
+  }, [currentIndex, reviewIndex]);
+
+  const finishExercise = useCallback(() => {
+    setCorrectCount(questions.length);
+    setPhase("results");
+    setIsCompleting(true);
+    const durationSeconds = Math.round((Date.now() - startedAtRef.current) / 1000);
+    completeExercise({
+      exerciseId: exercise.id,
+      answers: answersRef.current,
+      totalQuestions: questions.length,
+      correctAnswers: questions.length,
+      durationSeconds,
+    })
+      .then((result) => {
+        setGemsAwarded(result.gemsAwarded);
+      })
+      .catch(() => setGemsAwarded(0))
+      .finally(() => setIsCompleting(false));
+  }, [exercise.id, questions.length]);
 
   const handleFinishReading = useCallback(() => {
     const elapsed = Math.round((Date.now() - startedAtRef.current) / 1000);
@@ -256,7 +265,6 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
     })
       .then((result) => {
         setGemsAwarded(result.gemsAwarded);
-        if (result.unlockedWorld) setUnlockedWorld(result.unlockedWorld);
       })
       .catch(() => setGemsAwarded(0))
       .finally(() => setIsCompleting(false));
@@ -264,22 +272,15 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
 
   const handleCheck = useCallback(() => {
     if (!selectedOptionId || !currentQuestion) return;
-
     startTransition(async () => {
-      const result = await checkAnswer(
-        exercise.id,
-        currentQuestion.id,
-        selectedOptionId
-      );
+      const result = await checkAnswer(exercise.id, currentQuestion.id, selectedOptionId);
       setCheckResult(result);
-
       answersRef.current.push({
         questionId: currentQuestion.id,
         selectedOptionId,
         correctOptionId: result.correctOptionId,
         isCorrect: result.isCorrect,
       });
-
       const pts = currentQuestion.points || 1;
       setTotalPoints((p) => p + pts);
       if (result.isCorrect) {
@@ -287,52 +288,91 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
         setEarnedPoints((p) => p + pts);
       }
     });
-  }, [selectedOptionId, currentQuestion, exercise.id, currentIndex]);
+  }, [selectedOptionId, currentQuestion, exercise.id]);
 
   const handleNext = useCallback(() => {
     if (isLastQuestion) {
-      setPhase("results");
-      setIsCompleting(true);
-      const durationSeconds = Math.round(
-        (Date.now() - startedAtRef.current) / 1000
-      );
-      const currentAnswers = answersRef.current;
-      completeExercise({
-        exerciseId: exercise.id,
-        answers: currentAnswers,
-        totalQuestions: questions.length,
-        correctAnswers: currentAnswers.filter((a) => a.isCorrect).length,
-        durationSeconds,
-      })
-        .then((result) => {
-          setGemsAwarded(result.gemsAwarded);
-          if (result.unlockedWorld) setUnlockedWorld(result.unlockedWorld);
-        })
-        .catch(() => setGemsAwarded(0))
-        .finally(() => setIsCompleting(false));
+      const incorrect = answersRef.current.filter((a) => !a.isCorrect);
+      if (incorrect.length > 0) {
+        const incorrectIds = new Set(incorrect.map((a) => a.questionId));
+        const queue = questions.filter((q) => incorrectIds.has(q.id));
+        reviewFailedRef.current = [];
+        setReviewQueue(queue);
+        setReviewIndex(0);
+        setIsFirstReviewRound(true);
+        setSelectedOptionId(null);
+        setCheckResult(null);
+        setPhase("review-intro");
+      } else {
+        finishExercise();
+      }
     } else {
       setCurrentIndex((i) => i + 1);
       setSelectedOptionId(null);
       setCheckResult(null);
     }
-  }, [isLastQuestion, exercise.id, questions.length]);
+  }, [isLastQuestion, questions, finishExercise]);
+
+  const handleReviewCheck = useCallback(() => {
+    if (!selectedOptionId || !currentReviewQuestion) return;
+    startTransition(async () => {
+      const result = await checkAnswer(exercise.id, currentReviewQuestion.id, selectedOptionId);
+      setCheckResult(result);
+      if (result.isCorrect) {
+        const idx = answersRef.current.findIndex((a) => a.questionId === currentReviewQuestion.id);
+        if (idx >= 0) {
+          answersRef.current[idx] = {
+            ...answersRef.current[idx],
+            selectedOptionId,
+            isCorrect: true,
+          };
+        }
+      } else {
+        reviewFailedRef.current.push(currentReviewQuestion.id);
+      }
+    });
+  }, [selectedOptionId, currentReviewQuestion, exercise.id]);
+
+  const handleReviewNext = useCallback(() => {
+    if (isLastReviewQuestion) {
+      if (reviewFailedRef.current.length > 0) {
+        const failedIds = new Set(reviewFailedRef.current);
+        const newQueue = reviewQueue.filter((q) => failedIds.has(q.id));
+        reviewFailedRef.current = [];
+        setIsFirstReviewRound(false);
+        setReviewQueue(newQueue);
+        setReviewIndex(0);
+        setSelectedOptionId(null);
+        setCheckResult(null);
+        setPhase("review");
+      } else {
+        finishExercise();
+      }
+    } else {
+      setReviewIndex((i) => i + 1);
+      setSelectedOptionId(null);
+      setCheckResult(null);
+    }
+  }, [isLastReviewQuestion, reviewQueue, finishExercise]);
+
+  const worldBg = worldScheme ? (
+    <>
+      <div
+        className="fixed inset-0 -z-10 pointer-events-none"
+        style={{
+          background: worldScheme.background.startsWith("/")
+            ? `url(${worldScheme.background}) center/cover no-repeat`
+            : worldScheme.background,
+        }}
+      />
+      <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
+    </>
+  ) : null;
 
   if (phase === "intro") {
     return (
       <div className="min-h-screen flex flex-col">
-        {worldScheme && (
-          <>
-            <div
-              className="fixed inset-0 -z-10 pointer-events-none"
-              style={{
-                background: worldScheme.background.startsWith("/")
-                  ? `url(${worldScheme.background}) center/cover no-repeat`
-                  : worldScheme.background,
-              }}
-            />
-            <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
-          </>
-        )}
+        {worldBg}
         <header className="p-4">
           <Link
             href={backHref}
@@ -343,7 +383,6 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
             Volver
           </Link>
         </header>
-
         <main className="flex-1 flex items-center justify-center px-6 pb-6 pt-0">
           <div className="w-full max-w-lg text-center space-y-4">
             {worldConfig && (
@@ -357,7 +396,6 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                 />
               </div>
             )}
-
             <div className="space-y-3">
               <span
                 className="inline-block text-xs font-medium px-2.5 py-1 rounded-full border"
@@ -368,14 +406,15 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
               <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: "white" }}>
                 {exercise.title}
               </h1>
-              <p className="font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>{exercise.instructions}</p>
+              <p className="font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
+                {exercise.instructions}
+              </p>
               {exercise.instructionsAudioUrl && (
                 <div className="mt-4">
                   <AudioPlayer src={exercise.instructionsAudioUrl} />
                 </div>
               )}
             </div>
-
             <div className="flex flex-wrap justify-center gap-4 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
               <span className="flex items-center gap-1.5">
                 <BarChart3 className="h-4 w-4" />
@@ -397,9 +436,90 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                 </span>
               )}
             </div>
-
             <Button size="lg" className="w-full max-w-xs text-base h-12" onClick={handleStart}>
               Comenzar
+              <ChevronRight className="h-5 w-5 ml-1" />
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (phase === "review-intro") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {worldBg}
+        <header className="p-4">
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-1 text-sm transition-colors"
+            style={{ color: "rgba(255,255,255,0.70)" }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Link>
+        </header>
+        <main className="flex-1 flex items-center justify-center px-6 pb-6 pt-0">
+          <div className="w-full max-w-lg text-center space-y-6">
+            {worldConfig ? (
+              <>
+                <div className="flex justify-center -mt-4 -mb-1">
+                  <Image
+                    src={worldConfig.characterImage}
+                    alt=""
+                    width={200}
+                    height={200}
+                    className="w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] object-contain animate-fade-in-up drop-shadow-2xl"
+                  />
+                </div>
+                <div
+                  className="rounded-2xl px-6 py-5 text-center mx-auto max-w-sm"
+                  style={{
+                    background: "rgba(255,255,255,0.12)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    border: "1px solid rgba(255,255,255,0.20)",
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <RotateCcw className="h-5 w-5 text-amber-300" />
+                    <span className="text-sm font-bold text-amber-300 uppercase tracking-wider">
+                      Repaso
+                    </span>
+                  </div>
+                  <p className="text-lg font-bold text-white leading-snug">
+                    ¡Vamos a corregir las respuestas incorrectas!
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.70)" }}>
+                    {reviewQueue.length} pregunta{reviewQueue.length !== 1 && "s"} para repasar
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 px-6 py-8 text-center space-y-3">
+                <RotateCcw className="h-10 w-10 text-amber-500 mx-auto" />
+                <h2 className="text-xl font-bold text-gray-900">
+                  ¡Vamos a corregir las respuestas incorrectas!
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {reviewQueue.length} pregunta{reviewQueue.length !== 1 && "s"} para repasar
+                </p>
+              </div>
+            )}
+            <Button
+              size="lg"
+              className="w-full max-w-xs text-base h-12"
+              onClick={() => {
+                if (isFirstReviewRound && (isReadingComprehension || isTimedReading) && readingText) {
+                  setReviewReadingActive(true);
+                  setPhase("reading");
+                } else {
+                  setPhase("review");
+                }
+              }}
+            >
+              Continuar
               <ChevronRight className="h-5 w-5 ml-1" />
             </Button>
           </div>
@@ -415,7 +535,7 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
           <div className="max-w-prose mx-auto flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setPhase("intro")}
+              onClick={() => setPhase(reviewReadingActive ? "review-intro" : "intro")}
               className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -423,9 +543,7 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
             </button>
             {isTimedReading ? (
               <div className="flex items-center gap-4">
-                <p className="text-sm font-medium text-gray-700">
-                  Lee a tu ritmo
-                </p>
+                <p className="text-sm font-medium text-gray-700">Lee a tu ritmo</p>
                 {showTimer && (
                   <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5">
                     <Clock className="h-4 w-4 text-gray-700" />
@@ -437,21 +555,15 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
               </div>
             ) : (
               <p className="text-sm font-medium text-gray-900">
-                Lee el siguiente texto con atención
+                {reviewReadingActive ? "Repasá el texto" : "Lee el siguiente texto con atención"}
               </p>
             )}
           </div>
         </header>
-
         <main className="flex-1 p-4 sm:p-6">
           <div className="max-w-prose mx-auto space-y-4">
-            {readingAudioUrl && (
-              <AudioPlayer src={readingAudioUrl} />
-            )}
-            <div
-              className="space-y-5"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-            >
+            {readingAudioUrl && <AudioPlayer src={readingAudioUrl} />}
+            <div className="space-y-5" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
               {readingText.split(/\n+/).filter(Boolean).map((paragraph, idx) => (
                 <div key={idx} className="relative">
                   <p
@@ -472,7 +584,6 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
             </div>
           </div>
         </main>
-
         <footer className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4">
           <div className="max-w-prose mx-auto">
             {isTimedReading ? (
@@ -489,10 +600,17 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
               <Button
                 size="lg"
                 className="w-full text-base h-12"
-                onClick={() => setPhase("questions")}
+                onClick={() => {
+                  if (reviewReadingActive) {
+                    setReviewReadingActive(false);
+                    setPhase("review");
+                  } else {
+                    setPhase("questions");
+                  }
+                }}
                 style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: "#fff" } : undefined}
               >
-                Continuar a las preguntas
+                {reviewReadingActive ? "Continuar al repaso" : "Continuar a las preguntas"}
                 <ChevronRight className="h-5 w-5 ml-1" />
               </Button>
             )}
@@ -503,169 +621,118 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
   }
 
   if (phase === "results") {
-    const unlockNotification = unlockedWorld ? (
-      <WorldUnlockNotification
-        worldName={unlockedWorld.name}
-        worldDisplayName={unlockedWorld.displayName}
-        onDismiss={() => setUnlockedWorld(null)}
-      />
-    ) : null;
-
     if (isTimedReading) {
       return (
         <>
-          {unlockNotification}
           <div className="min-h-screen flex items-center justify-center p-6">
-          <div className="w-full max-w-lg text-center space-y-8">
-            <div className="text-6xl">{getWpmEmoji(wordsPerMinute)}</div>
-
-            <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                {getWpmMessage(wordsPerMinute)}
-              </h1>
-              <p className="text-muted-foreground">{exercise.title}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-2xl bg-muted p-4 space-y-1">
-                <p className="text-3xl font-bold">
-                  {formatTimer(finalTimeSeconds)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Tiempo de lectura
-                </p>
+            <div className="w-full max-w-lg text-center space-y-8">
+              <div className="text-6xl">{getWpmEmoji(wordsPerMinute)}</div>
+              <div className="space-y-2">
+                <h1 className="text-2xl sm:text-3xl font-bold">{getWpmMessage(wordsPerMinute)}</h1>
+                <p className="text-muted-foreground">{exercise.title}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-muted p-4 space-y-1">
+                  <p className="text-3xl font-bold">{formatTimer(finalTimeSeconds)}</p>
+                  <p className="text-xs text-muted-foreground">Tiempo de lectura</p>
+                </div>
+                <div className="rounded-2xl bg-muted p-4 space-y-1">
+                  <p className="text-3xl font-bold">{wordsPerMinute}</p>
+                  <p className="text-xs text-muted-foreground">Palabras por minuto</p>
+                </div>
               </div>
               <div className="rounded-2xl bg-muted p-4 space-y-1">
-                <p className="text-3xl font-bold">{wordsPerMinute}</p>
-                <p className="text-xs text-muted-foreground">
-                  Palabras por minuto
-                </p>
+                <p className="text-2xl font-bold">{wordCount}</p>
+                <p className="text-xs text-muted-foreground">Palabras leídas</p>
               </div>
-            </div>
-
-            <div className="rounded-2xl bg-muted p-4 space-y-1">
-              <p className="text-2xl font-bold">{wordCount}</p>
-              <p className="text-xs text-muted-foreground">Palabras leídas</p>
-            </div>
-
-            <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-200 dark:border-yellow-800 p-4">
-              {isCompleting ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
-                  <p className="text-sm text-muted-foreground">
-                    Calculando gemas...
-                  </p>
-                </div>
-              ) : gemsAwarded && gemsAwarded > 0 ? (
-                <div className="text-2xl font-bold text-center flex items-center justify-center gap-2">
-                  <GemIcon size={48} />
-                  +{gemsAwarded} gemas
-                </div>
-              ) : (
-                <p className="text-sm text-center text-muted-foreground">
-                  Sin gemas esta vez
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-3">
+              <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-200 dark:border-yellow-800 p-4">
+                {isCompleting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                    <p className="text-sm text-muted-foreground">Calculando gemas...</p>
+                  </div>
+                ) : gemsAwarded && gemsAwarded > 0 ? (
+                  <div className="text-2xl font-bold text-center flex items-center justify-center gap-2">
+                    <GemIcon size={48} />
+                    +{gemsAwarded} gemas
+                  </div>
+                ) : (
+                  <p className="text-sm text-center text-muted-foreground">Sin gemas esta vez</p>
+                )}
+              </div>
               <Button size="lg" className="w-full text-base h-12" asChild>
                 <Link href={backHref}>Volver a ejercicios</Link>
               </Button>
             </div>
           </div>
-        </div>
         </>
       );
     }
 
     const percentage =
-      questions.length > 0
-        ? Math.round((correctCount / questions.length) * 100)
-        : 0;
+      questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
 
     return (
       <>
-        {unlockNotification}
         <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-lg text-center space-y-8">
-          <div className="text-6xl">{getResultEmoji(percentage)}</div>
-
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">
-              {getResultMessage(percentage)}
-            </h1>
-            <p className="text-muted-foreground">{exercise.title}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-muted p-4 space-y-1">
-              <p className="text-3xl font-bold">{percentage}%</p>
-              <p className="text-xs text-muted-foreground">Aciertos</p>
+          <div className="w-full max-w-lg text-center space-y-8">
+            <div className="text-6xl">{getResultEmoji(percentage)}</div>
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-bold">{getResultMessage(percentage)}</h1>
+              <p className="text-muted-foreground">{exercise.title}</p>
             </div>
-            <div className="rounded-2xl bg-muted p-4 space-y-1">
-              <p className="text-3xl font-bold">
-                {correctCount}/{questions.length}
-              </p>
-              <p className="text-xs text-muted-foreground">Correctas</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl bg-muted p-4 space-y-1">
+                <p className="text-3xl font-bold">{percentage}%</p>
+                <p className="text-xs text-muted-foreground">Aciertos</p>
+              </div>
+              <div className="rounded-2xl bg-muted p-4 space-y-1">
+                <p className="text-3xl font-bold">{correctCount}/{questions.length}</p>
+                <p className="text-xs text-muted-foreground">Correctas</p>
+              </div>
             </div>
-          </div>
-
-          {totalPoints > 0 && (
-            <div className="rounded-2xl bg-muted p-4">
-              <p className="text-2xl font-bold">
-                <Trophy className="inline h-5 w-5 mr-1 text-yellow-500" />
-                {earnedPoints} / {totalPoints} puntos
-              </p>
-            </div>
-          )}
-
-          <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-200 dark:border-yellow-800 p-4">
-            {isCompleting ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
-                <p className="text-sm text-muted-foreground">
-                  Calculando gemas...
+            {totalPoints > 0 && (
+              <div className="rounded-2xl bg-muted p-4">
+                <p className="text-2xl font-bold">
+                  <Trophy className="inline h-5 w-5 mr-1 text-yellow-500" />
+                  {earnedPoints} / {totalPoints} puntos
                 </p>
               </div>
-            ) : gemsAwarded && gemsAwarded > 0 ? (
-              <div className="text-2xl font-bold text-center flex items-center justify-center gap-1">
-                <GemIcon size={20} className="mr-1" />
-                +{gemsAwarded} gemas
-              </div>
-            ) : (
-              <p className="text-sm text-center text-muted-foreground">
-                Sin gemas esta vez
-              </p>
             )}
-          </div>
-
-          <div className="space-y-3">
+            <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-200 dark:border-yellow-800 p-4">
+              {isCompleting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                  <p className="text-sm text-muted-foreground">Calculando gemas...</p>
+                </div>
+              ) : gemsAwarded && gemsAwarded > 0 ? (
+                <div className="text-2xl font-bold text-center flex items-center justify-center gap-1">
+                  <GemIcon size={20} className="mr-1" />
+                  +{gemsAwarded} gemas
+                </div>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground">Sin gemas esta vez</p>
+              )}
+            </div>
             <Button size="lg" className="w-full text-base h-12" asChild>
               <Link href={backHref}>Volver a ejercicios</Link>
             </Button>
           </div>
         </div>
-        </div>
       </>
     );
   }
 
+  const isReview = phase === "review";
+  const activeQuestion = isReview ? currentReviewQuestion : currentQuestion;
+  const activeProgress = isReview ? reviewProgress : progress;
+  const activeIndex = isReview ? reviewIndex : currentIndex;
+  const activeTotal = isReview ? reviewQueue.length : questions.length;
+  const isLastActive = isReview ? isLastReviewQuestion : isLastQuestion;
+
   return (
     <div className="min-h-screen flex flex-col">
-      {worldScheme && (
-        <>
-          <div
-            className="fixed inset-0 -z-10 pointer-events-none"
-            style={{
-              background: worldScheme.background.startsWith("/")
-                ? `url(${worldScheme.background}) center/cover no-repeat`
-                : worldScheme.background,
-            }}
-          />
-          <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
-        </>
-      )}
+      {worldBg}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
         <div className="max-w-lg mx-auto p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -677,7 +744,7 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
               <XCircle className="h-6 w-6" />
             </Link>
             <div className="flex items-center gap-3">
-              {isReadingComprehension && !hideTextDuringQuestions && (
+              {isReadingComprehension && !hideTextDuringQuestions && !isReview && (
                 <Sheet>
                   <SheetTrigger asChild>
                     <button
@@ -704,20 +771,31 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                 </Sheet>
               )}
               <span className="text-sm text-muted-foreground">
-                {currentIndex + 1} / {questions.length}
+                {activeIndex + 1} / {activeTotal}
               </span>
             </div>
           </div>
+
+          {isReview && (
+            <div className="flex items-center justify-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+              <RotateCcw className="h-4 w-4" />
+              Corrige tus respuestas incorrectas
+            </div>
+          )}
+
           <div
             className="h-2 rounded-full bg-muted overflow-hidden"
             role="progressbar"
-            aria-valuenow={progress}
+            aria-valuenow={activeProgress}
             aria-valuemin={0}
             aria-valuemax={100}
           >
             <div
-              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
+              className={cn(
+                "h-full rounded-full transition-all duration-500 ease-out",
+                isReview ? "bg-amber-500" : "bg-primary"
+              )}
+              style={{ width: `${activeProgress}%` }}
             />
           </div>
         </div>
@@ -725,11 +803,10 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
 
       <main className="flex-1 p-4 sm:p-6">
         <div ref={audioContainerRef} className="max-w-lg mx-auto space-y-5">
-
           {worldConfig ? (
             <div className="flex items-start gap-3">
               <div
-                key={`char-${currentIndex}`}
+                key={`char-${activeIndex}`}
                 className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 animate-in slide-in-from-left-6 fade-in duration-500"
               >
                 <Image
@@ -740,9 +817,8 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                   sizes="(min-width: 640px) 96px, 80px"
                 />
               </div>
-
               <div
-                key={currentIndex}
+                key={activeIndex}
                 className="relative flex-1 rounded-2xl rounded-bl-sm p-4 sm:p-5 animate-in fade-in slide-in-from-left-4 duration-500"
                 style={{
                   background: "rgba(255,255,255,0.95)",
@@ -758,37 +834,35 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                   }}
                 />
                 <p className="text-sm sm:text-base font-semibold text-gray-900 leading-snug">
-                  {currentQuestion?.text}
+                  {activeQuestion?.text}
                 </p>
-                {currentQuestion?.description && (
+                {activeQuestion?.description && (
                   <p className="text-xs sm:text-sm text-gray-500 mt-1.5 leading-relaxed">
-                    {currentQuestion.description}
+                    {activeQuestion.description}
                   </p>
                 )}
-                {currentQuestion?.question_audio_url && (
+                {activeQuestion?.question_audio_url && (
                   <div className="mt-3">
-                    <AudioPlayer src={currentQuestion.question_audio_url} />
+                    <AudioPlayer src={activeQuestion.question_audio_url} />
                   </div>
                 )}
               </div>
             </div>
           ) : (
             <>
-              <h2 className="text-lg sm:text-xl font-semibold">
-                {currentQuestion?.text}
-              </h2>
-              {currentQuestion?.description && (
-                <p className="text-muted-foreground">{currentQuestion.description}</p>
+              <h2 className="text-lg sm:text-xl font-semibold">{activeQuestion?.text}</h2>
+              {activeQuestion?.description && (
+                <p className="text-muted-foreground">{activeQuestion.description}</p>
               )}
-              {currentQuestion?.question_audio_url && (
-                <AudioPlayer src={currentQuestion.question_audio_url} />
+              {activeQuestion?.question_audio_url && (
+                <AudioPlayer src={activeQuestion.question_audio_url} />
               )}
             </>
           )}
 
-          {currentQuestion?.question_image_url && (
+          {activeQuestion?.question_image_url && (
             <Image
-              src={currentQuestion.question_image_url}
+              src={activeQuestion.question_image_url}
               alt="Imagen de la pregunta"
               width={400}
               height={200}
@@ -797,10 +871,9 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
           )}
 
           <div className="space-y-3" role="radiogroup" aria-label="Opciones de respuesta">
-            {currentQuestion?.options.map((option, index) => {
+            {activeQuestion?.options.map((option, index) => {
               const isSelected = selectedOptionId === option.id;
-              const isCorrectOption =
-                isChecked && option.id === checkResult?.correctOptionId;
+              const isCorrectOption = isChecked && option.id === checkResult?.correctOptionId;
 
               let variant = "default";
               if (isChecked) {
@@ -825,15 +898,11 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                     "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     variant === "default" &&
-                    "border-gray-200 hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98]",
-                    variant === "selected" &&
-                    "border-blue-500 bg-blue-50",
-                    variant === "correct" &&
-                    "border-green-500 bg-green-50",
-                    variant === "incorrect" &&
-                    "border-red-500 bg-red-50",
-                    variant === "dimmed" &&
-                    "border-gray-200 opacity-50",
+                      "border-gray-200 hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98]",
+                    variant === "selected" && "border-blue-500 bg-blue-50",
+                    variant === "correct" && "border-green-500 bg-green-50",
+                    variant === "incorrect" && "border-red-500 bg-red-50",
+                    variant === "dimmed" && "border-gray-200 opacity-50",
                     (isChecked || isPending) && "cursor-default"
                   )}
                 >
@@ -842,21 +911,14 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                       className={cn(
                         "flex shrink-0 items-center justify-center h-6 w-6 rounded-full border-2 text-xs font-bold transition-colors",
                         variant === "default" && "border-gray-300",
-                        variant === "selected" &&
-                        "border-blue-500 bg-blue-500 text-white",
-                        variant === "correct" &&
-                        "border-green-500 bg-green-500 text-white",
-                        variant === "incorrect" &&
-                        "border-red-500 bg-red-500 text-white",
+                        variant === "selected" && "border-blue-500 bg-blue-500 text-white",
+                        variant === "correct" && "border-green-500 bg-green-500 text-white",
+                        variant === "incorrect" && "border-red-500 bg-red-500 text-white",
                         variant === "dimmed" && "border-muted-foreground/20"
                       )}
                     >
-                      {isChecked && isCorrectOption && (
-                        <CheckCircle2 className="h-4 w-4" />
-                      )}
-                      {isChecked && isSelected && !isCorrectOption && (
-                        <XCircle className="h-4 w-4" />
-                      )}
+                      {isChecked && isCorrectOption && <CheckCircle2 className="h-4 w-4" />}
+                      {isChecked && isSelected && !isCorrectOption && <XCircle className="h-4 w-4" />}
                     </span>
                     {option.image_url && (
                       <Image
@@ -883,13 +945,9 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
                   : "bg-red-50 border border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-300"
               )}
             >
-              <p className="font-semibold mb-1">
-                {isCorrect ? "¡Correcto!" : "Incorrecto"}
-              </p>
+              <p className="font-semibold mb-1">{isCorrect ? "¡Correcto!" : "Incorrecto"}</p>
               {!isCorrect && checkResult?.explanation && (
-                <p className="text-xs opacity-80">
-                  {checkResult.explanation}
-                </p>
+                <p className="text-xs opacity-80">{checkResult.explanation}</p>
               )}
             </div>
           )}
@@ -903,7 +961,7 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
               size="lg"
               className="w-full text-base h-12"
               disabled={!selectedOptionId || isPending}
-              onClick={handleCheck}
+              onClick={isReview ? handleReviewCheck : handleCheck}
             >
               {isPending ? (
                 <>
@@ -918,9 +976,17 @@ function BaseExercisePlayer({ exercise, worldId, worldName, backHref }: Exercise
             <Button
               size="lg"
               className="w-full text-base h-12"
-              onClick={handleNext}
+              onClick={isReview ? handleReviewNext : handleNext}
             >
-              {isLastQuestion ? "Ver resultados" : "Siguiente"}
+              {isReview
+                ? isLastActive && reviewFailedRef.current.length === 0
+                  ? "Ver resultados"
+                  : "Siguiente"
+                : isLastActive
+                  ? answersRef.current.filter((a) => !a.isCorrect).length > 0
+                    ? "Corregir respuestas"
+                    : "Ver resultados"
+                  : "Siguiente"}
               <ChevronRight className="h-5 w-5 ml-1" />
             </Button>
           )}

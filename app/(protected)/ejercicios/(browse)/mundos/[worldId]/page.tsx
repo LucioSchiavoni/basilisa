@@ -24,7 +24,7 @@ export default async function WorldDetailPage({
 
   if (!world) notFound();
 
-  const [{ data: exercisesData }, { data: progress }] = await Promise.all([
+  const [{ data: exercisesData }, { data: completedSessionsData }] = await Promise.all([
     supabase
       .from("exercises")
       .select("id, title, instructions, difficulty_level, exercise_types(display_name)")
@@ -33,14 +33,11 @@ export default async function WorldDetailPage({
       .is("deleted_at", null)
       .order("created_at"),
     supabase
-      .from("player_world_progress")
-      .select("last_completed_position, total_exercises_completed")
-      .eq("player_id", user!.id)
-      .eq("world_id", worldId)
-      .maybeSingle(),
+      .from("assignment_sessions")
+      .select("exercise_id")
+      .eq("patient_id", user!.id)
+      .eq("is_completed", true),
   ]);
-
-  const lastCompletedPosition = progress?.last_completed_position ?? 0;
 
   const exercises = (exercisesData ?? []).map((ex, index) => {
     const typeName =
@@ -57,6 +54,17 @@ export default async function WorldDetailPage({
       isBonus: false,
     };
   });
+
+  const completedIds = new Set((completedSessionsData ?? []).map((s) => s.exercise_id));
+
+  let lastCompletedPosition = 0;
+  for (const ex of exercises) {
+    if (completedIds.has(ex.id)) {
+      lastCompletedPosition = ex.position;
+    } else {
+      break;
+    }
+  }
 
   return (
     <>

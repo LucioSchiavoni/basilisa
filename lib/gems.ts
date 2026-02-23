@@ -51,7 +51,10 @@ async function createTransaction(
     metadata: metadata ?? null,
   });
 
-  if (error) throw new Error(`Failed to create gem transaction: ${error.message}`);
+  if (error) {
+    if (error.code === "23505") return;
+    throw new Error(`Failed to create gem transaction: ${error.message}`);
+  }
 }
 
 async function addGems(
@@ -59,25 +62,12 @@ async function addGems(
   userId: string,
   amount: number
 ) {
-  const { data: current, error: readError } = await supabase
-    .from("user_gems")
-    .select("total_gems")
-    .eq("user_id", userId)
-    .single();
+  const { error } = await supabase.rpc("increment_user_gems", {
+    p_user_id: userId,
+    p_amount: amount,
+  });
 
-  if (readError || !current)
-    throw new Error(`Failed to read user gems: ${readError?.message}`);
-
-  const { error: updateError } = await supabase
-    .from("user_gems")
-    .update({
-      total_gems: current.total_gems + amount,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", userId);
-
-  if (updateError)
-    throw new Error(`Failed to update gems: ${updateError.message}`);
+  if (error) throw new Error(`Failed to update gems: ${error.message}`);
 }
 
 export async function awardExerciseGems(sessionId: string, patientId: string) {

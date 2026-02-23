@@ -19,7 +19,6 @@ type WorldData = {
   therapeuticDescription: string | null;
   totalExercises: number;
   completedExercises: number;
-  isUnlocked: boolean;
 };
 
 export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
@@ -104,7 +103,7 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
                   style={{
                     background: `radial-gradient(circle at center, ${scheme.particles} 0%, transparent 65%)`,
                     filter: "blur(32px)",
-                    opacity: world.isUnlocked ? 0.6 : 0.2,
+                    opacity: 0.6,
                   }}
                 />
                 {world.iconUrl && (
@@ -113,45 +112,10 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
                     alt={world.displayName}
                     fill
                     className="object-contain drop-shadow-2xl transition-all duration-500"
-                    style={
-                      !world.isUnlocked
-                        ? { filter: "saturate(0) opacity(0.35)" }
-                        : undefined
-                    }
                     sizes="(min-width: 1024px) 480px, (min-width: 768px) 340px, 256px"
                   />
                 )}
-                {!world.isUnlocked && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div
-                      className="rounded-full p-4 flex items-center justify-center"
-                      style={{
-                        background: "rgba(0,0,0,0.30)",
-                        backdropFilter: "blur(6px)",
-                        WebkitBackdropFilter: "blur(6px)",
-                      }}
-                    >
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
               </>
-            );
-
-            const previousWorld = worlds.find(
-              (w) => w.difficultyLevel === world.difficultyLevel - 1
             );
 
             return (
@@ -176,18 +140,12 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
                       animation: `worldFloat ${floatDuration}s ease-in-out ${floatDelay}s infinite`,
                     }}
                   >
-                    {world.isUnlocked ? (
-                      <Link
-                        href={`/ejercicios/mundos/${world.id}`}
-                        className="relative block w-full h-full transition-transform duration-200 active:scale-95 hover:scale-[1.03]"
-                      >
-                        {islandContent}
-                      </Link>
-                    ) : (
-                      <div className="relative w-full h-full">
-                        {islandContent}
-                      </div>
-                    )}
+                    <Link
+                      href={`/ejercicios/mundos/${world.id}`}
+                      className="relative block w-full h-full transition-transform duration-200 active:scale-95 hover:scale-[1.03]"
+                    >
+                      {islandContent}
+                    </Link>
                   </div>
 
                   {world.difficultyLabel && (
@@ -221,32 +179,21 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
                     </p>
                   )}
 
-                  {world.isUnlocked ? (
-                    <>
-                      <Link
-                        href={`/ejercicios/mundos/${world.id}`}
-                        className="w-[200px] md:w-[240px] text-center px-6 py-2.5 rounded-xl transition-all duration-200 active:scale-95 shadow-lg"
-                        style={{
-                          background: scheme.buttonGradient,
-                          boxShadow: `0 4px 16px ${scheme.particles}40`,
-                        }}
-                      >
-                        <span
-                          className="text-sm font-bold text-white"
-                          style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
-                        >
-                          Empezar
-                        </span>
-                      </Link>
-                    </>
-                  ) : previousWorld ? (
-                    <p
-                      className="text-sm font-semibold text-white text-center w-[260px] md:w-[320px]"
-                      style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.6)" }}
+                  <Link
+                    href={`/ejercicios/mundos/${world.id}`}
+                    className="w-[200px] md:w-[240px] text-center px-6 py-2.5 rounded-xl transition-all duration-200 active:scale-95 shadow-lg"
+                    style={{
+                      background: scheme.buttonGradient,
+                      boxShadow: `0 4px 16px ${scheme.particles}40`,
+                    }}
+                  >
+                    <span
+                      className="text-sm font-bold text-white"
+                      style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
                     >
-                      ¡Completá <span className="font-extrabold" style={{ color: scheme.particles }}>{previousWorld.displayName}</span> para desbloquear!
-                    </p>
-                  ) : null}
+                      Empezar
+                    </span>
+                  </Link>
                 </div>
               </div>
             );

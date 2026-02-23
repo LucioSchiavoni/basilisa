@@ -10,7 +10,7 @@ export default async function EjerciciosPage() {
 
   const adminClient = createAdminClient();
 
-  const [worldsResult, exercisesResult, completedSessionsResult, worldUnlocksResult] =
+  const [worldsResult, exercisesResult, completedSessionsResult] =
     await Promise.all([
       adminClient
         .from("worlds")
@@ -27,16 +27,11 @@ export default async function EjerciciosPage() {
         .select("exercise_id")
         .eq("patient_id", user!.id)
         .eq("is_completed", true),
-      adminClient
-        .from("world_unlocks")
-        .select("world_id")
-        .eq("user_id", user!.id),
     ]);
 
   const { data: worlds } = worldsResult;
   const { data: exercises } = exercisesResult;
   const { data: completedSessions } = completedSessionsResult;
-  const { data: worldUnlocks } = worldUnlocksResult;
 
   const exercisesByWorld: Record<string, number> = {};
   const exerciseIdToWorld: Record<string, string> = {};
@@ -56,9 +51,8 @@ export default async function EjerciciosPage() {
     }
   });
 
-  const unlockedWorldIds = new Set((worldUnlocks ?? []).map((u) => u.world_id));
-
-  const worldsData = (worlds ?? []).map((w) => ({
+  const sortedWorlds = worlds ?? [];
+  const worldsData = sortedWorlds.map((w) => ({
     id: w.id,
     name: w.name,
     displayName: w.display_name,
@@ -69,7 +63,6 @@ export default async function EjerciciosPage() {
     therapeuticDescription: w.therapeutic_description,
     totalExercises: exercisesByWorld[w.name] || 0,
     completedExercises: completedByWorld[w.name]?.size || 0,
-    isUnlocked: w.difficulty_level === 1 || unlockedWorldIds.has(w.id),
   }));
 
   return <WorldsGrid worlds={worldsData} />;

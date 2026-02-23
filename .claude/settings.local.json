@@ -19,7 +19,10 @@
       "Bash(supabase:*)",
       "Bash(node -e:*)",
       "Bash(node:*)",
-      "Bash(pnpm next build:*)"
+      "Bash(pnpm next build:*)",
+      "mcp__supabase__get_project_url",
+      "mcp__supabase__get_publishable_keys",
+      "mcp__supabase__generate_typescript_types"
     ]
   },
   "enabledMcpjsonServers": [

@@ -37,7 +37,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     name: "fuego",
     displayName: "Mundo Fuego",
     backgroundColor: "linear-gradient(to bottom, #1a0500, #3a0c00, #1f0800)",
-    characterImage: "/pj/phoenix.png",
+    characterImage: "/pj/dragon-pj.png",
     accentColor: "#f97316",
   },
   hielo: {
@@ -53,7 +53,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     name: "cielo",
     displayName: "Mundo Cielo",
     backgroundColor: "linear-gradient(to bottom, #87ceeb, #9b8ec4, #6a5acd)",
-    characterImage: "/pj/dragon-pj.png",
+    characterImage: "/pj/phoenix.png",
     accentColor: "#38bdf8",
   },
 }

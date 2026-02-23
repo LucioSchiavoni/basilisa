@@ -162,8 +162,8 @@ export default function LoginPage() {
                   href="/patient-login"
                   className="flex items-center justify-center gap-2 w-full h-11 rounded-xl border-2 border-[#b7205a]/40 dark:border-[#b7205a]/50 text-[#b7205a] dark:text-fuchsia-400 font-semibold hover:bg-[#b7205a]/8 dark:hover:bg-[#b7205a]/15 hover:border-[#b7205a] dark:hover:border-fuchsia-400 transition-all duration-200"
                 >
-                  <span className="text-base">🎮</span>
-                  Soy paciente
+                  <span className="text-base">📖</span>
+                  Soy lector
                 </Link>
               </div>
             </div>
