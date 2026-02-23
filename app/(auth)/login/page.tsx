@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ArrowLeft, Mail, Lock, Sparkles, BookOpen } from "lucide-react";
+import { FloatingParticles } from "@/components/home/floating-particles";
 import animationData from "@/public/lottie/education new color scheme.json";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
@@ -22,6 +23,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-pink-50 via-fuchsia-50 to-white dark:from-[#1a2332] dark:via-[#1e2a3a] dark:to-[#162030]">
+      <FloatingParticles />
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-[#b7205a]/10 dark:bg-[#b7205a]/5 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-[#b7205a]/8 dark:bg-[#b7205a]/5 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
