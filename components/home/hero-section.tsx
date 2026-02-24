@@ -7,8 +7,7 @@ import { LisaLogo } from "@/components/svg/lisa-logo"
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null)
-  const line1Ref = useRef<HTMLHeadingElement>(null)
-  const line2Ref = useRef<HTMLSpanElement>(null)
+  const titleRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -27,13 +26,13 @@ export function HeroSection() {
       const rays = gsap.utils.toArray<Element>("[data-ray]", sectionRef.current)
 
       if (prefersReduced) {
-        gsap.set([line1Ref.current, line2Ref.current], { opacity: 1 })
+        gsap.set(titleRef.current, { opacity: 1 })
         gsap.set(letters, { opacity: 1, y: 0 })
         gsap.set(rays, { opacity: 1, y: 0 })
         return
       }
 
-      gsap.set([line1Ref.current, line2Ref.current], { opacity: 0 })
+      gsap.set(titleRef.current, { opacity: 0 })
       gsap.set(stains, { opacity: 0, scale: 0.35 })
       gsap.set(letters, { opacity: 0, y: 42 })
       gsap.set(rays, { opacity: 0, y: 10 })
@@ -58,8 +57,7 @@ export function HeroSection() {
           ease: "power1.out",
           stagger: 0.22,
         }, 0.18)
-        .fromTo(line1Ref.current, smokeFrom, smokeTo, 0.55)
-        .fromTo(line2Ref.current, smokeFrom, { ...smokeTo }, "-=0.65")
+        .fromTo(titleRef.current, smokeFrom, smokeTo, 0.55)
         .to(letters, {
           opacity: 1,
           y: 0,
@@ -115,20 +113,16 @@ export function HeroSection() {
       <div className="relative z-10 flex flex-col items-center gap-10 px-4 text-center">
         <LisaLogo className="w-64 h-auto sm:w-80 md:w-[26rem] lg:w-[30rem] select-none" />
 
-        <div className="flex flex-col items-center gap-y-1 md:flex-row md:flex-wrap md:justify-center md:items-baseline md:gap-y-0 md:gap-x-[0.3em]">
-          <h1
-            ref={line1Ref}
-            style={{ display: "inline-block", opacity: 0 }}
-            className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap"
-          >
-            Lectura <span style={{ color: "#C73341" }}>accesible</span>,
+        <div
+          ref={titleRef}
+          style={{ opacity: 0 }}
+          className="flex flex-col items-center gap-y-1 md:flex-row md:flex-wrap md:justify-center md:items-baseline md:gap-y-0 md:gap-x-[0.3em]"
+        >
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
+            Lectura <span style={{ color: "#C73341" }}>accesible</span>
           </h1>
-          <span
-            ref={line2Ref}
-            style={{ display: "inline-block", opacity: 0 }}
-            className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap"
-          >
-            Basada en <span style={{ color: "#2E85C8" }}>evidencia</span>.
+          <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
+            basada en <span style={{ color: "#2E85C8" }}>evidencia</span>.
           </span>
         </div>
       </div>

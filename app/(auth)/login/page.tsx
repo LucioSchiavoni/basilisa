@@ -2,18 +2,14 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { login, type AuthState } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { ArrowLeft, Mail, Lock, Sparkles, BookOpen, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { FloatingParticles } from "@/components/home/floating-particles";
-import animationData from "@/public/lottie/education new color scheme.json";
-
-const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
+import { LisaIllustrationAnimated } from "@/components/svg/lisa-illustration-animated";
 
 const initialState: AuthState = {};
 
@@ -47,38 +43,19 @@ export default function LoginPage() {
         </Button>
       </div>
 
-      <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center gap-6 lg:gap-12 relative z-10">
-        <div className="hidden lg:flex flex-1 flex-col items-center justify-center">
-          <div className="relative">
-            <div className="absolute -inset-8 bg-gradient-to-br from-[#C73341]/10 to-[#579F93]/10 rounded-[3rem] blur-2xl" />
-            <Lottie
-              animationData={animationData}
-              loop
-              autoplay
-              className="w-full max-w-md relative z-10"
-            />
-          </div>
-          <div className="flex items-center gap-2 mt-4">
-            <BookOpen className="h-5 w-5 text-[#C73341]" />
-            <p className="text-lg font-semibold text-black">
-              Aprende jugando
-            </p>
-            <Sparkles className="h-5 w-5 text-[#D3A021]" />
-          </div>
-        </div>
+      <div className="w-full max-w-5xl flex flex-col items-center gap-6 relative z-10">
 
-        <div className="w-full lg:flex-1 flex justify-center">
+        <div className="w-full flex justify-center">
           <div className="w-full max-w-md">
-            {/* Lottie animation removed from mobile view */}
+            <div className="hidden lg:flex justify-center mb-6">
+              <LisaIllustrationAnimated className="w-72 h-auto" />
+            </div>
 
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-[#579F93]/20 shadow-xl shadow-[#579F93]/5 p-6 sm:p-8 space-y-6 transition-all">
               <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold text-black">
+                <h1 className="text-2xl  text-black">
                   Bienvenido de vuelta
                 </h1>
-                <p className="text-sm text-black/80">
-                  Ingresa para continuar tu aventura
-                </p>
               </div>
 
               {state.error && (
@@ -103,7 +80,7 @@ export default function LoginPage() {
 
               <form action={formAction} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-semibold text-black">
+                  <Label htmlFor="email" className="text-sm text-black">
                     Email
                   </Label>
                   <div className={`relative group transition-all duration-300 ${focusedField === "email" ? "scale-[1.02]" : ""}`}>
@@ -122,7 +99,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-semibold text-black">
+                  <Label htmlFor="password" className="text-sm text-black">
                     Contraseña
                   </Label>
                   <div className={`relative group transition-all duration-300 ${focusedField === "password" ? "scale-[1.02]" : ""}`}>

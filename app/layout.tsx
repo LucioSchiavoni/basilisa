@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "LISA 2.0",
     description: "Lectura accesible basada en evidencia. Plataforma para evaluación y mejora de la comprensión lectora.",
-    url: "https://test-basilisa.vercel.app", // Adjust this if you have a real domain
+    url: "https://test-basilisa.vercel.app",
     siteName: "LISA 2.0",
     images: [
       {
