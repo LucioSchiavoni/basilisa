@@ -12,19 +12,24 @@ const lexend = Lexend({
 export const metadata: Metadata = {
   metadataBase: new URL("https://test-basilisa.vercel.app"),
   title: "LISA 2.0 (Beta)",
-  description: "LISA 2.0 - Lectura accesible basada en evidencia. Plataforma líder en evaluación y mejora de la comprensión lectora.",
+  icons: {
+    icon: "/logos/Logotipo Lisa color simple.png",
+    apple: "/logos/Logotipo Lisa color simple.png",
+  },
+  description: "LISA 2.0 - Lectura accesible basada en evidencia. Plataforma para evaluación y mejora de la comprensión lectora.",
   keywords: ["LISA", "Lectura", "Accesibilidad", "Evidencia", "Educación", "Comprensión Lectora"],
   authors: [{ name: "LISA Team" }],
   openGraph: {
     title: "LISA 2.0",
-    description: "Lectura accesible basada en evidencia. Plataforma líder en evaluación y mejora de la comprensión lectora.",
+    description: "Lectura accesible basada en evidencia. Plataforma para evaluación y mejora de la comprensión lectora.",
     url: "https://test-basilisa.vercel.app", // Adjust this if you have a real domain
     siteName: "LISA 2.0",
     images: [
       {
-        url: "/og-image.png", // Assuming we might have one or will create one
+        url: "/logos/Logotipo Lisa color simple.png",
         width: 1200,
         height: 630,
+        alt: "LISA 2.0 Logo",
       },
     ],
     locale: "es_ES",
@@ -34,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "LISA 2.0",
     description: "Lectura accesible basada en evidencia.",
-    images: ["/og-image.png"],
+    images: ["/logos/Logotipo Lisa color simple.png"],
   },
   robots: {
     index: true,
