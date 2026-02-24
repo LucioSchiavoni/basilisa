@@ -1,19 +1,13 @@
 import { HeroButtons } from "@/components/home/hero-buttons"
+import { HeroSection } from "@/components/home/hero-section"
 
 export default function Page() {
   return (
-    <main className="theme-fixed-light relative flex min-h-svh flex-col overflow-hidden bg-background">
-      <header className="relative z-20 flex items-center justify-end px-16 py-4">
+    <main className="theme-fixed-light relative min-h-screen">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center sm:justify-end px-6 sm:px-16 py-4">
         <HeroButtons />
       </header>
-
-      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6">
-        <div className="animate-slide-up text-center px-2" style={{ animationDelay: "0.2s" }}>
-          <p className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug text-foreground" style={{ fontFamily: '-apple-system, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' }}>
-            La plataforma donde el aprendizaje se vuelve una aventura
-          </p>
-        </div>
-      </div>
+      <HeroSection />
     </main>
   )
 }

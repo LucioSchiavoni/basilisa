@@ -6,6 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import { getScheme, DEFAULT_SCHEME } from "./world-color-schemes";
 import { WorldCanvas } from "./world-canvas";
 import { useWorldTheme } from "@/components/world-theme-context";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 type WorldData = {
   id: string;
@@ -26,6 +30,9 @@ const NODE_X_RIGHT = CONTAINER_W - 76;
 const PATH_TOP = 130;
 const NODE_SPACING_Y = 220;
 const PATH_BOTTOM = 130;
+
+const SCALE_ACTIVE = 1.38;
+const SCALE_NORMAL = 1.0;
 
 function getNodePos(index: number) {
   return {
@@ -55,6 +62,8 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
   const [bgIndex, setBgIndex] = useState(0);
   const bgRef = useRef<HTMLDivElement>(null);
   const { setTheme } = useWorldTheme();
+  const scaleRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (worlds.length === 0) return;
@@ -93,6 +102,43 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     };
   }, [bgIndex, worlds]);
 
+  useEffect(() => {
+    if (worlds.length === 0 || !containerRef.current) return;
+
+    const els = scaleRefs.current.slice(0, worlds.length);
+
+    gsap.set(els[0], { scale: SCALE_ACTIVE });
+    if (els.length > 1) gsap.set(els.slice(1), { scale: SCALE_NORMAL });
+
+    if (worlds.length === 1) return;
+
+    const endOffset = PATH_TOP + (worlds.length - 1) * NODE_SPACING_Y;
+
+    const st = ScrollTrigger.create({
+      trigger: containerRef.current,
+      start: `top+=${PATH_TOP} center`,
+      end: `top+=${endOffset} center`,
+      scrub: 0.6,
+      onUpdate(self) {
+        const activeFloat = self.progress * (worlds.length - 1);
+        els.forEach((el, i) => {
+          if (!el) return;
+          const dist = Math.abs(i - activeFloat);
+          const scale =
+            dist < 1
+              ? SCALE_NORMAL + (SCALE_ACTIVE - SCALE_NORMAL) * (1 - dist)
+              : SCALE_NORMAL;
+          gsap.set(el, { scale });
+        });
+      },
+    });
+
+    return () => {
+      st.kill();
+      gsap.killTweensOf(els.filter(Boolean));
+    };
+  }, [worlds.length]);
+
   if (worlds.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-8">
@@ -101,7 +147,8 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     );
   }
 
-  const containerHeight = PATH_TOP + (worlds.length - 1) * NODE_SPACING_Y + PATH_BOTTOM;
+  const containerHeight =
+    PATH_TOP + (worlds.length - 1) * NODE_SPACING_Y + PATH_BOTTOM;
   const pathD = buildSvgPath(worlds.length);
   const currentWorldName = worlds[bgIndex]?.name ?? "";
   const currentScheme = getScheme(currentWorldName);
@@ -111,13 +158,20 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
       <div
         ref={bgRef}
         className="fixed inset-0 -z-10 pointer-events-none"
-        style={{ background: DEFAULT_SCHEME.background, transition: "opacity 0.35s ease-in" }}
+        style={{
+          background: DEFAULT_SCHEME.background,
+          transition: "opacity 0.35s ease-in",
+        }}
       />
 
       <WorldCanvas worldName={currentWorldName} isActive={true} />
 
       <div className="flex justify-center">
-        <div className="relative" style={{ width: CONTAINER_W, height: containerHeight }}>
+        <div
+          ref={containerRef}
+          className="relative"
+          style={{ width: CONTAINER_W, height: containerHeight, overflow: "visible" }}
+        >
           <svg
             className="absolute inset-0 pointer-events-none"
             width={CONTAINER_W}
@@ -147,66 +201,73 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
             return (
               <div
                 key={world.id}
-                className="absolute flex flex-col items-center gap-2"
+                className="absolute"
                 style={{
                   left: pos.x,
                   top: pos.y,
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                <div className="relative">
-                  <div
-                    className="absolute -inset-4 rounded-full -z-10 blur-xl"
-                    style={{ background: `${scheme.particles}40` }}
-                  />
-                  <Link
-                    href={`/ejercicios/mundos/${world.id}`}
-                    className="relative block w-[88px] h-[88px] transition-transform duration-200 active:scale-95 hover:scale-105"
-                  >
-                    {world.iconUrl && (
-                      <Image
-                        src={world.iconUrl}
-                        alt={world.displayName}
-                        fill
-                        className="object-contain drop-shadow-2xl"
-                        sizes="88px"
-                      />
-                    )}
-                  </Link>
-                </div>
-
-                <h2
-                  className="text-xs font-extrabold text-white text-center leading-tight"
-                  style={{
-                    maxWidth: 100,
-                    textShadow: "0 1px 6px rgba(0,0,0,0.9)",
+                <div
+                  ref={(el) => {
+                    scaleRefs.current[index] = el;
                   }}
+                  className="flex flex-col items-center gap-2"
                 >
-                  {world.displayName}
-                </h2>
+                  <div className="relative">
+                    <div
+                      className="absolute -inset-4 rounded-full -z-10 blur-xl"
+                      style={{ background: `${scheme.particles}40` }}
+                    />
+                    <Link
+                      href={`/ejercicios/mundos/${world.id}`}
+                      className="relative block w-[88px] h-[88px] transition-transform duration-200 active:scale-95 hover:scale-105"
+                    >
+                      {world.iconUrl && (
+                        <Image
+                          src={world.iconUrl}
+                          alt={world.displayName}
+                          fill
+                          className="object-contain drop-shadow-2xl"
+                          sizes="88px"
+                        />
+                      )}
+                    </Link>
+                  </div>
 
-                {world.difficultyLabel && (
-                  <span
-                    className="text-[10px] font-bold uppercase tracking-wider"
+                  <h2
+                    className="text-xs font-extrabold text-white text-center leading-tight"
                     style={{
-                      color: scheme.particles,
-                      textShadow: "0 0 8px rgba(0,0,0,1)",
+                      maxWidth: 100,
+                      textShadow: "0 1px 6px rgba(0,0,0,0.9)",
                     }}
                   >
-                    {world.difficultyLabel}
-                  </span>
-                )}
+                    {world.displayName}
+                  </h2>
 
-                <Link
-                  href={`/ejercicios/mundos/${world.id}`}
-                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all duration-200 active:scale-95 shadow-lg"
-                  style={{
-                    background: scheme.buttonGradient,
-                    boxShadow: `0 2px 10px ${scheme.particles}50`,
-                  }}
-                >
-                  Empezar
-                </Link>
+                  {world.difficultyLabel && (
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{
+                        color: scheme.particles,
+                        textShadow: "0 0 8px rgba(0,0,0,1)",
+                      }}
+                    >
+                      {world.difficultyLabel}
+                    </span>
+                  )}
+
+                  <Link
+                    href={`/ejercicios/mundos/${world.id}`}
+                    className="px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all duration-200 active:scale-95 shadow-lg"
+                    style={{
+                      background: scheme.buttonGradient,
+                      boxShadow: `0 2px 10px ${scheme.particles}50`,
+                    }}
+                  >
+                    Empezar
+                  </Link>
+                </div>
               </div>
             );
           })}

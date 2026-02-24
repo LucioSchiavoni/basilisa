@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ArrowLeft, Mail, Lock, Sparkles, BookOpen } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Sparkles, BookOpen, Eye, EyeOff } from "lucide-react";
 import { FloatingParticles } from "@/components/home/floating-particles";
 import animationData from "@/public/lottie/education new color scheme.json";
 
@@ -20,32 +20,37 @@ const initialState: AuthState = {};
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-pink-50 via-fuchsia-50 to-white dark:from-[#1a2332] dark:via-[#1e2a3a] dark:to-[#162030]">
+    <div
+      className="theme-fixed-light min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)"
+      }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
+        }}
+      />
       <FloatingParticles />
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-72 h-72 bg-[#b7205a]/10 dark:bg-[#b7205a]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-[#b7205a]/8 dark:bg-[#b7205a]/5 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
-        <div className="absolute top-1/3 left-1/4 w-48 h-48 bg-fuchsia-200/20 dark:bg-fuchsia-500/5 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
-      </div>
-
       <div className="absolute top-4 left-4 z-50">
-        <Button variant="ghost" size="icon" asChild className="rounded-full bg-white/60 dark:bg-white/10 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-white/20 hover:scale-110 transition-all">
+        <Button variant="ghost" size="icon" asChild className="rounded-full bg-white/60 backdrop-blur-sm hover:bg-white/80 hover:scale-110 transition-all">
           <Link href="/">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
       </div>
-      <div className="absolute top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
 
       <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center gap-6 lg:gap-12 relative z-10">
         <div className="hidden lg:flex flex-1 flex-col items-center justify-center">
           <div className="relative">
-            <div className="absolute -inset-8 bg-gradient-to-br from-[#b7205a]/15 to-fuchsia-300/20 dark:from-[#b7205a]/10 dark:to-fuchsia-500/5 rounded-[3rem] blur-2xl" />
+            <div className="absolute -inset-8 bg-gradient-to-br from-[#C73341]/10 to-[#579F93]/10 rounded-[3rem] blur-2xl" />
             <Lottie
               animationData={animationData}
               loop
@@ -54,37 +59,30 @@ export default function LoginPage() {
             />
           </div>
           <div className="flex items-center gap-2 mt-4">
-            <BookOpen className="h-5 w-5 text-[#b7205a]" />
-            <p className="text-lg font-semibold text-[#263238] dark:text-fuchsia-300">
+            <BookOpen className="h-5 w-5 text-[#C73341]" />
+            <p className="text-lg font-semibold text-black">
               Aprende jugando
             </p>
-            <Sparkles className="h-5 w-5 text-[#b7205a]" />
+            <Sparkles className="h-5 w-5 text-[#D3A021]" />
           </div>
         </div>
 
         <div className="w-full lg:flex-1 flex justify-center">
           <div className="w-full max-w-md">
-            <div className="lg:hidden flex justify-center mb-6">
-              <Lottie
-                animationData={animationData}
-                loop
-                autoplay
-                className="w-48 h-48"
-              />
-            </div>
+            {/* Lottie animation removed from mobile view */}
 
-            <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border-2 border-[#b7205a]/20 dark:border-[#b7205a]/30 shadow-xl shadow-[#b7205a]/10 dark:shadow-none p-6 sm:p-8 space-y-6 transition-all">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-[#579F93]/20 shadow-xl shadow-[#579F93]/5 p-6 sm:p-8 space-y-6 transition-all">
               <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold text-[#263238] dark:text-white">
+                <h1 className="text-2xl font-bold text-black">
                   Bienvenido de vuelta
                 </h1>
-                <p className="text-sm text-[#455a64] dark:text-gray-400">
+                <p className="text-sm text-neutral-800">
                   Ingresa para continuar tu aventura
                 </p>
               </div>
 
               {state.error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-500/10 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-500/20 flex items-center gap-2">
+                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-200 flex items-center gap-2">
                   <span className="text-lg">oops!</span>
                   {state.error}
                 </div>
@@ -94,10 +92,10 @@ export default function LoginPage() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-[#b7205a]/20 dark:border-[#b7205a]/30" />
+                  <span className="w-full border-t border-[#579F93]/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white/70 dark:bg-transparent px-3 text-[#b7205a]/70 dark:text-fuchsia-400/70 font-medium">
+                  <span className="bg-[#faf3ea] px-3 text-neutral-600 font-medium">
                     o con tu email
                   </span>
                 </div>
@@ -105,18 +103,18 @@ export default function LoginPage() {
 
               <form action={formAction} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-semibold text-[#263238] dark:text-gray-200">
+                  <Label htmlFor="email" className="text-sm font-semibold text-black">
                     Email
                   </Label>
                   <div className={`relative group transition-all duration-300 ${focusedField === "email" ? "scale-[1.02]" : ""}`}>
-                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "email" ? "text-[#b7205a]" : "text-[#455a64] dark:text-gray-500"}`} />
+                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "email" ? "text-[#579F93]" : "text-neutral-500"}`} />
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       placeholder="tu@email.com"
                       required
-                      className="pl-10 h-12 rounded-xl border-2 border-[#b7205a]/20 dark:border-[#b7205a]/30 bg-white/50 dark:bg-white/5 focus:border-[#b7205a] dark:focus:border-[#b7205a] focus:ring-[#b7205a]/20 transition-all duration-300"
+                      className="pl-10 h-12 rounded-xl border-2 border-[#579F93]/20 bg-white/50 focus:border-[#579F93] focus:ring-[#579F93]/20 focus-visible:border-[#579F93] focus-visible:ring-[#579F93]/20 transition-all duration-300 text-black placeholder:text-neutral-400"
                       onFocus={() => setFocusedField("email")}
                       onBlur={() => setFocusedField(null)}
                     />
@@ -124,27 +122,34 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-semibold text-[#263238] dark:text-gray-200">
+                  <Label htmlFor="password" className="text-sm font-semibold text-black">
                     Contraseña
                   </Label>
                   <div className={`relative group transition-all duration-300 ${focusedField === "password" ? "scale-[1.02]" : ""}`}>
-                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "password" ? "text-[#b7205a]" : "text-[#455a64] dark:text-gray-500"}`} />
+                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "password" ? "text-[#579F93]" : "text-neutral-500"}`} />
                     <Input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
-                      className="pl-10 h-12 rounded-xl border-2 border-[#b7205a]/20 dark:border-[#b7205a]/30 bg-white/50 dark:bg-white/5 focus:border-[#b7205a] dark:focus:border-[#b7205a] focus:ring-[#b7205a]/20 transition-all duration-300"
+                      className="pl-10 pr-10 h-12 rounded-xl border-2 border-[#579F93]/20 bg-white/50 focus:border-[#579F93] focus:ring-[#579F93]/20 focus-visible:border-[#579F93] focus-visible:ring-[#579F93]/20 transition-all duration-300 text-black"
                       onFocus={() => setFocusedField("password")}
                       onBlur={() => setFocusedField(null)}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-[#579F93] transition-colors focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
 
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full h-12 rounded-xl text-base font-bold bg-[#b7205a] hover:bg-[#9a1a4c] text-white shadow-lg shadow-[#b7205a]/25 dark:shadow-[#b7205a]/15 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 border-0"
+                  className="w-full h-12 rounded-xl text-base font-bold bg-[#C73341] hover:bg-[#b02d3a] text-white shadow-lg shadow-[#C73341]/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 border-0"
                 >
                   {pending ? (
                     <span className="flex items-center gap-2">
@@ -158,12 +163,12 @@ export default function LoginPage() {
               </form>
 
               <div className="text-sm text-center space-y-3 pt-2">
-                <Link href="/forgot-password" className="text-[#b7205a] dark:text-fuchsia-400 hover:text-[#9a1a4c] dark:hover:text-fuchsia-300 hover:underline block transition-colors">
+                <Link href="/forgot-password" className="text-[#C73341] hover:text-[#b02d3a] hover:underline block transition-colors font-medium">
                   ¿Olvidaste tu contraseña?
                 </Link>
                 <Link
                   href="/patient-login"
-                  className="flex items-center justify-center gap-2 w-full h-11 rounded-xl border-2 border-[#b7205a]/40 dark:border-[#b7205a]/50 text-[#b7205a] dark:text-fuchsia-400 font-semibold hover:bg-[#b7205a]/8 dark:hover:bg-[#b7205a]/15 hover:border-[#b7205a] dark:hover:border-fuchsia-400 transition-all duration-200"
+                  className="flex items-center justify-center gap-2 w-full h-11 rounded-xl border-2 border-[#2E85C8]/40 text-[#2E85C8] font-semibold hover:bg-[#2E85C8]/5 hover:border-[#2E85C8] transition-all duration-200"
                 >
                   <span className="text-base">📖</span>
                   Soy lector
