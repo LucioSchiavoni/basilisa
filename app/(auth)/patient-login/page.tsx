@@ -45,7 +45,7 @@ export default function PatientLoginPage() {
         <div className="text-center space-y-2">
           <div className="text-5xl select-none">👋</div>
           <h1 className="text-2xl font-bold text-black">¡Hola!</h1>
-          <p className="text-neutral-700 font-medium">Ingresa con tu usuario y contraseña</p>
+          <p className="text-black/80 font-medium">Ingresa con tu usuario y contraseña</p>
         </div>
 
         {state.error && (
@@ -60,7 +60,7 @@ export default function PatientLoginPage() {
               Usuario
             </Label>
             <div className={`relative group transition-all duration-300 ${focusedField === "username" ? "scale-[1.02]" : ""}`}>
-              <User className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "username" ? "text-[#579F93]" : "text-neutral-500"}`} />
+              <User className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "username" ? "text-[#579F93]" : "text-black/50"}`} />
               <Input
                 id="username"
                 name="username"
@@ -80,7 +80,7 @@ export default function PatientLoginPage() {
               Contraseña
             </Label>
             <div className={`relative group transition-all duration-300 ${focusedField === "password" ? "scale-[1.02]" : ""}`}>
-              <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "password" ? "text-[#579F93]" : "text-neutral-500"}`} />
+              <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "password" ? "text-[#579F93]" : "text-black/50"}`} />
               <Input
                 id="password"
                 name="password"

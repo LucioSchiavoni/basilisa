@@ -23,7 +23,7 @@ export function GoogleOAuthButton() {
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      className="w-full h-12 rounded-xl border-2 border-[#579F93]/20 bg-white/50 hover:bg-white/80 transition-all duration-300 text-black font-semibold shadow-sm"
       onClick={handleGoogleLogin}
       disabled={loading}
     >

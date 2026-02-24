@@ -42,7 +42,7 @@ export default function LoginPage() {
       <div className="absolute top-4 left-4 z-50">
         <Button variant="ghost" size="icon" asChild className="rounded-full bg-white/60 backdrop-blur-sm hover:bg-white/80 hover:scale-110 transition-all">
           <Link href="/">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-black" />
           </Link>
         </Button>
       </div>
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 <h1 className="text-2xl font-bold text-black">
                   Bienvenido de vuelta
                 </h1>
-                <p className="text-sm text-neutral-800">
+                <p className="text-sm text-black/80">
                   Ingresa para continuar tu aventura
                 </p>
               </div>
@@ -95,7 +95,7 @@ export default function LoginPage() {
                   <span className="w-full border-t border-[#579F93]/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-[#faf3ea] px-3 text-neutral-600 font-medium">
+                  <span className="bg-[#faf3ea] px-3 text-black/60 font-medium">
                     o con tu email
                   </span>
                 </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                     Email
                   </Label>
                   <div className={`relative group transition-all duration-300 ${focusedField === "email" ? "scale-[1.02]" : ""}`}>
-                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "email" ? "text-[#579F93]" : "text-neutral-500"}`} />
+                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "email" ? "text-[#579F93]" : "text-black/50"}`} />
                     <Input
                       id="email"
                       name="email"
@@ -126,7 +126,7 @@ export default function LoginPage() {
                     Contraseña
                   </Label>
                   <div className={`relative group transition-all duration-300 ${focusedField === "password" ? "scale-[1.02]" : ""}`}>
-                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "password" ? "text-[#579F93]" : "text-neutral-500"}`} />
+                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "password" ? "text-[#579F93]" : "text-black/50"}`} />
                     <Input
                       id="password"
                       name="password"
