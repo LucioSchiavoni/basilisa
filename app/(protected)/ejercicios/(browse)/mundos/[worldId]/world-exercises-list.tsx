@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle2, PlayCircle, Lock } from "lucide-react";
+import { CheckCircle2, PlayCircle } from "lucide-react";
 import { getScheme } from "../world-color-schemes";
 import { WorldCanvas } from "../world-canvas";
 import { getWorldConfig } from "@/lib/worlds";
@@ -17,44 +17,17 @@ type ExerciseItem = {
   isBonus: boolean;
 };
 
-type ExerciseState = "completed" | "unlocked" | "locked";
-
-function getExerciseState(
-  position: number,
-  isBonus: boolean,
-  lastCompletedPosition: number,
-  exercises: ExerciseItem[]
-): ExerciseState {
-  if (position <= lastCompletedPosition) return "completed";
-  if (position === 1 && lastCompletedPosition === 0) return "unlocked";
-
-  if (isBonus) {
-    const prevNonBonus = exercises
-      .filter((e) => !e.isBonus && e.position < position)
-      .sort((a, b) => b.position - a.position)[0];
-    if (!prevNonBonus || prevNonBonus.position <= lastCompletedPosition) return "unlocked";
-    return "locked";
-  }
-
-  const prevNonBonusPositions = exercises
-    .filter((e) => !e.isBonus && e.position < position)
-    .map((e) => e.position);
-
-  if (prevNonBonusPositions.length === 0) return "unlocked";
-  const maxPrev = Math.max(...prevNonBonusPositions);
-  return maxPrev <= lastCompletedPosition ? "unlocked" : "locked";
-}
-
 export function WorldExercisesList({
   exercises,
-  lastCompletedPosition,
+  completedExerciseIds,
   worldName,
 }: {
   exercises: ExerciseItem[];
-  lastCompletedPosition: number;
+  completedExerciseIds: string[];
   worldName: string;
 }) {
   const scheme = getScheme(worldName);
+  const completedSet = new Set(completedExerciseIds);
 
   if (exercises.length === 0) {
     const worldConfig = getWorldConfig(worldName);
@@ -106,9 +79,7 @@ export function WorldExercisesList({
 
   const nonBonusExercises = exercises.filter((e) => !e.isBonus);
   const totalExercises = nonBonusExercises.length;
-  const completedExercises = nonBonusExercises.filter(
-    (e) => e.position <= lastCompletedPosition
-  ).length;
+  const completedExercises = nonBonusExercises.filter((e) => completedSet.has(e.id)).length;
   const progressPct = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
 
   return (
@@ -173,46 +144,27 @@ export function WorldExercisesList({
 
       <div className="pb-10">
         {exercises.map((exercise, index) => {
-          const state = getExerciseState(
-            exercise.position,
-            exercise.isBonus,
-            lastCompletedPosition,
-            exercises
-          );
+          const isCompleted = completedSet.has(exercise.id);
           const isLeft = index % 2 === 0;
-          const isClickable = state !== "locked";
 
           const card = (
             <div
-              className={`w-[92%] ${isLeft ? "mr-auto" : "ml-auto"} rounded-2xl border overflow-hidden transition-all duration-200 ${isClickable ? "active:scale-[0.97] hover:scale-[1.04] cursor-pointer" : "cursor-default"}`}
+              className={`w-[92%] ${isLeft ? "mr-auto" : "ml-auto"} rounded-2xl border overflow-hidden transition-all duration-200 active:scale-[0.97] hover:scale-[1.04] cursor-pointer`}
               style={{
-                background:
-                  state === "completed"
-                    ? "rgba(240,253,244,1)"
-                    : state === "unlocked"
-                    ? "rgba(255,250,235,1)"
-                    : "rgba(245,240,228,0.75)",
-                borderColor:
-                  state === "completed"
-                    ? "rgba(16,185,129,0.5)"
-                    : state === "unlocked"
-                    ? `${scheme.particles}88`
-                    : "rgba(0,0,0,0.10)",
-                boxShadow:
-                  state === "unlocked"
-                    ? `0 4px 20px ${scheme.particles}33, 0 2px 6px rgba(0,0,0,0.12)`
-                    : state === "completed"
-                    ? "0 2px 8px rgba(16,185,129,0.18)"
-                    : "0 1px 3px rgba(0,0,0,0.08)",
+                background: isCompleted ? "rgba(240,253,244,1)" : "rgba(255,250,235,1)",
+                borderColor: isCompleted ? "rgba(16,185,129,0.5)" : `${scheme.particles}88`,
+                boxShadow: isCompleted
+                  ? "0 2px 8px rgba(16,185,129,0.18)"
+                  : `0 4px 20px ${scheme.particles}33, 0 2px 6px rgba(0,0,0,0.12)`,
               }}
             >
               <div className="flex items-center gap-3 px-3 py-3">
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
                   style={{
-                    background: state === "locked" ? "rgba(0,0,0,0.06)" : `${scheme.particles}18`,
-                    border: `2px solid ${state === "locked" ? "rgba(0,0,0,0.08)" : `${scheme.particles}45`}`,
-                    color: state === "locked" ? "rgba(0,0,0,0.25)" : scheme.particles,
+                    background: `${scheme.particles}18`,
+                    border: `2px solid ${scheme.particles}45`,
+                    color: scheme.particles,
                   }}
                 >
                   {exercise.position}
@@ -220,12 +172,7 @@ export function WorldExercisesList({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p
-                      className="font-bold text-sm leading-tight"
-                      style={{
-                        color: state === "locked" ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,1)",
-                      }}
-                    >
+                    <p className="font-bold text-sm leading-tight" style={{ color: "rgba(0,0,0,1)" }}>
                       {exercise.title}
                     </p>
                     {exercise.isBonus && (
@@ -261,9 +208,7 @@ export function WorldExercisesList({
                           style={{
                             background:
                               i < exercise.difficultyLevel
-                                ? state === "locked"
-                                  ? "rgba(0,0,0,0.1)"
-                                  : `${scheme.particles}cc`
+                                ? `${scheme.particles}cc`
                                 : "rgba(0,0,0,0.08)",
                           }}
                         />
@@ -273,27 +218,18 @@ export function WorldExercisesList({
                 </div>
 
                 <div className="shrink-0 flex flex-col items-center gap-1">
-                  {state === "completed" && (
+                  {isCompleted ? (
                     <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  )}
-                  {state === "unlocked" && (
+                  ) : (
                     <PlayCircle className="h-5 w-5" style={{ color: scheme.particles }} />
-                  )}
-                  {state === "locked" && (
-                    <Lock className="h-4 w-4 text-black/20" />
                   )}
                   <span
                     className="text-[9px] font-bold tracking-wider uppercase"
                     style={{
-                      color:
-                        state === "completed"
-                          ? "rgba(16,185,129,0.9)"
-                          : state === "unlocked"
-                          ? `${scheme.particles}dd`
-                          : "rgba(0,0,0,0.2)",
+                      color: isCompleted ? "rgba(16,185,129,0.9)" : `${scheme.particles}dd`,
                     }}
                   >
-                    {state === "completed" ? "Listo" : state === "unlocked" ? "Jugar" : "Bloq."}
+                    {isCompleted ? "Listo" : "Jugar"}
                   </span>
                 </div>
               </div>
@@ -310,11 +246,7 @@ export function WorldExercisesList({
                   />
                 </div>
               )}
-              {isClickable ? (
-                <Link href={`/ejercicios/${exercise.id}`}>{card}</Link>
-              ) : (
-                card
-              )}
+              <Link href={`/ejercicios/${exercise.id}`}>{card}</Link>
             </div>
           );
         })}

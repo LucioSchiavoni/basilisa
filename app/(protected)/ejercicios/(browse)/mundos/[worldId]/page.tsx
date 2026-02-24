@@ -55,16 +55,7 @@ export default async function WorldDetailPage({
     };
   });
 
-  const completedIds = new Set((completedSessionsData ?? []).map((s) => s.exercise_id));
-
-  let lastCompletedPosition = 0;
-  for (const ex of exercises) {
-    if (completedIds.has(ex.id)) {
-      lastCompletedPosition = ex.position;
-    } else {
-      break;
-    }
-  }
+  const completedIds = (completedSessionsData ?? []).map((s) => s.exercise_id);
 
   return (
     <>
@@ -78,7 +69,7 @@ export default async function WorldDetailPage({
 
       <WorldExercisesList
         exercises={exercises}
-        lastCompletedPosition={lastCompletedPosition}
+        completedExerciseIds={completedIds}
         worldName={world.name}
       />
     </>

@@ -3,77 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { awardExerciseGems } from "@/lib/gems";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-async function updateWorldProgress(
-  admin: SupabaseClient,
-  exerciseId: string,
-  patientId: string
-): Promise<void> {
-  const { data: exercise } = await admin
-    .from("exercises")
-    .select("world_id")
-    .eq("id", exerciseId)
-    .maybeSingle();
-
-  if (!exercise?.world_id) return;
-
-  const worldName = exercise.world_id;
-
-  const { data: world } = await admin
-    .from("worlds")
-    .select("id")
-    .eq("name", worldName)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (!world) return;
-
-  const { data: allInWorld } = await admin
-    .from("exercises")
-    .select("id")
-    .eq("world_id", worldName)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("created_at");
-
-  if (!allInWorld?.length) return;
-
-  const idx = allInWorld.findIndex((e) => e.id === exerciseId);
-  if (idx < 0) return;
-
-  const position = idx + 1;
-
-  const { data: existing } = await admin
-    .from("player_world_progress")
-    .select("id, last_completed_position, total_exercises_completed")
-    .eq("player_id", patientId)
-    .eq("world_id", world.id)
-    .maybeSingle();
-
-  if (!existing) {
-    await admin.from("player_world_progress").insert({
-      player_id: patientId,
-      world_id: world.id,
-      last_completed_position: position,
-      total_exercises_completed: 1,
-    });
-  } else {
-    const newPos =
-      position === existing.last_completed_position + 1
-        ? position
-        : existing.last_completed_position;
-
-    await admin
-      .from("player_world_progress")
-      .update({
-        last_completed_position: newPos,
-        total_exercises_completed: existing.total_exercises_completed + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-  }
-}
 
 type CheckAnswerResult = {
   isCorrect: boolean;
@@ -265,7 +194,6 @@ export async function completeExercise(input: {
       .eq("id", assignmentId);
   }
 
-  await updateWorldProgress(admin, input.exerciseId, patientId);
   const gemResult = await awardExerciseGems(session.id, patientId);
 
   return { gemsAwarded: gemResult.totalAwarded };
@@ -387,7 +315,6 @@ export async function completeTimedReading(input: {
       .eq("id", assignmentId);
   }
 
-  await updateWorldProgress(admin, input.exerciseId, patientId);
   const gemResult = await awardExerciseGems(session.id, patientId);
 
   return { gemsAwarded: gemResult.totalAwarded };
@@ -551,7 +478,6 @@ export async function completeLetterGap(input: {
       .eq("id", assignmentId);
   }
 
-  await updateWorldProgress(admin, input.exerciseId, patientId);
   const gemResult = await awardExerciseGems(session.id, patientId);
 
   return { gemsAwarded: gemResult.totalAwarded };
