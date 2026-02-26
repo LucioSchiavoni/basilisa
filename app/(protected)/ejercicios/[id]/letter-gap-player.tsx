@@ -582,7 +582,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
                   </p>
                   <span className="text-sm font-semibold tabular-nums">{correctCount}/{sentences.length}</span>
                 </div>
-                <AnswersChart readingTimeSeconds={readingTimeSeconds} totalTimeSeconds={totalTimeSeconds} questionsTimeSeconds={answersRef.current.reduce((s, a) => s + a.timeSpentSeconds, 0)} answers={sentences.flatMap((s) => {
+                <AnswersChart answers={sentences.flatMap((s) => {
                   const a = answersRef.current.find((r) => r.questionId === s.id)
                   if (!a) return []
                   return [{
