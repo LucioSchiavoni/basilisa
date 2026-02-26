@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 type Exercise = {
   id: string;
   title: string;
-  instructions: string;
+  instructions: string | null;
   difficulty_level: number;
   tags: string[];
   typeName: string | null;

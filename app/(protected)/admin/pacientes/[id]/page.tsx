@@ -107,7 +107,7 @@ export default async function PatientDetailPage({
   }
 
   const exerciseIds = [
-    ...new Set(sessions?.map((s) => s.exercise_id) ?? []),
+    ...new Set(sessions?.map((s) => s.exercise_id).filter((id): id is string => id !== null) ?? []),
   ];
 
   const sessionIds = sessions?.map((s) => s.id) ?? [];
@@ -166,7 +166,7 @@ export default async function PatientDetailPage({
 
     return {
       sessionId: s.id,
-      exerciseTitle: exerciseTitleMap.get(s.exercise_id) || "Ejercicio",
+      exerciseTitle: (s.exercise_id ? exerciseTitleMap.get(s.exercise_id) : undefined) || "Ejercicio",
       completedAt: s.started_at,
       scorePercentage: score?.score_percentage ?? 0,
       correctAnswers: score?.correct_answers ?? 0,

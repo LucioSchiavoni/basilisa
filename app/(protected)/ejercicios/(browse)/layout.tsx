@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { ProfileButton } from "@/components/profile-button";
 import { PatientBottomNav } from "@/components/patient-bottom-nav";
-import { ConditionalThemeToggle } from "@/components/conditional-theme-toggle";
+
 import { GemIcon } from "@/components/gem-icon";
 import { WorldThemeProvider } from "@/components/world-theme-context";
 import { ForceDarkOnWorldPages } from "@/components/force-dark-on-world-pages";
@@ -33,7 +33,7 @@ export default async function BrowseEjerciciosLayout({
     <WorldThemeProvider>
       <ForceDarkOnWorldPages />
       <div className="fixed inset-0 -z-10 bg-background dark:[background:linear-gradient(to_bottom,#0f172a_0%,#1e293b_50%,#0f172a_100%)]" />
-      <div className="min-h-[100dvh] p-4 pb-24 lg:p-8 lg:pb-24">
+      <div className="min-h-dvh overflow-x-hidden p-4 pb-24 lg:p-8 lg:pb-24">
         <div className="max-w-4xl mx-auto">
           <div className="sticky top-0 z-50 flex justify-between items-center mb-4 pt-0">
             <div className="flex items-center gap-1 rounded-2xl px-2.5 py-1 bg-card/80 border border-border dark:bg-black/35 dark:border-white/10 backdrop-blur-md shadow-sm">
@@ -43,7 +43,6 @@ export default async function BrowseEjerciciosLayout({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <ConditionalThemeToggle />
               <ProfileButton
                 fullName={profile?.full_name ?? null}
                 email={user!.email!}

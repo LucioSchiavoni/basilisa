@@ -15,6 +15,8 @@ export type AnswerResult = {
   selectedOptionId: string;
   correctOptionId: string;
   isCorrect: boolean;
+  timeSpentSeconds: number;
+  timedOut: boolean;
 };
 
 export type LetterGapAnswerResult = {
@@ -22,6 +24,7 @@ export type LetterGapAnswerResult = {
   patientAnswer: string;
   correctAnswer: string;
   isCorrect: boolean;
+  timeSpentSeconds: number;
 };
 
 export async function checkAnswer(
@@ -78,6 +81,7 @@ export async function completeExercise(input: {
   totalQuestions: number;
   correctAnswers: number;
   durationSeconds: number;
+  readingTimeSeconds?: number;
 }): Promise<{ gemsAwarded: number }> {
   const supabase = await createClient();
   const {
@@ -138,6 +142,7 @@ export async function completeExercise(input: {
       attempt_number: attemptNumber,
       ended_at: new Date().toISOString(),
       duration_seconds: Math.max(0, input.durationSeconds),
+      reading_time_seconds: input.readingTimeSeconds ?? null,
       is_completed: true,
     })
     .select("id")
@@ -157,7 +162,7 @@ export async function completeExercise(input: {
           patient_answer: { selected: a.selectedOptionId },
           correct_answer: { correct: a.correctOptionId },
           is_correct: a.isCorrect,
-          time_spent_seconds: null,
+          time_spent_seconds: a.timeSpentSeconds,
           answered_at: new Date().toISOString(),
         }))
       );
@@ -264,6 +269,7 @@ export async function completeTimedReading(input: {
       attempt_number: attemptNumber,
       ended_at: new Date().toISOString(),
       duration_seconds: Math.max(0, input.timeSeconds),
+      reading_time_seconds: Math.max(0, input.timeSeconds),
       is_completed: true,
     })
     .select("id")
@@ -362,6 +368,7 @@ export async function completeLetterGap(input: {
   totalSentences: number;
   correctAnswers: number;
   durationSeconds: number;
+  readingTimeSeconds?: number;
 }): Promise<{ gemsAwarded: number }> {
   const supabase = await createClient();
   const {
@@ -422,6 +429,7 @@ export async function completeLetterGap(input: {
       attempt_number: attemptNumber,
       ended_at: new Date().toISOString(),
       duration_seconds: Math.max(0, input.durationSeconds),
+      reading_time_seconds: input.readingTimeSeconds ?? null,
       is_completed: true,
     })
     .select("id")
@@ -441,7 +449,7 @@ export async function completeLetterGap(input: {
           patient_answer: { selected: a.patientAnswer },
           correct_answer: { correct: a.correctAnswer },
           is_correct: a.isCorrect,
-          time_spent_seconds: null,
+          time_spent_seconds: a.timeSpentSeconds,
           answered_at: new Date().toISOString(),
         }))
       );

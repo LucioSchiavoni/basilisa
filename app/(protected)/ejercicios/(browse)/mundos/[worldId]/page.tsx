@@ -55,7 +55,7 @@ export default async function WorldDetailPage({
     };
   });
 
-  const completedIds = (completedSessionsData ?? []).map((s) => s.exercise_id);
+  const completedIds = (completedSessionsData ?? []).map((s) => s.exercise_id).filter((id): id is string => id !== null);
 
   return (
     <>

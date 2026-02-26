@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { ExercisePlayer } from "./exercise-player";
 
@@ -25,6 +26,19 @@ export default async function ExercisePage({
   const { id } = await params;
   const { from } = await searchParams;
   const supabase = await createClient();
+  const admin = createAdminClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: userGemsData } = await admin
+    .from("user_gems")
+    .select("total_gems")
+    .eq("user_id", user!.id)
+    .maybeSingle();
+
+  const initialGems = userGemsData?.total_gems ?? 0;
 
   const { data: exercise } = await supabase
     .from("exercises")
@@ -74,10 +88,11 @@ export default async function ExercisePage({
 
   return (
     <ExercisePlayer
+      initialGems={initialGems}
       exercise={{
         id: exercise.id,
         title: exercise.title,
-        instructions: exercise.instructions,
+        instructions: exercise.instructions ?? "",
         instructionsAudioUrl: exercise.instructions_audio_url,
         difficultyLevel: exercise.difficulty_level,
         content: stripAnswers(exercise.content as Record<string, unknown>),

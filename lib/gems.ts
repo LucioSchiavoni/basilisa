@@ -171,10 +171,23 @@ export async function updateStreak(patientId: string): Promise<number> {
     .from("user_gems")
     .select("current_streak, best_streak, last_activity_date")
     .eq("user_id", patientId)
-    .single();
+    .maybeSingle();
 
-  if (error || !userGems)
-    throw new Error(`User gems not found: ${error?.message}`);
+  if (error)
+    throw new Error(`User gems query failed: ${error?.message}`);
+
+  if (!userGems) {
+    const { error: insertError } = await supabase.from("user_gems").insert({
+      user_id: patientId,
+      total_gems: 0,
+      current_streak: 1,
+      best_streak: 1,
+      last_activity_date: new Date().toISOString().split("T")[0],
+    });
+    if (insertError && insertError.code !== "23505")
+      throw new Error(`Failed to create user gems: ${insertError.message}`);
+    return 0;
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

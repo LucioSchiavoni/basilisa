@@ -138,6 +138,7 @@ export async function createUser(
         .from("profiles")
         .insert({
           id: authData.user.id,
+          email,
           full_name,
           role,
           is_profile_complete: true,
@@ -436,6 +437,7 @@ export async function createPatient(
         .from("profiles")
         .insert({
           id: authData.user.id,
+          email,
           full_name,
           role: "patient",
           is_profile_complete: true,

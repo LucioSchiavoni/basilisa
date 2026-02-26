@@ -108,7 +108,7 @@ export function FloatingParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 pointer-events-none"
+      className="fixed inset-0 pointer-events-none -z-10"
       aria-hidden="true"
     />
   )

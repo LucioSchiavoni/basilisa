@@ -44,6 +44,7 @@ export default async function EjerciciosPage() {
 
   const completedByWorld: Record<string, Set<string>> = {};
   (completedSessions ?? []).forEach((s) => {
+    if (!s.exercise_id) return;
     const worldName = exerciseIdToWorld[s.exercise_id];
     if (worldName) {
       if (!completedByWorld[worldName]) completedByWorld[worldName] = new Set();

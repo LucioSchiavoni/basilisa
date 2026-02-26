@@ -17,7 +17,7 @@ type WorldData = {
   displayName: string;
   description: string | null;
   iconUrl: string | null;
-  difficultyLevel: number;
+  difficultyLevel: number | null;
   difficultyLabel: string | null;
   therapeuticDescription: string | null;
   totalExercises: number;

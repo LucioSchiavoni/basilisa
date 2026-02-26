@@ -21,11 +21,11 @@ import { Trash2, Loader2, RotateCcw, Globe } from "lucide-react";
 type Exercise = {
   id: string;
   title: string;
-  instructions: string;
+  instructions: string | null;
   difficulty_level: number;
   is_active: boolean;
   created_at: string;
-  tags: string[];
+  tags: string[] | null;
   deleted_at: string | null;
   world_name: string | null;
 };

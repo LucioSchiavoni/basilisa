@@ -25,15 +25,15 @@ interface EditExerciseFormProps {
   exercise: {
     id: string
     title: string
-    instructions: string
+    instructions: string | null
     instructions_audio_url: string | null
     difficulty_level: number
-    estimated_time_seconds: number
-    target_age_min: number
-    target_age_max: number
+    estimated_time_seconds: number | null
+    target_age_min: number | null
+    target_age_max: number | null
     exercise_type_id: string
     content: Json
-    tags: string[]
+    tags: string[] | null
     world_id: string | null
     exercise_types: { name: string; display_name: string } | null
   }

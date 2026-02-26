@@ -10,7 +10,7 @@ import { getWorldConfig } from "@/lib/worlds";
 type ExerciseItem = {
   id: string;
   title: string;
-  instructions: string;
+  instructions: string | null;
   difficultyLevel: number;
   typeName: string | null;
   position: number;
