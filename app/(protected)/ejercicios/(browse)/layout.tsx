@@ -32,7 +32,7 @@ export default async function BrowseEjerciciosLayout({
   return (
     <WorldThemeProvider>
       <ForceDarkOnWorldPages />
-      <div className="fixed inset-0 -z-10 bg-background dark:[background:linear-gradient(to_bottom,#0f172a_0%,#1e293b_50%,#0f172a_100%)]" />
+      <div className="fixed inset-0 -z-10 bg-background" />
       <div className="min-h-dvh overflow-x-hidden p-4 pb-24 lg:p-8 lg:pb-24">
         <div className="max-w-4xl mx-auto">
           <div className="sticky top-0 z-50 flex justify-between items-center mb-4 pt-0">

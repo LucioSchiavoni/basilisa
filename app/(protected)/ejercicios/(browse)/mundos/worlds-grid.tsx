@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getScheme, DEFAULT_SCHEME } from "./world-color-schemes";
+import { getScheme } from "./world-color-schemes";
 import { WorldCanvas } from "./world-canvas";
 import { useWorldTheme } from "@/components/world-theme-context";
 import { gsap } from "gsap";
@@ -60,7 +60,6 @@ function buildSvgPath(count: number): string {
 
 export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
   const [bgIndex, setBgIndex] = useState(0);
-  const bgRef = useRef<HTMLDivElement>(null);
   const { setTheme } = useWorldTheme();
   const scaleRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,24 +82,6 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     return () => clearInterval(interval);
   }, [worlds.length]);
 
-  useEffect(() => {
-    if (!bgRef.current || worlds.length === 0) return;
-    const scheme = getScheme(worlds[bgIndex]?.name ?? "");
-    const bgValue = scheme.background.startsWith("/")
-      ? `url(${scheme.background}) center/cover no-repeat`
-      : scheme.background;
-    const el = bgRef.current;
-    el.style.opacity = "0";
-    const timer = setTimeout(() => {
-      if (!bgRef.current) return;
-      el.style.background = bgValue;
-      el.style.opacity = "1";
-    }, 350);
-    return () => {
-      clearTimeout(timer);
-      if (bgRef.current) bgRef.current.style.opacity = "1";
-    };
-  }, [bgIndex, worlds]);
 
   useEffect(() => {
     if (worlds.length === 0 || !containerRef.current) return;
@@ -156,11 +137,15 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
   return (
     <>
       <div
-        ref={bgRef}
         className="fixed inset-0 -z-10 pointer-events-none"
         style={{
-          background: DEFAULT_SCHEME.background,
-          transition: "opacity 0.35s ease-in",
+          background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+        }}
+      />
+      <div
+        className="fixed inset-0 -z-10 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
         }}
       />
 

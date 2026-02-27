@@ -61,11 +61,11 @@ export const WORLD_COLOR_SCHEMES: Record<string, WorldColorScheme> = {
 export const DEFAULT_SCHEME: WorldColorScheme = {
   background:
     "linear-gradient(to bottom, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
-  particles: "#818cf8",
-  glow: "rgba(129, 140, 248, 0.25)",
-  navGradient: "linear-gradient(135deg, rgba(8,10,18,0.92) 0%, rgba(5,7,14,0.96) 100%)",
-  accentColor: "#818cf8",
-  buttonGradient: "linear-gradient(135deg, #4f46e5 0%, #312e81 100%)",
+  particles: "#2E85C8",
+  glow: "rgba(46, 133, 200, 0.30)",
+  navGradient: "linear-gradient(135deg, rgba(20,55,90,0.92) 0%, rgba(12,35,60,0.97) 100%)",
+  accentColor: "#2E85C8",
+  buttonGradient: "linear-gradient(135deg, #2E85C8 0%, #1a5a8a 100%)",
 };
 
 export function getScheme(name: string): WorldColorScheme {

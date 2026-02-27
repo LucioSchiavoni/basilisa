@@ -88,6 +88,85 @@ export async function login(
   redirect("/ejercicios");
 }
 
+const unifiedLoginSchema = z.object({
+  identifier: z.string().min(1, "Ingresa tu email o usuario"),
+  password: z.string().min(1, "Ingresa tu contraseña"),
+});
+
+export async function unifiedLogin(
+  _prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const rawData = {
+    identifier: (formData.get("identifier") as string)?.trim(),
+    password: formData.get("password") as string,
+  };
+
+  const parsed = unifiedLoginSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const identifier = parsed.data.identifier;
+  const isEmail = identifier.includes("@");
+
+  let email: string;
+  if (isEmail) {
+    const emailParsed = z.string().email("Email inválido").safeParse(identifier);
+    if (!emailParsed.success) {
+      return { error: "Email inválido" };
+    }
+    email = emailParsed.data;
+  } else {
+    const usernameParsed = z
+      .string()
+      .regex(/^[a-zA-Z0-9]+$/, "El usuario solo puede tener letras y números")
+      .safeParse(identifier);
+    if (!usernameParsed.success) {
+      return { error: usernameParsed.error.issues[0].message };
+    }
+    email = `${identifier.toLowerCase()}@basilisa.internal`;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: parsed.data.password,
+  });
+
+  if (error) {
+    return { error: "Credenciales inválidas" };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No se pudo obtener el usuario" };
+  }
+
+  if (user.user_metadata?.must_change_password === true) {
+    redirect("/change-password");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_profile_complete")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_profile_complete && profile?.role !== "patient") {
+    redirect("/completar-perfil");
+  }
+
+  if (profile?.role === "admin") {
+    redirect("/admin");
+  }
+
+  redirect("/ejercicios");
+}
+
 export async function register(
   _prevState: AuthState,
   formData: FormData

@@ -2,12 +2,12 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { login, type AuthState } from "../actions";
+import { unifiedLogin, type AuthState } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, AtSign, Lock, Eye, EyeOff } from "lucide-react";
 import { FloatingParticles } from "@/components/home/floating-particles";
 import { LisaIllustrationAnimated } from "@/components/svg/lisa-illustration-animated";
 import { CharacterBlink } from "@/components/game/CharacterBlink";
@@ -15,7 +15,7 @@ import { CharacterBlink } from "@/components/game/CharacterBlink";
 const initialState: AuthState = {};
 
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(login, initialState);
+  const [state, formAction, pending] = useActionState(unifiedLogin, initialState);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -78,26 +78,27 @@ export default function LoginPage() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-[#faf3ea] px-3 text-black/60 font-medium">
-                    o con tu email
+                    o con tu email o usuario
                   </span>
                 </div>
               </div>
 
               <form action={formAction} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm text-black">
-                    Email
+                  <Label htmlFor="identifier" className="text-sm text-black">
+                    Email o usuario
                   </Label>
-                  <div className={`relative group transition-all duration-300 ${focusedField === "email" ? "scale-[1.02]" : ""}`}>
-                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "email" ? "text-[#579F93]" : "text-black/50"}`} />
+                  <div className={`relative group transition-all duration-300 ${focusedField === "identifier" ? "scale-[1.02]" : ""}`}>
+                    <AtSign className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-300 ${focusedField === "identifier" ? "text-[#579F93]" : "text-black/50"}`} />
                     <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="tu@email.com"
+                      id="identifier"
+                      name="identifier"
+                      type="text"
+                      placeholder="tu@email.com o nombre de usuario"
                       required
+                      autoComplete="username"
                       className="pl-10 h-12 rounded-xl border-2 border-[#579F93]/20 bg-white/50 focus:border-[#579F93] focus:ring-[#579F93]/20 focus-visible:border-[#579F93] focus-visible:ring-[#579F93]/20 transition-all duration-300 text-black placeholder:text-neutral-400"
-                      onFocus={() => setFocusedField("email")}
+                      onFocus={() => setFocusedField("identifier")}
                       onBlur={() => setFocusedField(null)}
                     />
                   </div>
@@ -144,16 +145,9 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="text-sm text-center space-y-3 pt-2">
+              <div className="text-sm text-center pt-2">
                 <Link href="/forgot-password" className="text-[#C73341] hover:text-[#b02d3a] hover:underline block transition-colors font-medium">
                   ¿Olvidaste tu contraseña?
-                </Link>
-                <Link
-                  href="/patient-login"
-                  className="flex items-center justify-center gap-2 w-full h-11 rounded-xl border-2 border-[#2E85C8]/40 text-[#2E85C8] font-semibold hover:bg-[#2E85C8]/5 hover:border-[#2E85C8] transition-all duration-200"
-                >
-                  <span className="text-base">📖</span>
-                  Soy lector
                 </Link>
               </div>
             </div>
