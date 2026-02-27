@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import confetti from "canvas-confetti";
+import { fireWinConfetti } from "@/lib/confetti";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Clock } from "lucide-react";
@@ -124,18 +124,9 @@ export function PhaseResults({
     if (isTimedReading) return;
     const pct = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     if (pct !== 100) return;
-    const t0 = setTimeout(() => {
-      const isDesktop = window.innerWidth >= 768;
-      if (isDesktop) {
-        confetti({ particleCount: 150, angle: 55, spread: 90, origin: { x: 0.15, y: 0.55 } });
-        setTimeout(() => confetti({ particleCount: 150, angle: 125, spread: 90, origin: { x: 0.85, y: 0.55 } }), 200);
-        setTimeout(() => confetti({ particleCount: 80, spread: 60, startVelocity: 22, origin: { x: 0.5, y: 0.4 } }), 420);
-      } else {
-        confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.65 } });
-        setTimeout(() => confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.65 } }), 200);
-      }
-    }, 50);
-    return () => clearTimeout(t0);
+    let cleanup: (() => void) | undefined;
+    const t0 = setTimeout(() => { cleanup = fireWinConfetti() }, 50);
+    return () => { clearTimeout(t0); cleanup?.() };
   }, [isTimedReading, correctCount, totalQuestions]);
 
   if (isTimedReading) {

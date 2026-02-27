@@ -182,17 +182,14 @@ export function PhaseQuestions({
             />
           )}
 
-          <div className="space-y-3" role="radiogroup" aria-label="Opciones de respuesta">
+          <div className="space-y-3">
             {activeQuestion?.options.map((option, index) => {
               const isSelected = selectedOptionId === option.id;
-              const variant = isSelected ? "selected" : "default";
 
               return (
                 <button
                   key={option.id}
                   type="button"
-                  role="radio"
-                  aria-checked={isSelected}
                   disabled={isPending}
                   onClick={() => {
                     if (isPending) return;
@@ -200,23 +197,24 @@ export function PhaseQuestions({
                   }}
                   style={{ animationDelay: `${index * 80}ms` }}
                   className={cn(
-                    "w-full text-left p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px] text-sm sm:text-base bg-white text-gray-900 font-light",
+                    "w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 min-h-[56px] text-sm sm:text-base bg-white text-gray-900 font-normal",
                     "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    variant === "default" &&
-                      "border-gray-200 hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98]",
-                    variant === "selected" && "border-blue-500 bg-blue-50",
+                    !isSelected && !isPending && "border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 active:scale-[0.98]",
+                    isSelected && "border-blue-500 bg-blue-50",
                     isPending && "cursor-default"
                   )}
                 >
                   <div className={cn("flex items-center gap-3", option.image_url && "flex-row")}>
                     <span
                       className={cn(
-                        "flex shrink-0 items-center justify-center h-6 w-6 rounded-full border-2 text-xs font-bold transition-colors",
-                        variant === "default" && "border-gray-300",
-                        variant === "selected" && "border-blue-500 bg-blue-500 text-white",
+                        "flex shrink-0 items-center justify-center h-8 w-8 rounded-xl border-2 text-xs font-bold transition-colors",
+                        !isSelected && "border-gray-200 text-gray-400",
+                        isSelected && "border-blue-500 bg-blue-500 text-white",
                       )}
-                    />
+                    >
+                      {String.fromCharCode(65 + index)}
+                    </span>
                     {option.image_url && (
                       <Image
                         src={option.image_url}

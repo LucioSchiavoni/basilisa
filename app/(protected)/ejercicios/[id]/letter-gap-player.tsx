@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useTransition, useEffect } from "react"
-import confetti from "canvas-confetti"
+import { fireWinConfetti } from "@/lib/confetti"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -175,17 +175,9 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
     if (phase !== "results") return;
     const pct = sentences.length > 0 ? Math.round((correctCount / sentences.length) * 100) : 0;
     if (pct !== 100) return;
-    const isDesktop = window.innerWidth >= 768;
-    if (isDesktop) {
-      confetti({ particleCount: 150, angle: 55, spread: 90, origin: { x: 0.15, y: 0.55 } });
-      const t1 = setTimeout(() => confetti({ particleCount: 150, angle: 125, spread: 90, origin: { x: 0.85, y: 0.55 } }), 200);
-      const t2 = setTimeout(() => confetti({ particleCount: 80, spread: 60, startVelocity: 22, origin: { x: 0.5, y: 0.4 } }), 420);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
-    } else {
-      confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.65 } });
-      const t = setTimeout(() => confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.65 } }), 200);
-      return () => clearTimeout(t);
-    }
+    let cleanup: (() => void) | undefined;
+    const t0 = setTimeout(() => { cleanup = fireWinConfetti() }, 50);
+    return () => { clearTimeout(t0); cleanup?.() };
   }, [phase, correctCount, sentences.length])
 
   const activeSentenceIndex = currentIndex

@@ -10,6 +10,7 @@ import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { FloatingParticles } from "@/components/home/floating-particles";
 import { LisaIllustrationAnimated } from "@/components/svg/lisa-illustration-animated";
+import { CharacterBlink } from "@/components/game/CharacterBlink";
 
 const initialState: AuthState = {};
 
@@ -43,7 +44,11 @@ export default function LoginPage() {
         </Button>
       </div>
 
-      <div className="w-full max-w-5xl flex flex-col items-center gap-6 relative z-10">
+      <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-16 relative z-10">
+
+        <div className="hidden lg:flex items-center justify-center">
+          <CharacterBlink />
+        </div>
 
         <div className="w-full flex justify-center">
           <div className="w-full max-w-md">
