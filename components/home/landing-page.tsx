@@ -8,6 +8,7 @@ import { LogIn } from "lucide-react"
 import { LisaLogo } from "@/components/svg/lisa-logo"
 import { WatercolorBackground } from "./watercolor-background"
 import { CurtainRevealSection } from "./curtain-reveal-section"
+import { WhoCanUseLisaSection } from "./who-can-use-lisa-section"
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -93,8 +94,8 @@ export function LandingPage() {
               scrollTrigger: {
                 trigger: section,
                 start: "top top",
-                end: "+=300vh",
-                scrub: 1,
+                end: "+=350vh",
+                scrub: 1.5,
                 pin: true,
                 anticipatePin: 1,
                 invalidateOnRefresh: true,
@@ -136,6 +137,11 @@ export function LandingPage() {
                   stagger: 0.03,
                 },
                 1.5
+              )
+              .to(
+                wordSpans,
+                { opacity: 0, y: -30, duration: 0.8, stagger: 0.01, ease: "power2.in" },
+                ">+=6"
               )
           })
         },
@@ -231,6 +237,7 @@ export function LandingPage() {
         </div>
       </section>
       <CurtainRevealSection />
+      <WhoCanUseLisaSection />
     </>
   )
 }

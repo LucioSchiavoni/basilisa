@@ -11,25 +11,23 @@ const IDL_PART1 =
 
 const IDL_PART2 = "En LISA diseñamos recursos para ampliar el acceso a la lectura."
 
-const BAR_COUNT = 5
+const BAR_COUNT = 14
+const BAR_DURATION = 1.5
+const BAR_STAGGER = 0.2
 
-const BARS_DURATION = 2.6
-const BARS_STAGGER = 0.12
-const BARS_COVER_END = BARS_DURATION + (BAR_COUNT - 1) * BARS_STAGGER
-
-const TEXT1_START = BARS_COVER_END + 1.2
-const TEXT1_DURATION = 1.2
-const TEXT1_STAGGER = 0.025
+const TEXT1_START = 1.0
+const TEXT1_DURATION = 1.6
+const TEXT1_STAGGER = 0.04
 const PART1_WORDS = IDL_PART1.split(" ").length
 const TEXT1_END = TEXT1_START + TEXT1_DURATION + PART1_WORDS * TEXT1_STAGGER
 
-const TEXT2_START = TEXT1_END + 2.0
-const TEXT2_DURATION = 1.0
-const TEXT2_STAGGER = 0.045
+const TEXT2_START = TEXT1_END + 3.5
+const TEXT2_DURATION = 1.2
+const TEXT2_STAGGER = 0.06
 const PART2_WORDS = IDL_PART2.split(" ").length
 const TEXT2_END = TEXT2_START + TEXT2_DURATION + PART2_WORDS * TEXT2_STAGGER
 
-const EXIT_START = TEXT2_END + 1.8
+const EXIT_START = TEXT2_END + 6.0
 
 function splitIntoSpans(el: HTMLParagraphElement) {
   const raw = el.textContent || ""
@@ -50,6 +48,7 @@ export function CurtainRevealSection() {
   const textLayerRef = useRef<HTMLDivElement>(null)
   const text1Ref = useRef<HTMLParagraphElement>(null)
   const text2Ref = useRef<HTMLParagraphElement>(null)
+  const blueOverlayRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -64,21 +63,38 @@ export function CurtainRevealSection() {
       )
 
       if (prefersReduced) {
-        gsap.set([...spans1, ...spans2], { opacity: 1, y: 0 })
+        gsap.set(spans1, { opacity: 1, y: 0, color: "rgba(255,255,255,0.9)" })
+        gsap.set(spans2, { opacity: 1, y: 0, color: "rgba(255,255,255,1)" })
         gsap.set(bars, { yPercent: -100 })
         gsap.set(textLayerRef.current, { yPercent: -100 })
+        gsap.set(blueOverlayRef.current, { opacity: 1 })
         return
       }
 
-      gsap.set(bars, { yPercent: 100 })
-      gsap.set([...spans1, ...spans2], { opacity: 0, y: 30 })
+      gsap.set(bars, { yPercent: 100, scaleX: 1.005, transformOrigin: "left center" })
+      gsap.set([...spans1, ...spans2], { opacity: 0, color: "rgba(255,255,255,0.22)", y: 20 })
       gsap.set(textLayerRef.current, { yPercent: 0 })
+      gsap.set(blueOverlayRef.current, { opacity: 0 })
+
+      const barEntryTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "top top",
+          scrub: 2,
+          invalidateOnRefresh: true,
+        },
+      })
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        barEntryTl.to(bars[i], { yPercent: 0, duration: BAR_DURATION, ease: "power2.inOut" }, i * BAR_STAGGER)
+      }
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
           start: "top top",
-          end: "+=340vh",
+          end: "+=400vh",
           scrub: 2,
           pin: true,
           anticipatePin: 1,
@@ -88,19 +104,14 @@ export function CurtainRevealSection() {
 
       tl
         .to(
-          bars,
-          {
-            yPercent: 0,
-            duration: BARS_DURATION,
-            stagger: { each: BARS_STAGGER, from: "start" },
-            ease: "power3.inOut",
-          },
+          [...spans1, ...spans2],
+          { opacity: 1, duration: 0.8, ease: "power1.out" },
           0
         )
         .to(
           spans1,
           {
-            opacity: 1,
+            color: "rgba(255,255,255,0.9)",
             y: 0,
             duration: TEXT1_DURATION,
             stagger: TEXT1_STAGGER,
@@ -111,7 +122,7 @@ export function CurtainRevealSection() {
         .to(
           spans2,
           {
-            opacity: 1,
+            color: "rgba(255,255,255,1)",
             y: 0,
             duration: TEXT2_DURATION,
             stagger: TEXT2_STAGGER,
@@ -119,24 +130,21 @@ export function CurtainRevealSection() {
           },
           TEXT2_START
         )
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        tl.to(bars[BAR_COUNT - 1 - i], { yPercent: -100, duration: BAR_DURATION, ease: "power2.inOut" }, EXIT_START + i * BAR_STAGGER)
+      }
+
+      tl
         .to(
-          bars,
-          {
-            yPercent: -100,
-            duration: BARS_DURATION,
-            stagger: { each: BARS_STAGGER, from: "start" },
-            ease: "power3.inOut",
-          },
-          EXIT_START
+          blueOverlayRef.current,
+          { opacity: 1, duration: 2.5, ease: "power2.in" },
+          EXIT_START - 2.0
         )
         .to(
           textLayerRef.current,
-          {
-            yPercent: -100,
-            duration: BARS_DURATION,
-            ease: "power3.inOut",
-          },
-          EXIT_START
+          { yPercent: -100, duration: 4.0, ease: "power4.inOut" },
+          EXIT_START + 0.1
         )
     })
 
@@ -145,19 +153,18 @@ export function CurtainRevealSection() {
 
   return (
     <>
-      <div ref={barsContainerRef} className="pointer-events-none" aria-hidden>
+      <div
+        ref={barsContainerRef}
+        className="pointer-events-none fixed inset-0 overflow-hidden"
+        style={{ zIndex: 40, display: "grid", gridTemplateColumns: `repeat(${BAR_COUNT}, 1fr)` }}
+        aria-hidden
+      >
         {Array.from({ length: BAR_COUNT }).map((_, i) => (
           <div
             key={i}
             data-curtain-bar
-            className="fixed top-0 h-screen"
-            style={{
-              left: `${(i / BAR_COUNT) * 100}%`,
-              width: `${100 / BAR_COUNT}%`,
-              backgroundColor: "#C73341",
-              zIndex: 40,
-              willChange: "transform",
-            }}
+            className="h-full"
+            style={{ backgroundColor: "#C73341", willChange: "transform", boxShadow: "2px 0 0 0 #C73341" }}
           />
         ))}
       </div>
@@ -176,7 +183,7 @@ export function CurtainRevealSection() {
           </p>
           <p
             ref={text2Ref}
-            className="text-center text-white leading-snug text-2xl sm:text-3xl md:text-4xl font-light"
+            className="text-center text-white leading-relaxed text-xl sm:text-2xl md:text-3xl font-extralight"
           >
             {IDL_PART2}
           </p>
@@ -186,18 +193,13 @@ export function CurtainRevealSection() {
       <section
         ref={sectionRef}
         className="relative h-screen overflow-hidden"
-        style={{
-          background:
-            "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
-        }}
+        style={{ backgroundColor: "#C73341" }}
       >
         <div
+          ref={blueOverlayRef}
           aria-hidden
           className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
-          }}
+          style={{ backgroundColor: "#2E85C8" }}
         />
       </section>
     </>
