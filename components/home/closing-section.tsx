@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { ArrowUp } from "lucide-react"
+import { WatercolorBackground } from "./watercolor-background"
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -28,6 +29,11 @@ export function ClosingSection() {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
     const ctx = gsap.context(() => {
+      const section = sectionRef.current!
+      const stains = gsap.utils.toArray<Element>("[data-stain]", section)
+      const leftStains = stains.slice(0, 4)
+      const rightStains = stains.slice(4, 8)
+
       const line1Spans: HTMLElement[] = []
       const line2Spans: HTMLElement[] = []
 
@@ -63,12 +69,14 @@ export function ClosingSection() {
       if (prefersReduced) {
         gsap.set(allSpans, { opacity: 1, filter: "blur(0px)", y: 0, scale: 1 })
         gsap.set(btnRef.current, { opacity: 1, y: 0 })
+        gsap.set(stains, { opacity: 1, scale: 1 })
         return
       }
 
       gsap.set(line1Spans, { opacity: 0, filter: "blur(22px)", y: 28, scale: 0.88 })
       gsap.set(line2Spans, { opacity: 0, filter: "blur(16px)", y: 16, scale: 0.94 })
       gsap.set(btnRef.current, { opacity: 0, y: 14 })
+      gsap.set(stains, { opacity: 0, scale: 0.35 })
 
       const stagger1 = 0.28
       const stagger2 = 0.16
@@ -89,6 +97,9 @@ export function ClosingSection() {
           invalidateOnRefresh: true,
         },
       })
+
+      tl.to(leftStains, { opacity: 1, scale: 1, duration: 1.9, ease: "power1.out", stagger: 0.22 }, 0)
+      tl.to(rightStains, { opacity: 1, scale: 1, duration: 1.9, ease: "power1.out", stagger: 0.22 }, 0.18)
 
       tl.to(
         line1Spans,
@@ -137,7 +148,8 @@ export function ClosingSection() {
           "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
       }}
     >
-      <div className="max-w-3xl flex flex-col items-center gap-7 md:gap-10 text-center">
+      <WatercolorBackground />
+      <div className="relative max-w-3xl flex flex-col items-center gap-7 md:gap-10 text-center">
         <p
           ref={line1Ref}
           className="text-3xl sm:text-4xl md:text-5xl font-semibold text-neutral-800 tracking-tight leading-tight"
