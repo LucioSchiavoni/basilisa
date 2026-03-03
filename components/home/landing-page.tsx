@@ -7,7 +7,6 @@ import Link from "next/link"
 import { LogIn } from "lucide-react"
 import { LisaLogo } from "@/components/svg/lisa-logo"
 import { WatercolorBackground } from "./watercolor-background"
-import { CurtainRevealSection } from "./curtain-reveal-section"
 
 
 gsap.registerPlugin(ScrollTrigger)
@@ -138,11 +137,6 @@ export function LandingPage() {
                 },
                 1.5
               )
-              .to(
-                wordSpans,
-                { opacity: 0, y: -30, duration: 0.8, stagger: 0.01, ease: "power2.in" },
-                ">+=6"
-              )
           })
         },
       })
@@ -236,7 +230,7 @@ export function LandingPage() {
           </p>
         </div>
       </section>
-      <CurtainRevealSection />
+
 
     </>
   )
