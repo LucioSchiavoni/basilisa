@@ -52,10 +52,11 @@ export function IdlSection() {
         scrollTrigger: {
           trigger: sectionRef.current,
           start: "top top",
-          end: `+=${wordSpans.length * 18}`,
+          end: `+=${wordSpans.length * 18 + 250}`,
           scrub: 1,
           pin: true,
           anticipatePin: 1,
+          pinSpacing: "margin",
           invalidateOnRefresh: true,
         },
       })

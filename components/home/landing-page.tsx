@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useEffect, useRef } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import Link from "next/link"
@@ -23,6 +23,12 @@ export function LandingPage() {
   const heroLogoRef = useRef<HTMLDivElement>(null)
   const taglineRef = useRef<HTMLDivElement>(null)
   const descriptionRef = useRef<HTMLParagraphElement>(null)
+
+  useEffect(() => {
+    const ro = new ResizeObserver(() => ScrollTrigger.refresh())
+    ro.observe(document.body)
+    return () => ro.disconnect()
+  }, [])
 
   useLayoutEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -201,7 +207,7 @@ export function LandingPage() {
               "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
           }}
         />
-        <WatercolorBackground />
+        {/* <WatercolorBackground /> */}
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-4">
           <div ref={heroLogoRef} style={{ willChange: "transform" }}>

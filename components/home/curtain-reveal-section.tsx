@@ -103,6 +103,7 @@ export function CurtainRevealSection() {
           scrub: 2,
           pin: true,
           anticipatePin: 1,
+          pinSpacing: "margin",
           invalidateOnRefresh: true,
           onLeave: () => {
             gsap.set(barsContainerRef.current, { autoAlpha: 0 })
@@ -170,10 +171,17 @@ export function CurtainRevealSection() {
   }, [])
 
   return (
-    <>
+    <section
+      ref={sectionRef}
+      className="relative h-screen overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+      }}
+    >
       <div
         ref={barsContainerRef}
-        className="pointer-events-none fixed inset-0 overflow-hidden"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
         style={{
           zIndex: 40,
           display: "grid",
@@ -198,7 +206,7 @@ export function CurtainRevealSection() {
 
       <div
         ref={textLayerRef}
-        className="fixed inset-0 flex items-center justify-center pointer-events-none"
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
         style={{ zIndex: 45, visibility: "hidden" }}
       >
         <div className="px-8 sm:px-16 max-w-3xl mx-auto flex flex-col items-center gap-10">
@@ -216,15 +224,6 @@ export function CurtainRevealSection() {
           </p>
         </div>
       </div>
-
-      <section
-        ref={sectionRef}
-        className="relative h-screen overflow-hidden"
-        style={{
-          background:
-            "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
-        }}
-      />
-    </>
+    </section>
   )
 }

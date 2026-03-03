@@ -94,6 +94,7 @@ export function ClosingSection() {
           scrub: 1.8,
           pin: true,
           anticipatePin: 1,
+          pinSpacing: "margin",
           invalidateOnRefresh: true,
         },
       })
@@ -134,6 +135,7 @@ export function ClosingSection() {
         { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
         btnStart
       )
+      tl.to({}, { duration: 1.5 })
     }, sectionRef)
 
     return () => ctx.revert()
@@ -148,7 +150,7 @@ export function ClosingSection() {
           "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
       }}
     >
-      <WatercolorBackground />
+      {/* <WatercolorBackground /> */}
       <div className="relative max-w-3xl flex flex-col items-center gap-7 md:gap-10 text-center">
         <p
           ref={line1Ref}

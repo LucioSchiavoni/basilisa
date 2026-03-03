@@ -39,6 +39,7 @@ export function WhoSection() {
           scrub: 1.5,
           pin: true,
           anticipatePin: 1,
+          pinSpacing: "margin",
           invalidateOnRefresh: true,
         },
       })
@@ -58,6 +59,7 @@ export function WhoSection() {
         { opacity: 1, filter: "blur(0px)", y: 0, duration: 1.2, ease: "power3.out" },
         3.0
       )
+      tl.to({}, { duration: 1.5 })
     }, sectionRef)
 
     return () => ctx.revert()

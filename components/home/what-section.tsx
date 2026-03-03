@@ -44,6 +44,7 @@ export function WhatSection() {
           scrub: 1.5,
           pin: true,
           anticipatePin: 1,
+          pinSpacing: "margin",
           invalidateOnRefresh: true,
         },
       })
@@ -61,6 +62,7 @@ export function WhatSection() {
           1.8 + i * 1.0
         )
       })
+      tl.to({}, { duration: 1.5 })
     }, sectionRef)
 
     return () => ctx.revert()
