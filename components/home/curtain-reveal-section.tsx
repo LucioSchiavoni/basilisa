@@ -48,7 +48,6 @@ export function CurtainRevealSection() {
   const textLayerRef = useRef<HTMLDivElement>(null)
   const text1Ref = useRef<HTMLParagraphElement>(null)
   const text2Ref = useRef<HTMLParagraphElement>(null)
-  const blueOverlayRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -66,15 +65,15 @@ export function CurtainRevealSection() {
         gsap.set(spans1, { opacity: 1, y: 0, color: "rgba(255,255,255,0.9)" })
         gsap.set(spans2, { opacity: 1, y: 0, color: "rgba(255,255,255,1)" })
         gsap.set(bars, { yPercent: -100 })
-        gsap.set(textLayerRef.current, { yPercent: -100 })
-        gsap.set(blueOverlayRef.current, { opacity: 1 })
+        gsap.set(barsContainerRef.current, { autoAlpha: 0 })
+        gsap.set(textLayerRef.current, { autoAlpha: 0 })
         return
       }
 
       gsap.set(bars, { yPercent: 100, scaleX: 1.005, transformOrigin: "left center" })
       gsap.set([...spans1, ...spans2], { opacity: 0, color: "rgba(255,255,255,0.22)", y: 20 })
       gsap.set(textLayerRef.current, { yPercent: 0 })
-      gsap.set(blueOverlayRef.current, { opacity: 0 })
+      gsap.set(barsContainerRef.current, { autoAlpha: 0 })
 
       const barEntryTl = gsap.timeline({
         scrollTrigger: {
@@ -83,6 +82,12 @@ export function CurtainRevealSection() {
           end: "top top",
           scrub: 2,
           invalidateOnRefresh: true,
+          onEnter: () => gsap.set(barsContainerRef.current, { autoAlpha: 1 }),
+          onLeaveBack: () => {
+            gsap.set(barsContainerRef.current, { autoAlpha: 0 })
+            gsap.set(bars, { yPercent: 100 })
+          },
+          onEnterBack: () => gsap.set(barsContainerRef.current, { autoAlpha: 1 }),
         },
       })
 
@@ -99,10 +104,23 @@ export function CurtainRevealSection() {
           pin: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          onLeave: () => {
+            gsap.set(barsContainerRef.current, { autoAlpha: 0 })
+            gsap.set(textLayerRef.current, { autoAlpha: 0 })
+          },
+          onEnterBack: () => {
+            gsap.set(barsContainerRef.current, { autoAlpha: 1 })
+            gsap.set(textLayerRef.current, { autoAlpha: 1 })
+          },
         },
       })
 
       tl
+        .to(
+          textLayerRef.current,
+          { autoAlpha: 1, duration: 0.5, ease: "power1.in" },
+          0
+        )
         .to(
           [...spans1, ...spans2],
           { opacity: 1, duration: 0.8, ease: "power1.out" },
@@ -130,22 +148,22 @@ export function CurtainRevealSection() {
           },
           TEXT2_START
         )
-
-      for (let i = 0; i < BAR_COUNT; i++) {
-        tl.to(bars[BAR_COUNT - 1 - i], { yPercent: -100, duration: BAR_DURATION, ease: "power2.inOut" }, EXIT_START + i * BAR_STAGGER)
-      }
-
-      tl
-        .to(
-          blueOverlayRef.current,
-          { opacity: 1, duration: 2.5, ease: "power2.in" },
-          EXIT_START - 2.0
-        )
         .to(
           textLayerRef.current,
-          { yPercent: -100, duration: 4.0, ease: "power4.inOut" },
-          EXIT_START + 0.1
+          { yPercent: -100, autoAlpha: 0, duration: 3.0, ease: "power3.inOut" },
+          EXIT_START
         )
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        tl.to(
+          bars[BAR_COUNT - 1 - i],
+          { yPercent: -100, duration: BAR_DURATION, ease: "power2.inOut" },
+          EXIT_START + 0.5 + i * BAR_STAGGER
+        )
+      }
+
+      const lastBarExit = EXIT_START + 0.5 + (BAR_COUNT - 1) * BAR_STAGGER + BAR_DURATION
+      tl.to({}, { duration: 0.3 }, lastBarExit)
     })
 
     return () => ctx.revert()
@@ -156,15 +174,24 @@ export function CurtainRevealSection() {
       <div
         ref={barsContainerRef}
         className="pointer-events-none fixed inset-0 overflow-hidden"
-        style={{ zIndex: 40, display: "grid", gridTemplateColumns: `repeat(${BAR_COUNT}, 1fr)` }}
-        aria-hidden
+        style={{
+          zIndex: 40,
+          display: "grid",
+          gridTemplateColumns: `repeat(${BAR_COUNT}, 1fr)`,
+          visibility: "hidden",
+        }}
+        aria-hidden="true"
       >
         {Array.from({ length: BAR_COUNT }).map((_, i) => (
           <div
-            key={i}
+            key={`bar-${i}`}
             data-curtain-bar
             className="h-full"
-            style={{ backgroundColor: "#C73341", willChange: "transform", boxShadow: "2px 0 0 0 #C73341" }}
+            style={{
+              backgroundColor: "#C73341",
+              willChange: "transform",
+              boxShadow: "2px 0 0 0 #C73341",
+            }}
           />
         ))}
       </div>
@@ -172,7 +199,7 @@ export function CurtainRevealSection() {
       <div
         ref={textLayerRef}
         className="fixed inset-0 flex items-center justify-center pointer-events-none"
-        style={{ zIndex: 45 }}
+        style={{ zIndex: 45, visibility: "hidden" }}
       >
         <div className="px-8 sm:px-16 max-w-3xl mx-auto flex flex-col items-center gap-10">
           <p
@@ -193,15 +220,11 @@ export function CurtainRevealSection() {
       <section
         ref={sectionRef}
         className="relative h-screen overflow-hidden"
-        style={{ backgroundColor: "#C73341" }}
-      >
-        <div
-          ref={blueOverlayRef}
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{ backgroundColor: "#2E85C8" }}
-        />
-      </section>
+        style={{
+          background:
+            "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+        }}
+      />
     </>
   )
 }

@@ -8,7 +8,7 @@ import { LogIn } from "lucide-react"
 import { LisaLogo } from "@/components/svg/lisa-logo"
 import { WatercolorBackground } from "./watercolor-background"
 import { CurtainRevealSection } from "./curtain-reveal-section"
-import { WhoCanUseLisaSection } from "./who-can-use-lisa-section"
+
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -237,7 +237,7 @@ export function LandingPage() {
         </div>
       </section>
       <CurtainRevealSection />
-      <WhoCanUseLisaSection />
+
     </>
   )
 }
