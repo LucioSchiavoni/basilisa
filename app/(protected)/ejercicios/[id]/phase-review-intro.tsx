@@ -27,8 +27,8 @@ export function PhaseReviewIntro({
       <header className="p-4">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1 text-sm transition-colors"
-          style={{ color: "rgba(255,255,255,0.70)" }}
+          className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl"
+          style={{ color: "#0B1926", background: "white" }}
         >
           <ArrowLeft className="h-4 w-4" />
           Volver

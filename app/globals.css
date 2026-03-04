@@ -126,9 +126,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     font-family: var(--font-lexend), sans-serif;
-    background-color: #fdf9f4;
   }
 }
 

@@ -35,11 +35,11 @@ export function WorldExercisesList({
       <>
         <div
           className="fixed inset-0 -z-10 pointer-events-none"
-          style={{
-            background: scheme.background.startsWith("/")
-              ? `url(${scheme.background}) center/cover no-repeat`
-              : scheme.background,
-          }}
+          style={
+            scheme.background.startsWith("/")
+              ? { backgroundImage: `url(${scheme.background})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
+              : { background: scheme.background }
+          }
         />
         <WorldCanvas worldName={worldName} isActive={true} />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-6">
@@ -86,11 +86,11 @@ export function WorldExercisesList({
     <>
       <div
         className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          background: scheme.background.startsWith("/")
-            ? `url(${scheme.background}) center/cover no-repeat`
-            : scheme.background,
-        }}
+        style={
+          scheme.background.startsWith("/")
+            ? { backgroundImage: `url(${scheme.background})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
+            : { background: scheme.background }
+        }
       />
       <WorldCanvas worldName={worldName} isActive={true} />
 

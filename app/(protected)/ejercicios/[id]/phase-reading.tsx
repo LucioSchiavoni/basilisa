@@ -44,7 +44,8 @@ export function PhaseReading({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
+            className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl"
+            style={{ color: "#0B1926", background: "white" }}
           >
             <ArrowLeft className="h-4 w-4" />
             Volver

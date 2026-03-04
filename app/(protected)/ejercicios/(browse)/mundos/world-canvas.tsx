@@ -26,12 +26,12 @@ function spawnParticle(world: string, canvas: HTMLCanvasElement, randomY = true)
       return {
         x: Math.random() * width,
         y: randomY ? Math.random() * height : height + 20,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: -(Math.random() * 0.25 + 0.08),
-        opacity: Math.random() * 0.25 + 0.10,
-        size: Math.random() * 2 + 1.5,
-        angle: 0,
-        angleSpeed: 0,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -(Math.random() * 0.5 + 0.15),
+        opacity: Math.random() * 0.4 + 0.55,
+        size: Math.random() * 5 + 3,
+        angle: Math.random() * Math.PI * 2,
+        angleSpeed: (Math.random() - 0.5) * 0.02,
         phase: Math.random() * Math.PI * 2,
         flipAngle: 0,
         color: "",
@@ -108,9 +108,10 @@ function updateParticle(world: string, p: Particle, canvas: HTMLCanvasElement): 
   p.y += p.vy;
   switch (world) {
     case "medieval":
-      p.phase += 0.014;
-      p.x += Math.sin(p.phase * 0.7) * 0.18;
-      if (p.y + p.size * 3 < 0) Object.assign(p, spawnParticle("medieval", canvas, false));
+      p.phase += 0.022;
+      p.angle += p.angleSpeed;
+      p.x += Math.sin(p.phase * 0.6) * 0.3;
+      if (p.y + p.size * 4 < 0) Object.assign(p, spawnParticle("medieval", canvas, false));
       break;
     case "agua":
       p.phase += 0.02;
@@ -149,14 +150,15 @@ function drawParticle(world: string, ctx: CanvasRenderingContext2D, p: Particle)
   ctx.globalAlpha = p.opacity;
   switch (world) {
     case "medieval": {
-      const pulse = 0.55 + Math.sin(p.phase) * 0.45;
+      const pulse = 0.6 + Math.sin(p.phase) * 0.4;
       ctx.globalAlpha = p.opacity * pulse;
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 1.6);
-      g.addColorStop(0, "rgba(220, 190, 255, 1)");
-      g.addColorStop(0.5, "rgba(192, 132, 252, 0.60)");
-      g.addColorStop(1, "rgba(160, 90, 230, 0)");
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+      g.addColorStop(0, "rgba(255, 245, 255, 1)");
+      g.addColorStop(0.3, "rgba(200, 100, 255, 0.9)");
+      g.addColorStop(0.7, "rgba(160, 50, 240, 0.4)");
+      g.addColorStop(1, "rgba(120, 20, 200, 0)");
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 1.6, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
       ctx.fillStyle = g;
       ctx.fill();
       break;
@@ -243,7 +245,7 @@ function drawParticle(world: string, ctx: CanvasRenderingContext2D, p: Particle)
 }
 
 const COUNTS: Record<string, number> = {
-  medieval: 14,
+  medieval: 28,
   agua: 25,
   bosque: 20,
   hielo: 35,

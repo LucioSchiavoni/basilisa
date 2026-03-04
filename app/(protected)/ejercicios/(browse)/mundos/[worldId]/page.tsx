@@ -61,7 +61,8 @@ export default async function WorldDetailPage({
     <>
       <Link
         href="/ejercicios"
-        className="relative z-50 inline-flex items-center gap-1.5 text-sm font-semibold text-white/70 hover:text-white transition-colors mb-6"
+        className="relative z-50 inline-flex items-center gap-1.5 text-sm font-semibold transition-colors mb-6 px-3 py-1.5 rounded-xl"
+        style={{ color: "#0B1926", background: "white" }}
       >
         <ArrowLeft className="h-4 w-4" />
         Volver

@@ -383,8 +383,8 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
         <header className="p-4">
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1 text-sm transition-colors"
-            style={{ color: "rgba(255,255,255,0.70)" }}
+            className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl"
+            style={{ color: "#0B1926", background: "white" }}
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
@@ -454,7 +454,8 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
             <button
               type="button"
               onClick={() => setPhase("intro")}
-              className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
+              className="inline-flex items-center gap-1 text-sm font-medium transition-colors"
+              style={{ color: "#0B1926" }}
             >
               <ArrowLeft className="h-4 w-4" />
               Volver
