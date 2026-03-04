@@ -101,7 +101,7 @@ export default async function RankingPage() {
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
           {ranking.map((entry, index) => {
             const rank = index + 1;
             const isMe = entry.user_id === user!.id;
@@ -112,13 +112,9 @@ export default async function RankingPage() {
             return (
               <div
                 key={entry.user_id}
-                className={`flex items-center gap-3 rounded-2xl border p-3 transition-all ${
-                  isMe
-                    ? "border-[#579F93]/40 bg-[#579F93]/8"
-                    : rank <= 3
-                    ? "border-border bg-card shadow-sm"
-                    : "border-border bg-card/50"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  index !== ranking.length - 1 ? "border-b border-border" : ""
+                } ${isMe ? "bg-[#579F93]/8" : ""}`}
               >
                 <div className="w-8 text-center shrink-0">
                   {rank <= 3 ? (

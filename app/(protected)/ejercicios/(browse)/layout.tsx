@@ -33,7 +33,7 @@ export default async function BrowseEjerciciosLayout({
     <WorldThemeProvider>
       <ForceDarkOnWorldPages />
       <div className="fixed inset-0 -z-10 bg-background" />
-      <div className="min-h-dvh overflow-x-hidden p-4 pb-24 lg:pl-28 lg:pr-8 lg:py-8 lg:pb-8">
+      <div className="min-h-dvh overflow-x-hidden p-4 pb-36 lg:pl-28 lg:pr-8 lg:py-8 lg:pb-8">
         <div className="max-w-4xl mx-auto">
           <div className="sticky top-0 z-50 flex justify-between items-center mb-4 pt-0">
             <div className="flex items-center gap-1 rounded-2xl px-2.5 py-1 bg-card/80 border border-border dark:bg-black/35 dark:border-white/10 backdrop-blur-md shadow-sm">
