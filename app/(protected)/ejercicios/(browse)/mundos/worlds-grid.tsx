@@ -2,14 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { getScheme } from "./world-color-schemes";
 import { WorldCanvas } from "./world-canvas";
 import { useWorldTheme } from "@/components/world-theme-context";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 type WorldData = {
   id: string;
@@ -24,45 +20,94 @@ type WorldData = {
   completedExercises: number;
 };
 
-const CONTAINER_W = 320;
-const NODE_X_LEFT = 76;
-const NODE_X_RIGHT = CONTAINER_W - 76;
-const PATH_TOP = 130;
-const NODE_SPACING_Y = 220;
-const PATH_BOTTOM = 130;
+function WorldCard({ world, index }: { world: WorldData; index: number }) {
+  const scheme = getScheme(world.name);
+  const progress =
+    world.totalExercises > 0
+      ? Math.round((world.completedExercises / world.totalExercises) * 100)
+      : 0;
 
-const SCALE_ACTIVE = 1.38;
-const SCALE_NORMAL = 1.0;
+  return (
+    <Link
+      href={`/ejercicios/mundos/${world.id}`}
+      className="relative flex h-44 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+      style={{
+        animation: "fadeInUp 0.4s ease-out backwards",
+        animationDelay: `${index * 80}ms`,
+        background: scheme.navGradient,
+      }}
+    >
+      {world.iconUrl && (
+        <Image
+          src={world.iconUrl}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(min-width: 672px) 672px, 100vw"
+          priority={index < 2}
+        />
+      )}
 
-function getNodePos(index: number) {
-  return {
-    x: index % 2 === 0 ? NODE_X_LEFT : NODE_X_RIGHT,
-    y: PATH_TOP + index * NODE_SPACING_Y,
-  };
-}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
-function buildSvgPath(count: number): string {
-  if (count === 0) return "";
-  if (count === 1) {
-    const p = getNodePos(0);
-    return `M ${p.x} ${p.y}`;
-  }
-  const pts = Array.from({ length: count }, (_, i) => getNodePos(i));
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length; i++) {
-    const p0 = pts[i - 1];
-    const p1 = pts[i];
-    const cy = (p0.y + p1.y) / 2;
-    d += ` C ${p0.x} ${cy} ${p1.x} ${cy} ${p1.x} ${p1.y}`;
-  }
-  return d;
+      <div className="relative flex items-end w-full px-6 py-5">
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          {world.difficultyLabel && (
+            <span
+              className="self-start text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full"
+              style={{ color: scheme.particles, background: `${scheme.particles}28` }}
+            >
+              {world.difficultyLabel}
+            </span>
+          )}
+
+          <h2 className="font-serif font-bold text-white text-2xl leading-none drop-shadow">
+            {world.displayName}
+          </h2>
+
+          {world.description && (
+            <p className="text-xs text-white/65 leading-snug line-clamp-1">
+              {world.description}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-1 max-w-[220px]">
+            <div className="flex justify-between text-[10px] text-white/45">
+              <span>{world.completedExercises} de {world.totalExercises} ejercicios</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${progress}%`, background: scheme.accentColor }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <span
+          className="shrink-0 ml-4 px-5 py-1.5 rounded-full text-base text-white whitespace-nowrap self-end"
+          style={{
+            fontFamily: "var(--font-caveat)",
+            fontWeight: 700,
+            letterSpacing: "0.03em",
+            background: "rgba(255,255,255,0.15)",
+            border: `1.5px solid rgba(255,255,255,0.40)`,
+            backdropFilter: "blur(6px)",
+            boxShadow: `0 2px 12px ${scheme.particles}30`,
+          }}
+        >
+          Empezar →
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
   const [bgIndex, setBgIndex] = useState(0);
   const { setTheme } = useWorldTheme();
-  const scaleRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (worlds.length === 0) return;
@@ -82,44 +127,6 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     return () => clearInterval(interval);
   }, [worlds.length]);
 
-
-  useEffect(() => {
-    if (worlds.length === 0 || !containerRef.current) return;
-
-    const els = scaleRefs.current.slice(0, worlds.length);
-
-    gsap.set(els[0], { scale: SCALE_ACTIVE });
-    if (els.length > 1) gsap.set(els.slice(1), { scale: SCALE_NORMAL });
-
-    if (worlds.length === 1) return;
-
-    const endOffset = PATH_TOP + (worlds.length - 1) * NODE_SPACING_Y;
-
-    const st = ScrollTrigger.create({
-      trigger: containerRef.current,
-      start: `top+=${PATH_TOP} center`,
-      end: `top+=${endOffset} center`,
-      scrub: 0.6,
-      onUpdate(self) {
-        const activeFloat = self.progress * (worlds.length - 1);
-        els.forEach((el, i) => {
-          if (!el) return;
-          const dist = Math.abs(i - activeFloat);
-          const scale =
-            dist < 1
-              ? SCALE_NORMAL + (SCALE_ACTIVE - SCALE_NORMAL) * (1 - dist)
-              : SCALE_NORMAL;
-          gsap.set(el, { scale });
-        });
-      },
-    });
-
-    return () => {
-      st.kill();
-      gsap.killTweensOf(els.filter(Boolean));
-    };
-  }, [worlds.length]);
-
   if (worlds.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-8">
@@ -128,135 +135,16 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     );
   }
 
-  const containerHeight =
-    PATH_TOP + (worlds.length - 1) * NODE_SPACING_Y + PATH_BOTTOM;
-  const pathD = buildSvgPath(worlds.length);
   const currentWorldName = worlds[bgIndex]?.name ?? "";
-  const currentScheme = getScheme(currentWorldName);
 
   return (
     <>
-      <div
-        className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
-        }}
-      />
-      <div
-        className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
-        }}
-      />
-
       <WorldCanvas worldName={currentWorldName} isActive={true} />
 
-      <div className="flex justify-center">
-        <div
-          ref={containerRef}
-          className="relative"
-          style={{ width: CONTAINER_W, height: containerHeight, overflow: "visible" }}
-        >
-          <svg
-            className="absolute inset-0 pointer-events-none"
-            width={CONTAINER_W}
-            height={containerHeight}
-          >
-            <path
-              d={pathD}
-              fill="none"
-              stroke={currentScheme.particles}
-              strokeWidth={14}
-              strokeOpacity={0.18}
-              strokeLinecap="round"
-            />
-            <path
-              d={pathD}
-              fill="none"
-              stroke="rgba(255,255,255,0.28)"
-              strokeWidth={3.5}
-              strokeLinecap="round"
-              strokeDasharray="14 10"
-            />
-          </svg>
-
-          {worlds.map((world, index) => {
-            const scheme = getScheme(world.name);
-            const pos = getNodePos(index);
-            return (
-              <div
-                key={world.id}
-                className="absolute"
-                style={{
-                  left: pos.x,
-                  top: pos.y,
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                <div
-                  ref={(el) => {
-                    scaleRefs.current[index] = el;
-                  }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <div className="relative">
-                    <div
-                      className="absolute -inset-4 rounded-full -z-10 blur-xl"
-                      style={{ background: `${scheme.particles}40` }}
-                    />
-                    <Link
-                      href={`/ejercicios/mundos/${world.id}`}
-                      className="relative block w-[88px] h-[88px] transition-transform duration-200 active:scale-95 hover:scale-105"
-                    >
-                      {world.iconUrl && (
-                        <Image
-                          src={world.iconUrl}
-                          alt={world.displayName}
-                          fill
-                          className="object-contain drop-shadow-2xl"
-                          sizes="88px"
-                        />
-                      )}
-                    </Link>
-                  </div>
-
-                  <h2
-                    className="text-xs font-extrabold text-white text-center leading-tight"
-                    style={{
-                      maxWidth: 100,
-                      textShadow: "0 1px 6px rgba(0,0,0,0.9)",
-                    }}
-                  >
-                    {world.displayName}
-                  </h2>
-
-                  {world.difficultyLabel && (
-                    <span
-                      className="text-[10px] font-bold uppercase tracking-wider"
-                      style={{
-                        color: scheme.particles,
-                        textShadow: "0 0 8px rgba(0,0,0,1)",
-                      }}
-                    >
-                      {world.difficultyLabel}
-                    </span>
-                  )}
-
-                  <Link
-                    href={`/ejercicios/mundos/${world.id}`}
-                    className="px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all duration-200 active:scale-95 shadow-lg"
-                    style={{
-                      background: scheme.buttonGradient,
-                      boxShadow: `0 2px 10px ${scheme.particles}50`,
-                    }}
-                  >
-                    Empezar
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <div className="flex flex-col gap-3 px-4 max-w-2xl mx-auto pb-32">
+        {worlds.map((world, index) => (
+          <WorldCard key={world.id} world={world} index={index} />
+        ))}
       </div>
     </>
   );

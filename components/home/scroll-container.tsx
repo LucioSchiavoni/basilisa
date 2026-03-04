@@ -278,7 +278,7 @@ export function ScrollContainer() {
           { opacity: 1, filter: "blur(0px)", y: 0, duration: 1.0, ease: "power3.out" },
           0.55
         )
-        .to(letters, { opacity: 1, y: 0, duration: 0.82, ease: "power3.out", stagger: 0.13 }, "+=0.20")
+        .to(letters, { opacity: 1, y: 0, duration: 0.82, ease: "power3.out", stagger: 0.13 }, 0.1)
         .to(rays, { opacity: 1, y: 0, duration: 0.20, ease: "power2.out", stagger: 0.055 }, "+=0.10")
     }, containerRef)
 
@@ -360,7 +360,7 @@ export function ScrollContainer() {
           className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24"
           style={{ backgroundColor: "#C73341", opacity: 0 }}
         >
-          <div className="max-w-3xl flex flex-col gap-8 text-center text-white leading-relaxed text-2xl sm:text-3xl md:text-4xl font-extralight">
+          <div className="max-w-3xl mt-4 flex flex-col gap-4 text-center text-white leading-relaxed text-2xl sm:text-3xl md:text-4xl font-extralight">
             <p ref={idlP1Ref}>{IDL_1}</p>
             <p ref={idlP2Ref}>{IDL_2}</p>
           </div>
@@ -374,22 +374,22 @@ export function ScrollContainer() {
             opacity: 0,
           }}
         >
-          <div className="max-w-2xl flex flex-col gap-6 md:gap-8 text-center">
+          <div className="max-w-4xl flex flex-col gap-6 md:gap-8 text-center">
             <h2
               ref={whoQRef}
-              className="text-2xl sm:text-3xl md:text-4xl font-semibold text-neutral-700 tracking-tight leading-tight"
+              className="text-2xl sm:text-3xl md:text-5xl font-semibold text-neutral-700 tracking-tight leading-tight"
             >
               {WHO_Q}
             </h2>
             <p
               ref={whoA1Ref}
-              className="text-base sm:text-lg md:text-xl font-extralight text-neutral-600 leading-relaxed"
+              className="text-base sm:text-lg md:text-4xl font-extralight text-neutral-600 leading-relaxed"
             >
               {WHO_A1}
             </p>
             <p
               ref={whoA2Ref}
-              className="text-base sm:text-lg md:text-xl font-extralight text-neutral-600 leading-relaxed"
+              className="text-base sm:text-lg md:text-4xl font-extralight text-neutral-600 leading-relaxed"
             >
               {WHO_A2}
             </p>
@@ -401,21 +401,21 @@ export function ScrollContainer() {
           className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24"
           style={{ backgroundColor: "#2E85C8", opacity: 0 }}
         >
-          <div className="max-w-2xl w-full flex flex-col gap-8 md:gap-10">
+          <div className="max-w-4xl w-full flex flex-col gap-8 md:gap-10">
             <h2
               ref={whatQRef}
-              className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white tracking-tight leading-tight text-center"
+              className="text-2xl sm:text-3xl md:text-5xl font-semibold text-white tracking-tight leading-tight text-center"
             >
               {WHAT_Q}
             </h2>
-            <ul className="flex flex-col gap-4">
+            <ul className="flex flex-col gap-5 md:gap-7">
               {FEATURES.map((feature, i) => (
                 <li
                   key={i}
                   ref={(el) => { featuresRef.current[i] = el }}
-                  className="text-base sm:text-lg md:text-xl font-extralight text-white/90 leading-relaxed flex items-start gap-3"
+                  className="text-base sm:text-lg md:text-2xl font-extralight text-white/90 leading-relaxed flex items-baseline gap-4"
                 >
-                  <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-white/70" />
+                  <span className="shrink-0 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white/70 translate-y-[-0.1em]" />
                   {feature}
                 </li>
               ))}

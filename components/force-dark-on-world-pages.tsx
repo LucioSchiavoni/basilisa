@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 
 export function ForceDarkOnWorldPages() {
   const pathname = usePathname()
-  const isWorldPage = pathname === "/ejercicios" || pathname.startsWith("/ejercicios/mundos")
+  const isWorldPage = pathname.startsWith("/ejercicios/mundos")
   const wasForced = useRef(false)
 
   useEffect(() => {
