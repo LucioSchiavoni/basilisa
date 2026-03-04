@@ -1,0 +1,40 @@
+{
+    "worlds": [
+        {
+            "id": 1,
+            "slug": "medieval",
+            "name": "El Reino Medieval",
+            "story": "Hace mucho tiempo, en una tierra de castillos y torres enormes, existía un reino protegido por un hechizo muy especial. Sus puertas solo se abrían para quienes se animaban a descifrar los acertijos grabados en sus murallas de piedra. Cada palabra descubierta encendía una antorcha nueva, y así el castillo brillaba más y más."
+        },
+        {
+            "id": 2,
+            "slug": "oceano",
+            "name": "El Océano Profundo",
+            "story": "Muy por debajo de las olas, donde la luz del sol casi no llega, hay un mundo de corales brillantes y cuevas escondidas. Las criaturas del océano guardan secretos antiguos entre las algas y la arena. Solo quienes nadan con paciencia y miran con atención pueden encontrar los tesoros que el mar esconde."
+        },
+        {
+            "id": 3,
+            "slug": "bosque",
+            "name": "El Bosque Encantado",
+            "story": "En el corazón de un bosque enorme, los árboles hablan con luces y las piedras guardan mensajes. Los caminos cambian todo el tiempo, y nada es lo que parece a primera vista. Pero quienes se animan a explorar despacio descubren que el bosque siempre los guía hacia donde necesitan llegar."
+        },
+        {
+            "id": 4,
+            "slug": "hielo",
+            "name": "Las Cumbres de Hielo",
+            "story": "En las montañas más altas del mundo, donde todo está cubierto de nieve y el viento sopla fuerte, hay cumbres que nadie pisó jamás. El hielo guarda huellas de quienes lo intentaron antes, y cada paso nuevo abre el camino un poco más para el que viene después."
+        },
+        {
+            "id": 5,
+            "slug": "fuego",
+            "name": "Las Tierras de Fuego",
+            "story": "En un valle rodeado de volcanes, la tierra tiembla y el cielo brilla de noche con ríos de lava. Todo parece peligroso, pero debajo del fuego crece la roca más fuerte del mundo. Los que se animan a cruzar este lugar descubren que el fuego no destruye todo: también transforma."
+        },
+        {
+            "id": 6,
+            "slug": "cielo",
+            "name": "El Cielo Infinito",
+            "story": "Más arriba de las nubes, donde el aire es liviano y las estrellas se ven de día, hay un mundo que flota en silencio. Desde ahí se puede ver todo: los otros reinos, el océano, el bosque y las montañas. Llegar hasta acá no es fácil, pero quienes lo logran entienden que cada paso del camino valió la pena."
+        }
+    ]
+}

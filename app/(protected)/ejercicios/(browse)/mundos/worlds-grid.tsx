@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { getScheme } from "./world-color-schemes";
-import { WorldCanvas } from "./world-canvas";
 import { useWorldTheme } from "@/components/world-theme-context";
+import { FloatingParticles } from "@/components/home/floating-particles";
 
 type WorldData = {
   id: string;
@@ -106,7 +106,6 @@ function WorldCard({ world, index }: { world: WorldData; index: number }) {
 }
 
 export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
-  const [bgIndex, setBgIndex] = useState(0);
   const { setTheme } = useWorldTheme();
 
   useEffect(() => {
@@ -119,14 +118,6 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     });
   }, [worlds]);
 
-  useEffect(() => {
-    if (worlds.length === 0) return;
-    const interval = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % worlds.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [worlds.length]);
-
   if (worlds.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-8">
@@ -135,11 +126,9 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
     );
   }
 
-  const currentWorldName = worlds[bgIndex]?.name ?? "";
-
   return (
     <>
-      <WorldCanvas worldName={currentWorldName} isActive={true} />
+      <FloatingParticles />
 
       <div className="flex flex-col gap-3 px-4 max-w-2xl mx-auto pb-32">
         {worlds.map((world, index) => (

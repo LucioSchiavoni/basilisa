@@ -53,7 +53,7 @@ const navItems = [
     href: "/completar-perfil",
     label: "Perfil",
     exact: false,
-    accentColor: "#e2e8f0",
+    accentColor: "#2E85C8",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="5" />
@@ -67,17 +67,46 @@ export function PatientBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-3">
-      <div
-        className="flex h-[64px] items-center rounded-2xl px-1"
-        style={{
-          background: NAV_BG,
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.10)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-        }}
-      >
+    <>
+      {/* Mobile: bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+        <div
+          className="flex h-[64px] items-center"
+          style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.2)" }}
+        >
+          {navItems.map((item) => {
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "relative flex flex-col items-center justify-center gap-0.5 py-2 h-full transition-all duration-200",
+                  isActive ? "flex-[2]" : "flex-1"
+                )}
+                style={{ background: item.accentColor }}
+              >
+                <div
+                  className={cn("relative transition-all duration-200", isActive ? "scale-110" : "")}
+                  style={{ color: "#ffffff" }}
+                >
+                  {item.icon}
+                </div>
+                {isActive && (
+                  <span className="text-[9px] font-bold tracking-widest uppercase relative text-white">
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Desktop: left sidebar */}
+      <nav className="hidden lg:flex fixed left-0 top-0 bottom-0 z-50 w-20 flex-col">
         {navItems.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
@@ -86,41 +115,30 @@ export function PatientBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-0.5 py-2 transition-all duration-200",
-                isActive ? "flex-[2]" : "flex-1"
-              )}
+              className="relative flex flex-col items-center justify-center gap-1.5 flex-1 w-full transition-all duration-200"
+              style={{ background: item.accentColor }}
             >
               {isActive && (
-                <div
-                  className="absolute inset-0 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.07)" }}
-                />
+                <div className="absolute inset-0 rounded-[6px] border-2 border-black/25 dark:border-white/60 pointer-events-none" />
               )}
               <div
-                className={cn("relative transition-all duration-200", isActive ? "scale-110" : "opacity-50")}
-                style={{ color: isActive ? item.accentColor : "rgba(255,255,255,0.6)" }}
+                className={cn("relative transition-all duration-200", isActive ? "scale-110" : "")}
+                style={{ color: "#ffffff" }}
               >
                 {item.icon}
               </div>
-              {isActive && (
-                <span
-                  className="text-[9px] font-bold tracking-widest uppercase relative"
-                  style={{ color: item.accentColor }}
-                >
-                  {item.label}
-                </span>
-              )}
-              {isActive && (
-                <div
-                  className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full"
-                  style={{ background: item.accentColor }}
-                />
-              )}
+              <span
+                className={cn(
+                  "text-[9px] font-bold tracking-widest uppercase text-white transition-all duration-200",
+                  isActive ? "opacity-100" : "opacity-60"
+                )}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
