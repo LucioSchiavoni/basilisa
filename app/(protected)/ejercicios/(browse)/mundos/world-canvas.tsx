@@ -253,16 +253,15 @@ const COUNTS: Record<string, number> = {
   cielo: 8,
 };
 
-export function WorldCanvas({ worldName, isActive }: { worldName: string; isActive: boolean }) {
+export function WorldCanvas({ worldName, isActive, canStart }: { worldName: string; isActive: boolean; canStart: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
+  const particlesRef = useRef<Particle[]>([]);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !isActive) return;
-
-    setVisible(false);
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -273,34 +272,44 @@ export function WorldCanvas({ worldName, isActive }: { worldName: string; isActi
     };
     window.addEventListener("resize", onResize);
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
     const count = COUNTS[worldName] ?? 20;
-    const particles = Array.from({ length: count }, () =>
+    particlesRef.current = Array.from({ length: count }, () =>
       spawnParticle(worldName, canvas, true)
     );
 
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    };
+  }, [worldName, isActive]);
+
+  useEffect(() => {
+    if (!canStart || !isActive) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    setVisible(true);
+
     const tick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const p of particles) {
+      for (const p of particlesRef.current) {
         updateParticle(worldName, p, canvas);
         drawParticle(worldName, ctx, p);
       }
       rafRef.current = requestAnimationFrame(tick);
     };
 
-    const timeout = setTimeout(() => {
-      setVisible(true);
-      rafRef.current = requestAnimationFrame(tick);
-    }, 800);
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      clearTimeout(timeout);
       cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", onResize);
+      rafRef.current = 0;
     };
-  }, [worldName, isActive]);
+  }, [canStart, isActive, worldName]);
 
   return (
     <canvas

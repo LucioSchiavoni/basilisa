@@ -4,7 +4,7 @@ import { useLayoutEffect, useEffect, useRef } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import Link from "next/link"
-import { LogIn, ArrowUp } from "lucide-react"
+import { LogIn, ArrowUp, ChevronDown, Mouse } from "lucide-react"
 import { LisaLogo } from "@/components/svg/lisa-logo"
 
 gsap.registerPlugin(ScrollTrigger)
@@ -112,6 +112,8 @@ export function ScrollContainer() {
   const closeL1Ref = useRef<HTMLParagraphElement>(null)
   const closeL2Ref = useRef<HTMLParagraphElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const knowMoreBtnRef = useRef<HTMLDivElement>(null)
+  const scrollMiniRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const ro = new ResizeObserver(() => ScrollTrigger.refresh())
@@ -141,6 +143,8 @@ export function ScrollContainer() {
         gsap.set(featureEls, { opacity: 1, x: 0 })
         gsap.set([...close1Spans, ...close2Spans], { opacity: 1, filter: "blur(0px)", y: 0, scale: 1 })
         gsap.set(closeBtnRef.current, { opacity: 1, y: 0 })
+        gsap.set(knowMoreBtnRef.current, { opacity: 0 })
+        gsap.set(scrollMiniRef.current, { opacity: 0 })
         gsap.set([panel2Ref.current, panel3Ref.current, panel4Ref.current, panel5Ref.current], { opacity: 1 })
         return
       }
@@ -165,6 +169,8 @@ export function ScrollContainer() {
       gsap.set(close1Spans, { opacity: 0, filter: "blur(22px)", y: 28, scale: 0.88 })
       gsap.set(close2Spans, { opacity: 0, filter: "blur(16px)", y: 16, scale: 0.94 })
       gsap.set(closeBtnRef.current, { opacity: 0, y: 14 })
+      gsap.set(knowMoreBtnRef.current, { opacity: 0, y: 10 })
+      gsap.set(scrollMiniRef.current, { opacity: 0 })
 
       const entryTl = gsap.timeline({
         onComplete() {
@@ -226,6 +232,8 @@ export function ScrollContainer() {
               .to(heroWords, {
                 opacity: 1, y: 0, duration: 1, ease: "power2.out", stagger: 0.03,
               }, 1.5)
+              .to(knowMoreBtnRef.current, { opacity: 0, y: -8, duration: 0.5, ease: "power2.in" }, 1.5)
+              .to(scrollMiniRef.current, { opacity: 1, duration: 0.6, ease: "power2.out" }, 1.5)
 
               .to(panel1Ref.current, { opacity: 0, duration: 1, ease: "power2.inOut" }, 5)
               .to(panel2Ref.current, { opacity: 1, duration: 1, ease: "power2.inOut" }, 5)
@@ -253,6 +261,7 @@ export function ScrollContainer() {
             const closeStart = 29
             tl.to(panel4Ref.current, { opacity: 0, duration: 1, ease: "power2.inOut" }, closeStart)
               .to(panel5Ref.current, { opacity: 1, duration: 1, ease: "power2.inOut" }, closeStart)
+              .to(scrollMiniRef.current, { opacity: 0, duration: 0.5, ease: "power2.in" }, closeStart)
 
             const s1 = 0.28
             const s2 = 0.16
@@ -280,6 +289,7 @@ export function ScrollContainer() {
         )
         .to(letters, { opacity: 1, y: 0, duration: 0.82, ease: "power3.out", stagger: 0.13 }, 0.1)
         .to(rays, { opacity: 1, y: 0, duration: 0.20, ease: "power2.out", stagger: 0.055 }, "+=0.10")
+        .to(knowMoreBtnRef.current, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, "+=0.3")
     }, containerRef)
 
     return () => {
@@ -454,6 +464,32 @@ export function ScrollContainer() {
               Subir al inicio
             </button>
           </div>
+        </div>
+
+        <div
+          ref={knowMoreBtnRef}
+          style={{ opacity: 0, willChange: "transform, opacity" }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5"
+        >
+          <Mouse size={20} strokeWidth={1.5} className="text-neutral-400" />
+          <span className="text-[10px] font-medium tracking-widest uppercase text-neutral-400">
+            Baja para ver más
+          </span>
+          <div className="flex flex-col items-center -space-y-3">
+            <ChevronDown size={22} strokeWidth={1.5} className="text-neutral-400 animate-[scrollhint_1.4s_ease-in-out_infinite]" />
+            <ChevronDown size={22} strokeWidth={1.5} className="text-neutral-300 animate-[scrollhint_1.4s_ease-in-out_0.2s_infinite]" />
+            <ChevronDown size={22} strokeWidth={1.5} className="text-neutral-200 animate-[scrollhint_1.4s_ease-in-out_0.4s_infinite]" />
+          </div>
+        </div>
+
+        <div
+          ref={scrollMiniRef}
+          style={{ opacity: 0, willChange: "opacity" }}
+          className="absolute bottom-8 right-8 z-10 flex flex-col items-center -space-y-2.5"
+        >
+          <ChevronDown size={16} strokeWidth={1.5} className="text-neutral-500/70 animate-[scrollhint_1.4s_ease-in-out_infinite]" />
+          <ChevronDown size={16} strokeWidth={1.5} className="text-neutral-400/50 animate-[scrollhint_1.4s_ease-in-out_0.2s_infinite]" />
+          <ChevronDown size={16} strokeWidth={1.5} className="text-neutral-300/35 animate-[scrollhint_1.4s_ease-in-out_0.4s_infinite]" />
         </div>
       </div>
     </>

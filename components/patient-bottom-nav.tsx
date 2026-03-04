@@ -55,7 +55,7 @@ export function PatientBottomNav() {
             const isActive = item.exact
               ? pathname === item.href
               : pathname.startsWith(item.href) && !otherExactMatch;
-            const iconSrc = isActive && "activeIcon" in item ? item.activeIcon : item.icon;
+            const iconSrc = isActive && "activeIcon" in item ? (item.activeIcon ?? item.icon) : item.icon;
             return (
               <Link
                 key={item.href}
@@ -95,7 +95,7 @@ export function PatientBottomNav() {
           const isActive = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href) && !otherExactMatch;
-          const iconSrc = isActive && "activeIcon" in item ? item.activeIcon : item.icon;
+          const iconSrc = isActive && "activeIcon" in item ? (item.activeIcon ?? item.icon) : item.icon;
           return (
             <Link
               key={item.href}

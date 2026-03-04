@@ -14,12 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/app/(auth)/actions";
 
-interface ProfileButtonProps {
-  fullName: string | null;
-  email: string;
-  isProfileComplete: boolean;
-}
-
 function getInitials(fullName: string | null, email: string) {
   if (fullName) {
     return fullName
@@ -71,14 +65,21 @@ function ThemeToggleRow() {
   );
 }
 
-export function ProfileButton({ fullName, email, isProfileComplete }: ProfileButtonProps) {
+interface ProfileButtonProps {
+  fullName: string | null;
+  email: string;
+  isProfileComplete: boolean;
+  avatarClassName?: string;
+}
+
+export function ProfileButton({ fullName, email, isProfileComplete, avatarClassName }: ProfileButtonProps) {
   const router = useRouter();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button suppressHydrationWarning className="relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <Avatar className="h-9 w-9 cursor-pointer">
+          <Avatar className={avatarClassName ?? "h-9 w-9 cursor-pointer"}>
             <AvatarFallback className="text-xs">
               {getInitials(fullName, email)}
             </AvatarFallback>

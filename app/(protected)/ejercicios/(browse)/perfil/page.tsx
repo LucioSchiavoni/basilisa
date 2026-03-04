@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FloatingParticles } from "@/components/home/floating-particles";
-import { Pencil, Mail, Phone, Calendar, Flame, LogOut } from "lucide-react";
+import { Pencil, Mail, Phone, Calendar, Flame, LogOut, KeyRound } from "lucide-react";
 import { GemIcon } from "@/components/gem-icon";
 import { logout } from "@/app/(auth)/actions";
 
@@ -158,6 +158,14 @@ export default async function PerfilPage() {
           </div>
         </div>
       </div>
+
+      <Link
+        href="/change-password"
+        className="flex items-center justify-center gap-2 w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-sm"
+      >
+        <KeyRound className="h-4 w-4" />
+        Cambiar contraseña
+      </Link>
 
       <form action={logout}>
         <button

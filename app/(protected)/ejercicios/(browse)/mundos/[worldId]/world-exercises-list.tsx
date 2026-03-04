@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { CheckCircle2, PlayCircle } from "lucide-react";
 import { getScheme } from "../world-color-schemes";
 import { WorldCanvas } from "../world-canvas";
@@ -28,20 +29,37 @@ export function WorldExercisesList({
 }) {
   const scheme = getScheme(worldName);
   const completedSet = new Set(completedExerciseIds);
+  const [bgReady, setBgReady] = useState(false);
+  const [particlesReady, setParticlesReady] = useState(false);
+
+  useEffect(() => {
+    const onBgLoaded = () => {
+      setBgReady(true);
+      setTimeout(() => setParticlesReady(true), 350);
+    };
+    if (!scheme.background.startsWith("/")) {
+      onBgLoaded();
+      return;
+    }
+    const img = new window.Image();
+    img.onload = onBgLoaded;
+    img.onerror = onBgLoaded;
+    img.src = scheme.background;
+  }, [scheme.background]);
+
+  const bgStyle = scheme.background.startsWith("/")
+    ? { backgroundImage: `url(${scheme.background})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
+    : { background: scheme.background };
 
   if (exercises.length === 0) {
     const worldConfig = getWorldConfig(worldName);
     return (
       <>
         <div
-          className="fixed inset-0 -z-10 pointer-events-none"
-          style={
-            scheme.background.startsWith("/")
-              ? { backgroundImage: `url(${scheme.background})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
-              : { background: scheme.background }
-          }
+          className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
+          style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
         />
-        <WorldCanvas worldName={worldName} isActive={true} />
+        <WorldCanvas worldName={worldName} isActive={true} canStart={particlesReady} />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-6">
           {worldConfig?.characterImage && (
             <div className="relative w-40 h-40">
@@ -85,14 +103,10 @@ export function WorldExercisesList({
   return (
     <>
       <div
-        className="fixed inset-0 -z-10 pointer-events-none"
-        style={
-          scheme.background.startsWith("/")
-            ? { backgroundImage: `url(${scheme.background})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
-            : { background: scheme.background }
-        }
+        className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
+        style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
       />
-      <WorldCanvas worldName={worldName} isActive={true} />
+      <WorldCanvas worldName={worldName} isActive={true} canStart={particlesReady} />
 
       {totalExercises > 0 && (
         <div
