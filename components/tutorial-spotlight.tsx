@@ -48,10 +48,12 @@ export function TutorialSpotlight({ targetField }: Props) {
   useEffect(() => {
     if (tutorial !== targetField) return
 
-    const el = document.querySelector(`[data-spotlight="${targetField}"]`)
+    const el = document.querySelector(`[data-spotlight="${targetField}"]`) as Element | null
     if (!el) return
 
-    el.scrollIntoView({ behavior: "smooth", block: "center" })
+    const target = el
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" })
 
     let savedScrollY = 0
     let interval: ReturnType<typeof setInterval>
@@ -60,7 +62,7 @@ export function TutorialSpotlight({ targetField }: Props) {
       savedScrollY = lockScroll()
 
       function measure() {
-        const r = el.getBoundingClientRect()
+        const r = target.getBoundingClientRect()
         setRect({ top: r.top, left: r.left, right: r.right, bottom: r.bottom, width: r.width, height: r.height })
       }
 
@@ -68,7 +70,7 @@ export function TutorialSpotlight({ targetField }: Props) {
       interval = setInterval(measure, 150)
       window.addEventListener("resize", measure)
 
-      ;(el as any)._unlockScroll = () => {
+      ;(target as any)._unlockScroll = () => {
         clearInterval(interval)
         window.removeEventListener("resize", measure)
         unlockScroll(savedScrollY)
@@ -77,7 +79,7 @@ export function TutorialSpotlight({ targetField }: Props) {
 
     return () => {
       clearTimeout(lockTimer)
-      const unlock = (el as any)._unlockScroll
+      const unlock = (target as any)._unlockScroll
       if (unlock) {
         unlock()
         delete (el as any)._unlockScroll
