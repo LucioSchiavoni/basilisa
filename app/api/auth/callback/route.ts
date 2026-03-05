@@ -38,6 +38,10 @@ export async function GET(request: NextRequest) {
     }
   );
 
+  const next = requestUrl.searchParams.get("next");
+  const gradeYearParam = requestUrl.searchParams.get("grade_year");
+  const gradeYear = gradeYearParam ? Number(gradeYearParam) : null;
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -50,6 +54,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=no_user", requestUrl.origin));
   }
 
+  if (gradeYear && !isNaN(gradeYear)) {
+    await supabase
+      .from("profiles")
+      .update({
+        grade_year: gradeYear,
+        grade_year_updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+  }
+
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, is_profile_complete")
@@ -60,12 +74,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=profile", requestUrl.origin));
   }
 
-  let redirectPath = "/ejercicios";
+  let redirectPath = next ?? "/ejercicios";
 
-  if (!profile.is_profile_complete && profile.role !== "patient") {
-    redirectPath = "/completar-perfil";
-  } else if (profile.role === "admin") {
-    redirectPath = "/admin";
+  if (!next) {
+    if (!profile.is_profile_complete && profile.role !== "patient") {
+      redirectPath = "/completar-perfil";
+    } else if (profile.role === "admin") {
+      redirectPath = "/admin";
+    }
   }
 
   const redirectUrl = new URL(redirectPath, requestUrl.origin);

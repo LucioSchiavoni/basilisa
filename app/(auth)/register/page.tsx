@@ -1,93 +1,321 @@
-"use client";
+"use client"
 
-import { useActionState } from "react";
-import Link from "next/link";
-import { register, type AuthState } from "../actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
+import { useState } from "react"
+import Link from "next/link"
+import { ArrowLeft, ArrowRight, Check, Mail, Eye, EyeOff } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { register } from "../actions"
+import { FloatingParticles } from "@/components/home/floating-particles"
+import { LisaLogo } from "@/components/svg/lisa-logo"
 
-const initialState: AuthState = {};
+const ESCUELA: Grade[] = [
+  { year: 1, label: "1°", color: "#C73341" },
+  { year: 2, label: "2°", color: "#579F93" },
+  { year: 3, label: "3°", color: "#D3A021" },
+  { year: 4, label: "4°", color: "#2E85C8" },
+  { year: 5, label: "5°", color: "#C73341" },
+  { year: 6, label: "6°", color: "#579F93" },
+]
+
+const LICEO: Grade[] = [
+  { year: 7, label: "1°", color: "#D3A021" },
+  { year: 8, label: "2°", color: "#2E85C8" },
+  { year: 9, label: "3°", color: "#C73341" },
+  { year: 10, label: "4°", color: "#579F93" },
+  { year: 11, label: "5°", color: "#D3A021" },
+  { year: 12, label: "6°", color: "#2E85C8" },
+]
+
+type Grade = { year: number; label: string; color: string }
+
+function GradeCard({ grade, selected, onSelect }: { grade: Grade; selected: boolean; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="relative flex flex-col items-center justify-center gap-1 rounded-2xl border-2 py-4 transition-all duration-200 hover:scale-105 active:scale-95"
+      style={{
+        borderColor: selected ? grade.color : "transparent",
+        backgroundColor: selected ? grade.color + "14" : "rgba(255,255,255,0.75)",
+        boxShadow: selected
+          ? `0 4px 16px ${grade.color}28`
+          : "0 1px 4px rgba(0,0,0,0.07)",
+      }}
+    >
+      {selected && (
+        <div
+          className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: grade.color }}
+        >
+          <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
+        </div>
+      )}
+      <span
+        className="text-2xl font-bold transition-colors duration-200"
+        style={{ color: selected ? grade.color : "#6b7280" }}
+      >
+        {grade.label}
+      </span>
+    </button>
+  )
+}
 
 export default function RegisterPage() {
-  const [state, formAction, pending] = useActionState(register, initialState);
+  const [step, setStep] = useState(1)
+  const [gradeYear, setGradeYear] = useState<number | null>(null)
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [pending, setPending] = useState(false)
+
+  async function handleGoogleSignUp() {
+    if (gradeYear) sessionStorage.setItem("register_grade_year", String(gradeYear))
+    const supabase = createClient()
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback?grade_year=${gradeYear ?? ""}`,
+      },
+    })
+  }
+
+  async function handleEmailSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setPending(true)
+    setError(null)
+    const formData = new FormData(e.currentTarget)
+    formData.set("grade_year", String(gradeYear ?? ""))
+    const result = await register(undefined as never, formData)
+    setPending(false)
+    if (result?.error) setError(result.error)
+    if (result?.success) setSuccess(true)
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Crear Cuenta</CardTitle>
-          <CardDescription>Completa los datos para registrarte</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {state.error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
-              {state.error}
-            </div>
-          )}
-          {state.success && (
-            <div className="p-3 text-sm text-green-500 bg-green-50 rounded-md">
-              {state.success}
-            </div>
-          )}
-          <GoogleOAuthButton />
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                o regístrate con email
-              </span>
-            </div>
-          </div>
-        </CardContent>
-        <form action={formAction}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="tu@email.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Creando cuenta..." : "Crear Cuenta"}
-            </Button>
-            <p className="text-sm text-center text-muted-foreground">
-              ¿Ya tienes cuenta?{" "}
-              <Link href="/login" className="text-primary hover:underline">
-                Inicia sesión
+    <div
+      className="theme-fixed-light min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+      }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
+        }}
+      />
+      <FloatingParticles />
+
+      <div className="absolute top-4 left-4 z-20">
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver
+        </Link>
+      </div>
+
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center gap-8 -mt-12">
+        <LisaLogo className="w-24 h-auto select-none" />
+
+        <div
+          className="w-full rounded-3xl shadow-xl p-8"
+          style={{ backgroundColor: "rgba(255,255,255,0.82)", backdropFilter: "blur(16px)" }}
+        >
+          {success ? (
+            <div className="flex flex-col items-center gap-6 py-6 text-center">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#579F93]/15">
+                <Check className="h-8 w-8 text-[#579F93]" strokeWidth={2} />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-xl font-semibold text-neutral-800">¡Cuenta creada!</h2>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 space-y-1">
+                  <p className="text-sm font-semibold text-amber-800">Confirmá tu email para continuar</p>
+                  <p className="text-sm text-amber-700">
+                    Te enviamos un link de verificación. Revisá tu bandeja de entrada y hacé click en el link antes de iniciar sesión.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/login"
+                className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
+              >
+                Ya confirmé mi email, ir a iniciar sesión
               </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+            </div>
+          ) : step === 1 ? (
+            <div className="flex flex-col gap-7">
+              <div className="text-center space-y-1">
+                <h1 className="text-2xl font-semibold text-neutral-800">¿Qué año estás cursando?</h1>
+                <p className="text-sm text-neutral-500">Elegí tu año para personalizar tu experiencia en LISA</p>
+              </div>
+
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
+                    Escuela · Primaria
+                  </span>
+                  <div className="grid grid-cols-6 gap-2">
+                    {ESCUELA.map((g) => (
+                      <GradeCard
+                        key={g.year}
+                        grade={g}
+                        selected={gradeYear === g.year}
+                        onSelect={() => setGradeYear(g.year)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-neutral-200" />
+                  <span className="text-xs text-neutral-400">o</span>
+                  <div className="flex-1 h-px bg-neutral-200" />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
+                    Liceo · Secundaria
+                  </span>
+                  <div className="grid grid-cols-6 gap-2">
+                    {LICEO.map((g) => (
+                      <GradeCard
+                        key={g.year}
+                        grade={g}
+                        selected={gradeYear === g.year}
+                        onSelect={() => setGradeYear(g.year)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                disabled={gradeYear === null}
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#579F93] hover:bg-[#4a8e83] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                Continuar
+                <ArrowRight className="h-4 w-4" />
+              </button>
+
+              <p className="text-center text-sm text-neutral-400">
+                ¿Ya tenés cuenta?{" "}
+                <Link href="/login" className="text-[#C73341] hover:underline font-medium">
+                  Iniciá sesión
+                </Link>
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-5">
+              <button
+                type="button"
+                onClick={() => { setStep(1); setShowEmailForm(false); setError(null); }}
+                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-600 transition-colors self-start"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Volver
+              </button>
+
+              <div className="text-center space-y-1">
+                <h2 className="text-2xl font-semibold text-neutral-800">Crear tu cuenta</h2>
+                <p className="text-sm text-neutral-500">Elegí cómo querés registrarte</p>
+              </div>
+
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-200">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleGoogleSignUp}
+                className="flex items-center justify-center gap-3 w-full h-12 rounded-xl border-2 border-neutral-200 bg-white hover:bg-neutral-50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-sm font-semibold text-neutral-700 shadow-sm"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                Continuar con Google
+              </button>
+
+              {!showEmailForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowEmailForm(true)}
+                  className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border-2 border-neutral-200 bg-white hover:bg-neutral-50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-sm font-semibold text-neutral-700"
+                >
+                  <Mail className="h-4 w-4" />
+                  Registrarme con email
+                </button>
+              ) : (
+                <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="tu@email.com"
+                    className="w-full h-11 rounded-xl border-2 border-neutral-200 bg-white px-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-[#579F93] focus:outline-none transition-colors"
+                  />
+                  <div className="relative">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      placeholder="Contraseña (mínimo 6 caracteres)"
+                      className="w-full h-11 rounded-xl border-2 border-neutral-200 bg-white px-4 pr-10 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-[#579F93] focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      name="confirmPassword"
+                      type={showConfirm ? "text" : "password"}
+                      required
+                      placeholder="Repetir contraseña"
+                      className="w-full h-11 rounded-xl border-2 border-neutral-200 bg-white px-4 pr-10 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-[#579F93] focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                    >
+                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={pending}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#C73341] hover:bg-[#b02d3a] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 mt-1"
+                  >
+                    {pending ? (
+                      <>
+                        <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Creando cuenta...
+                      </>
+                    ) : "Crear cuenta"}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  );
+  )
 }

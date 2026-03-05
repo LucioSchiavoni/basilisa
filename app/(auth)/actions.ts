@@ -182,10 +182,19 @@ export async function register(
     return { error: parsed.error.issues[0].message };
   }
 
+  const gradeYearRaw = formData.get("grade_year");
+  const gradeYear = gradeYearRaw ? Number(gradeYearRaw) : null;
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?next=/login`,
+      data: {
+        grade_year: gradeYear && !isNaN(gradeYear) ? gradeYear : null,
+      },
+    },
   });
 
   if (error) {

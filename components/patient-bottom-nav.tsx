@@ -45,7 +45,7 @@ export function PatientBottomNav() {
       {/* Mobile: bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
         <div
-          className="flex h-[108px] items-stretch rounded-t-md overflow-hidden"
+          className="flex h-[88px] items-stretch rounded-t-md overflow-hidden"
           style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.2)" }}
         >
           {navItems.map((item) => {
@@ -69,7 +69,7 @@ export function PatientBottomNav() {
                 {isActive && (
                   <div className="absolute inset-0 rounded-t-md border-[3px] border-white/80 pointer-events-none z-20" />
                 )}
-                <div className={cn("relative flex-1 w-full overflow-hidden transition-all duration-200", isActive ? "scale-105" : "")}>
+                <div className={cn("relative flex-1 w-full overflow-hidden transition-all duration-200", isActive ? "scale-105" : "scale-[1.18]")}>
                   <Image src={iconSrc} alt={item.label} fill className="object-cover" />
                 </div>
                 <span
@@ -106,7 +106,7 @@ export function PatientBottomNav() {
               {isActive && (
                 <div className="absolute inset-0 rounded-[6px] border-2 border-black/25 dark:border-white/60 pointer-events-none z-20" />
               )}
-              <div className={cn("relative flex-1 w-full transition-all duration-200", isActive ? "scale-105" : "")}>
+              <div className={cn("relative flex-1 w-full transition-all duration-200", isActive ? "scale-105" : "scale-[1.18]")}>
                 <Image src={iconSrc} alt={item.label} fill className="object-cover" />
               </div>
               <span

@@ -4,7 +4,7 @@ import { useLayoutEffect, useEffect, useRef } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import Link from "next/link"
-import { LogIn, ArrowUp, ChevronDown, Mouse } from "lucide-react"
+import { ArrowUp, ChevronDown, Mouse } from "lucide-react"
 import { LisaLogo } from "@/components/svg/lisa-logo"
 
 gsap.registerPlugin(ScrollTrigger)
@@ -114,6 +114,7 @@ export function ScrollContainer() {
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const knowMoreBtnRef = useRef<HTMLDivElement>(null)
   const scrollMiniRef = useRef<HTMLDivElement>(null)
+  const ctaButtonsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const ro = new ResizeObserver(() => ScrollTrigger.refresh())
@@ -145,6 +146,7 @@ export function ScrollContainer() {
         gsap.set(closeBtnRef.current, { opacity: 1, y: 0 })
         gsap.set(knowMoreBtnRef.current, { opacity: 0 })
         gsap.set(scrollMiniRef.current, { opacity: 0 })
+        gsap.set(ctaButtonsRef.current, { opacity: 1, y: 0 })
         gsap.set([panel2Ref.current, panel3Ref.current, panel4Ref.current, panel5Ref.current], { opacity: 1 })
         return
       }
@@ -171,6 +173,7 @@ export function ScrollContainer() {
       gsap.set(closeBtnRef.current, { opacity: 0, y: 14 })
       gsap.set(knowMoreBtnRef.current, { opacity: 0, y: 10 })
       gsap.set(scrollMiniRef.current, { opacity: 0 })
+      gsap.set(ctaButtonsRef.current, { opacity: 0, y: 12 })
 
       const entryTl = gsap.timeline({
         onComplete() {
@@ -213,6 +216,7 @@ export function ScrollContainer() {
               { opacity: 0, y: -30, duration: 1, ease: "power2.in" },
               0
             )
+              .to(ctaButtonsRef.current, { opacity: 0, y: -16, duration: 0.8, ease: "power2.in" }, 0.3)
               .fromTo(
                 flyingLogoRef.current,
                 {
@@ -260,7 +264,7 @@ export function ScrollContainer() {
 
             const closeStart = 29
             tl.to(panel4Ref.current, { opacity: 0, duration: 1, ease: "power2.inOut" }, closeStart)
-              .to(panel5Ref.current, { opacity: 1, duration: 1, ease: "power2.inOut" }, closeStart)
+              .to(panel5Ref.current, { opacity: 1, pointerEvents: "auto", duration: 1, ease: "power2.inOut" }, closeStart)
               .to(scrollMiniRef.current, { opacity: 0, duration: 0.5, ease: "power2.in" }, closeStart)
 
             const s1 = 0.28
@@ -281,15 +285,16 @@ export function ScrollContainer() {
       })
 
       entryTl
+        .to(letters, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.08 }, 0.05)
+        .to(rays, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out", stagger: 0.04 }, "+=0.04")
         .fromTo(
           taglineRef.current,
           { opacity: 0, filter: "blur(28px)", y: 12 },
-          { opacity: 1, filter: "blur(0px)", y: 0, duration: 1.0, ease: "power3.out" },
-          0.55
+          { opacity: 1, filter: "blur(0px)", y: 0, duration: 0.65, ease: "power3.out" },
+          0.3
         )
-        .to(letters, { opacity: 1, y: 0, duration: 0.82, ease: "power3.out", stagger: 0.13 }, 0.1)
-        .to(rays, { opacity: 1, y: 0, duration: 0.20, ease: "power2.out", stagger: 0.055 }, "+=0.10")
-        .to(knowMoreBtnRef.current, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, "+=0.3")
+        .to(ctaButtonsRef.current, { opacity: 1, y: 0, duration: 0.65, ease: "power2.out" }, 0.3)
+        .to(knowMoreBtnRef.current, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.0)
     }, containerRef)
 
     return () => {
@@ -300,18 +305,11 @@ export function ScrollContainer() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between md:justify-end px-6 sm:px-16 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center px-6 sm:px-16 py-4">
         <div
           ref={headerSlotRef}
-          className="h-8 w-[85px] md:absolute md:left-1/2 md:-translate-x-1/2 md:h-11 md:w-[117px]"
+          className="h-8 w-[85px] md:h-11 md:w-[117px]"
         />
-        <Link
-          href="/login"
-          className="flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-medium text-neutral-800 bg-white/90 hover:bg-white transition-colors duration-200"
-        >
-          <LogIn className="h-3.5 w-3.5" />
-          <span>Comenzar</span>
-        </Link>
       </header>
 
       <div
@@ -327,7 +325,7 @@ export function ScrollContainer() {
 
         <div
           ref={panel1Ref}
-          className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-4"
+          className="absolute inset-0 flex flex-col items-center justify-center px-4"
           style={{
             background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
           }}
@@ -340,20 +338,40 @@ export function ScrollContainer() {
                 "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%), radial-gradient(circle at 55% 90%, rgba(253,230,210,0.22) 0%, transparent 40%)",
             }}
           />
-          <div ref={heroLogoRef} style={{ willChange: "transform" }}>
-            <LisaLogo className="w-64 h-auto sm:w-80 select-none" />
-          </div>
-          <div
-            ref={taglineRef}
-            style={{ opacity: 0, willChange: "transform, opacity" }}
-            className="flex flex-col items-center gap-y-1 text-center md:flex-row md:flex-wrap md:justify-center md:items-baseline md:gap-y-0 md:gap-x-[0.3em]"
-          >
-            <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
-              Lectura <span style={{ color: "#C73341" }}>accesible</span>
-            </h1>
-            <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
-              basada en <span style={{ color: "#2E85C8" }}>evidencia</span>.
-            </span>
+          <div className="flex flex-col items-center gap-6 -mt-16 sm:-mt-20">
+            <div ref={heroLogoRef} style={{ willChange: "transform" }}>
+              <LisaLogo className="w-56 h-auto sm:w-72 select-none" />
+            </div>
+            <div
+              ref={taglineRef}
+              style={{ opacity: 0, willChange: "transform, opacity" }}
+              className="flex flex-col items-center gap-y-1 text-center md:flex-row md:flex-wrap md:justify-center md:items-baseline md:gap-y-0 md:gap-x-[0.3em]"
+            >
+              <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
+                Lectura <span style={{ color: "#C73341" }}>accesible</span>
+              </h1>
+              <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
+                basada en <span style={{ color: "#2E85C8" }}>evidencia</span>.
+              </span>
+            </div>
+            <div
+              ref={ctaButtonsRef}
+              style={{ opacity: 0, willChange: "transform, opacity" }}
+              className="flex flex-col items-center gap-3 mt-1"
+            >
+              <Link
+                href="/register"
+                className="rounded-full px-8 py-2.5 text-sm font-semibold text-white bg-[#C73341] hover:bg-[#b02d3a] hover:scale-105 active:scale-95 transition-all duration-200 shadow-md shadow-[#C73341]/20"
+              >
+                Quiero empezar
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-full px-8 py-2.5 text-sm font-medium text-neutral-700 bg-white/80 hover:bg-white hover:scale-105 active:scale-95 border border-neutral-200 transition-all duration-200"
+              >
+                Ya tengo cuenta
+              </Link>
+            </div>
           </div>
           <div className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 pointer-events-none">
             <p
@@ -367,7 +385,7 @@ export function ScrollContainer() {
 
         <div
           ref={panel2Ref}
-          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24"
+          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24 pointer-events-none"
           style={{ backgroundColor: "#C73341", opacity: 0 }}
         >
           <div className="max-w-3xl mt-4 flex flex-col gap-4 text-center text-white leading-relaxed text-2xl sm:text-3xl md:text-4xl font-extralight">
@@ -378,7 +396,7 @@ export function ScrollContainer() {
 
         <div
           ref={panel3Ref}
-          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24"
+          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24 pointer-events-none"
           style={{
             background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
             opacity: 0,
@@ -408,7 +426,7 @@ export function ScrollContainer() {
 
         <div
           ref={panel4Ref}
-          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24"
+          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24 pointer-events-none"
           style={{ backgroundColor: "#2E85C8", opacity: 0 }}
         >
           <div className="max-w-4xl w-full flex flex-col gap-8 md:gap-10">
@@ -435,7 +453,7 @@ export function ScrollContainer() {
 
         <div
           ref={panel5Ref}
-          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24"
+          className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24 pointer-events-none"
           style={{
             background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
             opacity: 0,
@@ -492,6 +510,7 @@ export function ScrollContainer() {
           <ChevronDown size={16} strokeWidth={1.5} className="text-neutral-300/35 animate-[scrollhint_1.4s_ease-in-out_0.4s_infinite]" />
         </div>
       </div>
+
     </>
   )
 }
