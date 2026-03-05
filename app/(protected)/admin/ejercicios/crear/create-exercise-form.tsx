@@ -86,8 +86,6 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
       instructions_audio_url: "",
       difficulty_level: 1,
       estimated_time_seconds: 0,
-      target_age_min: 5,
-      target_age_max: 12,
       exercise_type_id: "",
       tags: [],
       world_id: "medieval",
@@ -126,8 +124,6 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
       "title",
       "instructions",
       "difficulty_level",
-      "target_age_min",
-      "target_age_max",
       "exercise_type_id",
     ])
     if (valid) {
@@ -151,8 +147,7 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
 
   function onInvalid(errors: Record<string, unknown>) {
     const generalFields = [
-      "title", "instructions", "difficulty_level",
-      "target_age_min", "target_age_max", "exercise_type_id", "tags",
+      "title", "instructions", "difficulty_level", "exercise_type_id", "tags",
     ]
     const hasGeneralError = generalFields.some((f) => f in errors)
     if (hasGeneralError) {

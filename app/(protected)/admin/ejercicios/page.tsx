@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExercisesList } from "./exercises-list";
 import { Plus } from "lucide-react";
@@ -29,43 +28,37 @@ export default async function AdminExercisesPage({
   const { data: exercises } = await query;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Gestion de Ejercicios</h1>
-        <Button asChild>
-          <Link href="/admin/ejercicios/crear">
-            <Plus className="h-4 w-4 mr-2" />
-            Crear Ejercicio
-          </Link>
-        </Button>
-      </div>
+    <div className="space-y-10">
+      <h1 className="text-2xl font-bold sm:text-3xl">Gestión de Ejercicios</h1>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{showDeleted ? "Ejercicios Eliminados" : "Lista de Ejercicios"}</CardTitle>
-              <CardDescription>
-                {exercises?.length || 0} ejercicios {showDeleted ? "eliminados" : "disponibles"}
-              </CardDescription>
-            </div>
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">{showDeleted ? "Ejercicios Eliminados" : "Ejercicios"}</h2>
+            <p className="text-sm text-muted-foreground">{exercises?.length || 0} {showDeleted ? "eliminados" : "disponibles"}</p>
+          </div>
+          <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link href={showDeleted ? "/admin/ejercicios" : "/admin/ejercicios?show=deleted"}>
                 {showDeleted ? "Ver activos" : "Ver eliminados"}
               </Link>
             </Button>
+            <Button asChild size="sm">
+              <Link href="/admin/ejercicios/crear">
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Ejercicio
+              </Link>
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <ExercisesList
-            exercises={(exercises || []).map((e) => ({
-              ...e,
-              world_name: e.world_id ? (WORLDS[e.world_id]?.displayName ?? null) : null,
-            }))}
-            showDeleted={showDeleted}
-          />
-        </CardContent>
-      </Card>
+        </div>
+        <ExercisesList
+          exercises={(exercises || []).map((e) => ({
+            ...e,
+            world_name: e.world_id ? (WORLDS[e.world_id]?.displayName ?? null) : null,
+          }))}
+          showDeleted={showDeleted}
+        />
+      </section>
     </div>
   );
 }

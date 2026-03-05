@@ -2,63 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, Check, Mail, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Check, Mail, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { register } from "../actions"
 import { FloatingParticles } from "@/components/home/floating-particles"
 import { LisaLogo } from "@/components/svg/lisa-logo"
-
-const ESCUELA: Grade[] = [
-  { year: 1, label: "1°", color: "#C73341" },
-  { year: 2, label: "2°", color: "#579F93" },
-  { year: 3, label: "3°", color: "#D3A021" },
-  { year: 4, label: "4°", color: "#2E85C8" },
-  { year: 5, label: "5°", color: "#C73341" },
-  { year: 6, label: "6°", color: "#579F93" },
-]
-
-const LICEO: Grade[] = [
-  { year: 7, label: "1°", color: "#D3A021" },
-  { year: 8, label: "2°", color: "#2E85C8" },
-  { year: 9, label: "3°", color: "#C73341" },
-  { year: 10, label: "4°", color: "#579F93" },
-  { year: 11, label: "5°", color: "#D3A021" },
-  { year: 12, label: "6°", color: "#2E85C8" },
-]
-
-type Grade = { year: number; label: string; color: string }
-
-function GradeCard({ grade, selected, onSelect }: { grade: Grade; selected: boolean; onSelect: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="relative flex flex-col items-center justify-center gap-1 rounded-2xl border-2 py-4 transition-all duration-200 hover:scale-105 active:scale-95"
-      style={{
-        borderColor: selected ? grade.color : "transparent",
-        backgroundColor: selected ? grade.color + "14" : "rgba(255,255,255,0.75)",
-        boxShadow: selected
-          ? `0 4px 16px ${grade.color}28`
-          : "0 1px 4px rgba(0,0,0,0.07)",
-      }}
-    >
-      {selected && (
-        <div
-          className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: grade.color }}
-        >
-          <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
-        </div>
-      )}
-      <span
-        className="text-2xl font-bold transition-colors duration-200"
-        style={{ color: selected ? grade.color : "#6b7280" }}
-      >
-        {grade.label}
-      </span>
-    </button>
-  )
-}
+import { GradeYearSelector } from "@/components/auth/grade-year-selector"
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1)
@@ -155,55 +104,12 @@ export default function RegisterPage() {
                 <p className="text-sm text-neutral-500">Elegí tu año para personalizar tu experiencia en LISA</p>
               </div>
 
-              <div className="flex flex-col gap-5">
-                <div className="flex flex-col gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                    Escuela · Primaria
-                  </span>
-                  <div className="grid grid-cols-6 gap-2">
-                    {ESCUELA.map((g) => (
-                      <GradeCard
-                        key={g.year}
-                        grade={g}
-                        selected={gradeYear === g.year}
-                        onSelect={() => setGradeYear(g.year)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-neutral-200" />
-                  <span className="text-xs text-neutral-400">o</span>
-                  <div className="flex-1 h-px bg-neutral-200" />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                    Liceo · Secundaria
-                  </span>
-                  <div className="grid grid-cols-6 gap-2">
-                    {LICEO.map((g) => (
-                      <GradeCard
-                        key={g.year}
-                        grade={g}
-                        selected={gradeYear === g.year}
-                        onSelect={() => setGradeYear(g.year)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                disabled={gradeYear === null}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#579F93] hover:bg-[#4a8e83] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                Continuar
-                <ArrowRight className="h-4 w-4" />
-              </button>
+              <GradeYearSelector
+                onSelect={(year) => {
+                  setGradeYear(year)
+                  setStep(2)
+                }}
+              />
 
               <p className="text-center text-sm text-neutral-400">
                 ¿Ya tenés cuenta?{" "}

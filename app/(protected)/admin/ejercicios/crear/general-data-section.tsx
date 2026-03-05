@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { type UseFormReturn } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import type { ExerciseType } from "@/types/exercises"
-import { WORLDS, getWorldByDifficulty } from "@/lib/worlds"
 
 const difficultyLabels: Record<string, string> = {
   "1": "1 - Muy facil",
@@ -41,13 +40,6 @@ interface GeneralDataSectionProps {
 export function GeneralDataSection({ form, exerciseTypes }: GeneralDataSectionProps) {
   const [tagInput, setTagInput] = useState("")
   const tags = (form.watch("tags") as string[]) || []
-  const difficultyLevel = Number(form.watch("difficulty_level") ?? 1)
-  const assignedWorldId = getWorldByDifficulty(difficultyLevel)
-  const assignedWorld = assignedWorldId ? WORLDS[assignedWorldId] : null
-
-  useEffect(() => {
-    form.setValue("world_id", assignedWorldId ?? null, { shouldValidate: false })
-  }, [assignedWorldId, form])
 
   function addTag(value: string) {
     const tag = value.trim()
@@ -138,36 +130,6 @@ export function GeneralDataSection({ form, exerciseTypes }: GeneralDataSectionPr
         )}
       />
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="target_age_min"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Edad minima</FormLabel>
-              <FormControl>
-                <Input {...field} type="number" min={1} max={100} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="target_age_max"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Edad maxima</FormLabel>
-              <FormControl>
-                <Input {...field} type="number" min={1} max={100} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
       <FormField
         control={form.control}
         name="exercise_type_id"
@@ -192,16 +154,6 @@ export function GeneralDataSection({ form, exerciseTypes }: GeneralDataSectionPr
           </FormItem>
         )}
       />
-
-      <FormItem>
-        <FormLabel>Mundo asignado</FormLabel>
-        <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">
-          {assignedWorld ? assignedWorld.displayName : "Sin mundo"}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Se asigna automáticamente según el nivel de dificultad.
-        </p>
-      </FormItem>
 
       <FormField
         control={form.control}

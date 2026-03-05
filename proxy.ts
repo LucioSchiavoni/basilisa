@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/patient-login"];
-const PROTECTED_ROUTES = ["/dashboard", "/ejercicios", "/pacientes", "/completar-perfil", "/admin", "/change-password"];
+const PROTECTED_ROUTES = ["/dashboard", "/ejercicios", "/pacientes", "/completar-perfil", "/completar-grado", "/bienvenida", "/admin", "/change-password"];
 const REDIRECT_BY_ROLE_ROUTES = ["/", "/dashboard"];
 
 const ROLE_RESTRICTED_ROUTES: Record<string, string> = {
@@ -11,12 +11,14 @@ const ROLE_RESTRICTED_ROUTES: Record<string, string> = {
   "/ejercicios": "patient",
 };
 
-function getDefaultPathForRole(role: string | undefined, isProfileComplete: boolean | undefined): string {
-  if (!isProfileComplete && role !== "patient") {
-    return "/completar-perfil";
-  }
+function getDefaultPathForRole(
+  role: string | undefined,
+  isProfileComplete: boolean | undefined,
+  gradeYear: number | null | undefined
+): string {
+  if (role !== "admin" && !gradeYear) return "/completar-grado";
+  if (!isProfileComplete && role !== "patient") return "/completar-perfil";
   if (role === "admin") return "/admin";
-
   return "/ejercicios";
 }
 
@@ -66,12 +68,12 @@ export async function proxy(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, is_profile_complete")
+      .select("role, is_profile_complete, grade_year")
       .eq("id", user.id)
       .single();
 
     const url = request.nextUrl.clone();
-    url.pathname = getDefaultPathForRole(profile?.role, profile?.is_profile_complete);
+    url.pathname = getDefaultPathForRole(profile?.role, profile?.is_profile_complete, profile?.grade_year);
     return NextResponse.redirect(url);
   }
 
@@ -84,12 +86,12 @@ export async function proxy(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, is_profile_complete")
+      .select("role, is_profile_complete, grade_year")
       .eq("id", user.id)
       .single();
 
     const url = request.nextUrl.clone();
-    url.pathname = getDefaultPathForRole(profile?.role, profile?.is_profile_complete);
+    url.pathname = getDefaultPathForRole(profile?.role, profile?.is_profile_complete, profile?.grade_year);
     return NextResponse.redirect(url);
   }
 
@@ -108,22 +110,26 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    const matchedRoute = Object.keys(ROLE_RESTRICTED_ROUTES).find((route) =>
-      pathname.startsWith(route)
-    );
-
-    if (matchedRoute) {
+    if (!pathname.startsWith("/completar-grado") && !pathname.startsWith("/bienvenida")) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, is_profile_complete")
+        .select("role, is_profile_complete, grade_year")
         .eq("id", user.id)
         .single();
 
-      const requiredRole = ROLE_RESTRICTED_ROUTES[matchedRoute];
-
-      if (profile?.role !== requiredRole) {
+      if (profile?.role !== "admin" && !profile?.grade_year) {
         const url = request.nextUrl.clone();
-        url.pathname = getDefaultPathForRole(profile?.role, profile?.is_profile_complete);
+        url.pathname = "/completar-grado";
+        return NextResponse.redirect(url);
+      }
+
+      const matchedRoute = Object.keys(ROLE_RESTRICTED_ROUTES).find((route) =>
+        pathname.startsWith(route)
+      );
+
+      if (matchedRoute && profile?.role !== ROLE_RESTRICTED_ROUTES[matchedRoute]) {
+        const url = request.nextUrl.clone();
+        url.pathname = getDefaultPathForRole(profile?.role, profile?.is_profile_complete, profile?.grade_year);
         return NextResponse.redirect(url);
       }
     }

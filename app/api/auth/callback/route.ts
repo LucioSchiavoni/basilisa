@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("role, is_profile_complete")
+    .select("role, is_profile_complete, grade_year")
     .eq("id", user.id)
     .single();
 
@@ -77,7 +77,9 @@ export async function GET(request: NextRequest) {
   let redirectPath = next ?? "/ejercicios";
 
   if (!next) {
-    if (!profile.is_profile_complete && profile.role !== "patient") {
+    if (profile.role !== "admin" && !profile.grade_year) {
+      redirectPath = "/completar-grado";
+    } else if (!profile.is_profile_complete && profile.role !== "patient") {
       redirectPath = "/completar-perfil";
     } else if (profile.role === "admin") {
       redirectPath = "/admin";

@@ -16,7 +16,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2, RotateCcw, Globe } from "lucide-react";
+import { Trash2, Loader2, RotateCcw, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Exercise = {
   id: string;
@@ -51,6 +53,20 @@ const difficultyColors: Record<number, string> = {
 export function ExercisesList({ exercises, showDeleted = false }: { exercises: Exercise[]; showDeleted?: boolean }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
+
+  const allTags = Array.from(new Set(exercises.flatMap((e) => e.tags ?? []))).sort();
+
+  const filtered = exercises.filter((e) => {
+    const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase());
+    const matchesDifficulty = difficultyFilter === "all" || e.difficulty_level === Number(difficultyFilter);
+    const matchesTag = tagFilter === "all" || (e.tags ?? []).includes(tagFilter);
+    return matchesSearch && matchesDifficulty && matchesTag;
+  });
+
+  const hasFilters = search !== "" || difficultyFilter !== "all" || tagFilter !== "all";
 
   async function handleDelete(id: string) {
     setLoading(id);
@@ -84,42 +100,83 @@ export function ExercisesList({ exercises, showDeleted = false }: { exercises: E
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Dificultad" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las dificultades</SelectItem>
+            {Object.entries(difficultyLabels).map(([level, label]) => (
+              <SelectItem key={level} value={level}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {allTags.length > 0 && (
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Etiqueta" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las etiquetas</SelectItem>
+              {allTags.map((tag) => (
+                <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSearch(""); setDifficultyFilter("all"); setTagFilter("all"); }}
+            className="text-muted-foreground"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Limpiar
+          </Button>
+        )}
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="text-muted-foreground text-center py-8">Sin resultados</p>
+      )}
+
       {error && (
         <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md dark:bg-red-900/20">
           {error}
         </div>
       )}
 
-      {exercises.map((exercise) => (
+      {filtered.map((exercise) => (
         <div
           key={exercise.id}
-          className="flex items-start justify-between p-4 border rounded-lg"
+          className="flex items-start justify-between gap-3 p-4 border rounded-lg"
         >
           <Link
             href={`/admin/ejercicios/${exercise.id}`}
-            className="space-y-2 flex-1 hover:opacity-70 transition-opacity"
+            className="space-y-2 flex-1 min-w-0 hover:opacity-70 transition-opacity"
           >
-            <div className="flex items-center gap-2">
-              <p className="font-medium">{exercise.title}</p>
+            <p className="font-medium leading-snug">{exercise.title}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
               <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
+                className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
                   difficultyColors[exercise.difficulty_level] || difficultyColors[3]
                 }`}
               >
                 {difficultyLabels[exercise.difficulty_level] || `Nivel ${exercise.difficulty_level}`}
               </span>
-              {exercise.world_name ? (
-                <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400">
-                  <Globe className="h-3 w-3" />
-                  {exercise.world_name}
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                  Sin mundo
-                </Badge>
-              )}
-              {!exercise.is_active && (
-                <Badge variant="secondary">Inactivo</Badge>
+{!exercise.is_active && (
+                <Badge variant="secondary" className="shrink-0">Inactivo</Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">

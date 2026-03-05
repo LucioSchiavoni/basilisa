@@ -29,8 +29,6 @@ interface EditExerciseFormProps {
     instructions_audio_url: string | null
     difficulty_level: number
     estimated_time_seconds: number | null
-    target_age_min: number | null
-    target_age_max: number | null
     exercise_type_id: string
     content: Json
     tags: string[] | null
@@ -69,8 +67,6 @@ export function EditExerciseForm({
       instructions_audio_url: exercise.instructions_audio_url,
       difficulty_level: exercise.difficulty_level,
       estimated_time_seconds: exercise.estimated_time_seconds,
-      target_age_min: exercise.target_age_min,
-      target_age_max: exercise.target_age_max,
       exercise_type_id: exercise.exercise_type_id,
       tags: exercise.tags || [],
       world_id: exercise.world_id ?? null,
@@ -135,8 +131,6 @@ export function EditExerciseForm({
       "title",
       "instructions",
       "difficulty_level",
-      "target_age_min",
-      "target_age_max",
       "exercise_type_id",
     ])
     if (valid) {
@@ -160,8 +154,7 @@ export function EditExerciseForm({
 
   function onInvalid(errors: Record<string, unknown>) {
     const generalFields = [
-      "title", "instructions", "difficulty_level",
-      "target_age_min", "target_age_max", "exercise_type_id", "tags",
+      "title", "instructions", "difficulty_level", "exercise_type_id", "tags",
     ]
     const hasGeneralError = generalFields.some((f) => f in errors)
     if (hasGeneralError) {

@@ -186,11 +186,13 @@ export async function register(
   const gradeYear = gradeYearRaw ? Number(gradeYearRaw) : null;
 
   const supabase = await createClient();
+  const gradeYearParam = gradeYear && !isNaN(gradeYear) ? `&grade_year=${gradeYear}` : ""
+
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?next=/login`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?next=/bienvenida${gradeYearParam}`,
       data: {
         grade_year: gradeYear && !isNaN(gradeYear) ? gradeYear : null,
       },

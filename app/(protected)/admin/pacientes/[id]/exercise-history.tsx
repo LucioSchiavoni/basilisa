@@ -26,6 +26,7 @@ type ExerciseAttempt = {
   correctAnswers: number;
   totalQuestions: number;
   durationSeconds: number;
+  readingTimeSeconds: number | null;
   gemsEarned: number;
   isAssigned: boolean;
   results: QuestionResult[];
@@ -98,11 +99,16 @@ export function ExerciseHistory({
                       {attempt.scorePercentage}%
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      {attempt.correctAnswers}/{attempt.totalQuestions}
+                      {attempt.correctAnswers}/{attempt.totalQuestions} correctas
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {formatDuration(attempt.durationSeconds)}
+                      Total: {formatDuration(attempt.durationSeconds)}
                     </span>
+                    {attempt.readingTimeSeconds != null && (
+                      <span className="text-xs text-muted-foreground">
+                        Lectura: {formatDuration(attempt.readingTimeSeconds)}
+                      </span>
+                    )}
                     {attempt.gemsEarned > 0 && (
                       <Badge variant="outline" className="text-xs">
                         +{attempt.gemsEarned} gemas
@@ -159,35 +165,9 @@ export function ExerciseHistory({
                             </svg>
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium">
-                            P{idx + 1}: {result.questionText}
-                          </p>
-                          <p className="text-xs mt-1">
-                            <span className="text-muted-foreground">
-                              Respuesta:{" "}
-                            </span>
-                            <span
-                              className={
-                                result.isCorrect
-                                  ? "text-green-600 dark:text-green-400"
-                                  : "text-red-600 dark:text-red-400"
-                              }
-                            >
-                              {result.patientAnswerText}
-                            </span>
-                          </p>
-                          {!result.isCorrect && (
-                            <p className="text-xs mt-0.5">
-                              <span className="text-muted-foreground">
-                                Correcta:{" "}
-                              </span>
-                              <span className="text-green-600 dark:text-green-400">
-                                {result.correctAnswerText}
-                              </span>
-                            </p>
-                          )}
-                        </div>
+                        <p className="text-sm font-medium">
+                          P{idx + 1}: {result.questionText}
+                        </p>
                       </div>
                     </div>
                   ))}

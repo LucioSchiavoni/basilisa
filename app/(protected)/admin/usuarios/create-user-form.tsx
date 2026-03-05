@@ -25,6 +25,7 @@ const passwordRules = [
   },
 ];
 
+
 const initialState: CreateAccountState = {};
 
 export function CreateUserForm() {
@@ -32,6 +33,8 @@ export function CreateUserForm() {
   const [accountType, setAccountType] = useState<"patient" | "user">("patient");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [gradeYear, setGradeYear] = useState<number | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"patient" | "admin">("patient");
 
   const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
@@ -153,6 +156,27 @@ export function CreateUserForm() {
               <p className="text-sm text-red-500">{state.fieldErrors.username[0]}</p>
             )}
           </div>
+          <div className="space-y-2">
+            <Label>Grado</Label>
+            <input type="hidden" name="grade_year" value={gradeYear ?? ""} />
+            <div className="grid grid-cols-6 gap-1.5">
+              {[1, 2, 3, 4, 5, 6].map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  onClick={() => setGradeYear(gradeYear === year ? null : year)}
+                  className={`flex flex-col items-center justify-center rounded-lg border-2 py-2.5 text-sm font-semibold transition-colors ${
+                    gradeYear === year
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-muted text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  {year}°
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="p-3 text-sm bg-blue-50 text-blue-700 rounded-md dark:bg-blue-900/20 dark:text-blue-400">
             Contraseña inicial: <strong>Basilisa2025</strong>
           </div>
@@ -237,7 +261,12 @@ export function CreateUserForm() {
 
           <div className="space-y-2">
             <Label htmlFor="role">Rol</Label>
-            <Select name="role" required defaultValue="patient">
+            <Select
+              name="role"
+              required
+              defaultValue="patient"
+              onValueChange={(v) => setSelectedRole(v as "patient" | "admin")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar rol" />
               </SelectTrigger>
@@ -247,6 +276,29 @@ export function CreateUserForm() {
               </SelectContent>
             </Select>
           </div>
+
+          {selectedRole === "patient" && (
+            <div className="space-y-2">
+              <Label>Grado</Label>
+              <input type="hidden" name="grade_year" value={gradeYear ?? ""} />
+              <div className="grid grid-cols-6 gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => setGradeYear(gradeYear === year ? null : year)}
+                    className={`flex flex-col items-center justify-center rounded-lg border-2 py-2.5 text-sm font-semibold transition-colors ${
+                      gradeYear === year
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-muted text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+                    }`}
+                  >
+                    {year}°
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 

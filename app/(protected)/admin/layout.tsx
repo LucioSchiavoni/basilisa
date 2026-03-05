@@ -29,7 +29,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen lg:flex">
+    <div className="min-h-screen lg:flex bg-background">
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-card border-r">
         <div className="p-6">
           <h2 className="text-xl font-bold">Panel Admin</h2>

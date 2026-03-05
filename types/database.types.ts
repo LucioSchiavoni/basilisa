@@ -242,8 +242,6 @@ export type Database = {
           instructions_audio_url: string | null
           is_active: boolean
           tags: string[] | null
-          target_age_max: number | null
-          target_age_min: number | null
           title: string
           updated_at: string
           world_id: string | null
@@ -261,8 +259,6 @@ export type Database = {
           instructions_audio_url?: string | null
           is_active?: boolean
           tags?: string[] | null
-          target_age_max?: number | null
-          target_age_min?: number | null
           title: string
           updated_at?: string
           world_id?: string | null
@@ -280,8 +276,6 @@ export type Database = {
           instructions_audio_url?: string | null
           is_active?: boolean
           tags?: string[] | null
-          target_age_max?: number | null
-          target_age_min?: number | null
           title?: string
           updated_at?: string
           world_id?: string | null
@@ -419,6 +413,8 @@ export type Database = {
           date_of_birth: string | null
           email: string
           full_name: string | null
+          grade_year: number | null
+          grade_year_updated_at: string | null
           id: string
           is_active: boolean
           is_profile_complete: boolean
@@ -432,6 +428,8 @@ export type Database = {
           date_of_birth?: string | null
           email: string
           full_name?: string | null
+          grade_year?: number | null
+          grade_year_updated_at?: string | null
           id: string
           is_active?: boolean
           is_profile_complete?: boolean
@@ -445,6 +443,8 @@ export type Database = {
           date_of_birth?: string | null
           email?: string
           full_name?: string | null
+          grade_year?: number | null
+          grade_year_updated_at?: string | null
           id?: string
           is_active?: boolean
           is_profile_complete?: boolean

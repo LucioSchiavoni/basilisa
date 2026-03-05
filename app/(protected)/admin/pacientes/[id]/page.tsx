@@ -69,7 +69,7 @@ export default async function PatientDetailPage({
     supabase
       .from("assignment_sessions")
       .select(
-        "id, exercise_id, attempt_number, started_at, duration_seconds, is_assigned"
+        "id, exercise_id, attempt_number, started_at, duration_seconds, reading_time_seconds, is_assigned"
       )
       .eq("patient_id", id)
       .eq("is_completed", true)
@@ -172,6 +172,7 @@ export default async function PatientDetailPage({
       correctAnswers: score?.correct_answers ?? 0,
       totalQuestions: score?.total_questions ?? 0,
       durationSeconds: s.duration_seconds ?? 0,
+      readingTimeSeconds: s.reading_time_seconds ?? null,
       gemsEarned: gemsBySession.get(s.id) || 0,
       isAssigned: s.is_assigned ?? false,
       results: sessionResults.map((r) => {

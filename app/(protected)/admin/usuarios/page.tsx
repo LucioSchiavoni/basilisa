@@ -1,6 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserForm } from "./create-user-form";
 import { UsersList } from "./users-list";
 
@@ -31,34 +30,28 @@ export default async function AdminUsersPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">Gestión de Usuarios</h1>
+    <div className="space-y-10">
+      <h1 className="text-2xl font-bold sm:text-3xl">Gestión de Usuarios</h1>
 
-      <div className="flex flex-col gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Usuarios</CardTitle>
-            <CardDescription>
-              {usersWithDetails.length} usuarios registrados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UsersList users={usersWithDetails} currentUserId={user!.id} />
-          </CardContent>
-        </Card>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">Usuarios</h2>
+          <p className="text-sm text-muted-foreground">{usersWithDetails.length} registrados</p>
+        </div>
+        <UsersList users={usersWithDetails} currentUserId={user!.id} />
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Crear Cuenta</CardTitle>
-            <CardDescription>
-              Añade un nuevo usuario o paciente al sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CreateUserForm />
-          </CardContent>
-        </Card>
-      </div>
+      <div className="border-t" />
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">Crear Cuenta</h2>
+          <p className="text-sm text-muted-foreground">Añade un nuevo usuario o paciente</p>
+        </div>
+        <div className="max-w-md">
+          <CreateUserForm />
+        </div>
+      </section>
     </div>
   );
 }

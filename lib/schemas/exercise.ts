@@ -135,52 +135,30 @@ const baseExerciseSchema = z.object({
   instructions_audio_url: optionalUrl,
   difficulty_level: z.coerce.number().int().min(1).max(6),
   estimated_time_seconds: z.coerce.number().int().default(0),
-  target_age_min: z.coerce.number().int().min(1).max(100),
-  target_age_max: z.coerce.number().int().min(1).max(100),
   exercise_type_id: z.string().uuid("Selecciona un tipo de ejercicio"),
   tags: z.array(z.string().min(1).max(50)).max(10).default([]),
   world_id: z.string().nullable().optional(),
 })
 
-const createMultipleChoiceSchema = baseExerciseSchema
-  .extend({
-    exercise_type_name: z.literal("multiple_choice"),
-    content: multipleChoiceContentSchema,
-  })
-  .refine((data) => data.target_age_min <= data.target_age_max, {
-    message: "La edad minima no puede ser mayor que la maxima",
-    path: ["target_age_max"],
-  })
+const createMultipleChoiceSchema = baseExerciseSchema.extend({
+  exercise_type_name: z.literal("multiple_choice"),
+  content: multipleChoiceContentSchema,
+})
 
-const createReadingComprehensionSchema = baseExerciseSchema
-  .extend({
-    exercise_type_name: z.literal("reading_comprehension"),
-    content: readingComprehensionContentSchema,
-  })
-  .refine((data) => data.target_age_min <= data.target_age_max, {
-    message: "La edad minima no puede ser mayor que la maxima",
-    path: ["target_age_max"],
-  })
+const createReadingComprehensionSchema = baseExerciseSchema.extend({
+  exercise_type_name: z.literal("reading_comprehension"),
+  content: readingComprehensionContentSchema,
+})
 
-const createTimedReadingSchema = baseExerciseSchema
-  .extend({
-    exercise_type_name: z.literal("timed_reading"),
-    content: timedReadingContentSchema,
-  })
-  .refine((data) => data.target_age_min <= data.target_age_max, {
-    message: "La edad minima no puede ser mayor que la maxima",
-    path: ["target_age_max"],
-  })
+const createTimedReadingSchema = baseExerciseSchema.extend({
+  exercise_type_name: z.literal("timed_reading"),
+  content: timedReadingContentSchema,
+})
 
-const createLetterGapSchema = baseExerciseSchema
-  .extend({
-    exercise_type_name: z.literal("letter_gap"),
-    content: letterGapContentSchema,
-  })
-  .refine((data) => data.target_age_min <= data.target_age_max, {
-    message: "La edad minima no puede ser mayor que la maxima",
-    path: ["target_age_max"],
-  })
+const createLetterGapSchema = baseExerciseSchema.extend({
+  exercise_type_name: z.literal("letter_gap"),
+  content: letterGapContentSchema,
+})
 
 export const createExerciseSchema = z.discriminatedUnion("exercise_type_name", [
   createMultipleChoiceSchema,

@@ -29,6 +29,7 @@ const createUserSchema = z
     role: z.enum(["patient", "admin"], {
       message: "Rol inválido",
     }),
+    grade_year: z.coerce.number().int().min(1).max(6).optional(),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: "Las contraseñas no coinciden",
@@ -60,6 +61,7 @@ const createPatientSchema = z.object({
     .max(20, "El usuario no puede tener más de 20 caracteres")
     .regex(/^[a-zA-Z0-9]+$/, "Solo se permiten letras y números"),
   full_name: z.string().min(2, "El nombre es requerido"),
+  grade_year: z.coerce.number().int().min(1).max(6).optional(),
 });
 
 export type CreatePatientState = {
@@ -95,6 +97,7 @@ export async function createUser(
     confirm_password: formData.get("confirm_password") as string,
     full_name: formData.get("full_name") as string,
     role: formData.get("role") as string,
+    grade_year: formData.get("grade_year") || undefined,
   };
 
   const validatedFields = createUserSchema.safeParse(rawData);
@@ -104,7 +107,7 @@ export async function createUser(
     return { fieldErrors: flattened.fieldErrors as Record<string, string[]> };
   }
 
-  const { email, password, full_name, role } = validatedFields.data;
+  const { email, password, full_name, role, grade_year } = validatedFields.data;
 
   const adminClient = createAdminClient();
   const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -124,25 +127,25 @@ export async function createUser(
   }
 
   if (authData.user) {
+    const profileData = {
+      full_name,
+      role,
+      is_profile_complete: true,
+      ...(role === "patient" && grade_year != null && {
+        grade_year,
+        grade_year_updated_at: new Date().toISOString(),
+      }),
+    };
+
     const { error: profileError } = await adminClient
       .from("profiles")
-      .update({
-        full_name,
-        role,
-        is_profile_complete: true,
-      })
+      .update(profileData)
       .eq("id", authData.user.id);
 
     if (profileError) {
       const { error: insertError } = await adminClient
         .from("profiles")
-        .insert({
-          id: authData.user.id,
-          email,
-          full_name,
-          role,
-          is_profile_complete: true,
-        });
+        .insert({ id: authData.user.id, email, ...profileData });
 
       if (insertError) {
         return { error: `Usuario creado pero hubo un error al configurar el perfil: ${insertError.message}` };
@@ -393,6 +396,7 @@ export async function createPatient(
   const rawData = {
     username: formData.get("username") as string,
     full_name: formData.get("full_name") as string,
+    grade_year: formData.get("grade_year") || undefined,
   };
 
   const validatedFields = createPatientSchema.safeParse(rawData);
@@ -402,7 +406,7 @@ export async function createPatient(
     return { fieldErrors: flattened.fieldErrors as Record<string, string[]> };
   }
 
-  const { username, full_name } = validatedFields.data;
+  const { username, full_name, grade_year } = validatedFields.data;
   const email = `${username.toLowerCase()}@basilisa.internal`;
 
   const adminClient = createAdminClient();
@@ -423,13 +427,16 @@ export async function createPatient(
   }
 
   if (authData.user) {
+    const profileData = {
+      full_name,
+      role: "patient",
+      is_profile_complete: true,
+      ...(grade_year != null && { grade_year, grade_year_updated_at: new Date().toISOString() }),
+    };
+
     const { error: profileError } = await adminClient
       .from("profiles")
-      .update({
-        full_name,
-        role: "patient",
-        is_profile_complete: true,
-      })
+      .update(profileData)
       .eq("id", authData.user.id);
 
     if (profileError) {
@@ -438,9 +445,7 @@ export async function createPatient(
         .insert({
           id: authData.user.id,
           email,
-          full_name,
-          role: "patient",
-          is_profile_complete: true,
+          ...profileData,
         });
 
       if (insertError) {
@@ -681,4 +686,84 @@ export async function cancelAssignment(
 
   revalidatePath(`/admin/pacientes/${parsedPatientId.data}`);
   return { success: "Ejercicio desasignado exitosamente" };
+}
+
+const assignExercisesBulkSchema = z.object({
+  patientId: z.string().uuid("ID de paciente inválido"),
+  assignments: z.array(z.object({
+    exerciseId: z.string().uuid(),
+    startDate: z.string().nullable().optional(),
+    dueDate: z.string().nullable().optional(),
+  })).min(1, "Selecciona al menos un ejercicio"),
+});
+
+export async function assignExercisesBulk(
+  data: z.infer<typeof assignExercisesBulkSchema>
+): Promise<{ error?: string; assigned?: number; skipped?: number }> {
+  const validated = assignExercisesBulkSchema.safeParse(data);
+  if (!validated.success) {
+    return { error: validated.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autorizado" };
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!adminProfile || adminProfile.role !== "admin") {
+    return { error: "No tienes permisos para asignar ejercicios" };
+  }
+
+  const { patientId, assignments } = validated.data;
+  const adminClient = createAdminClient();
+
+  const { data: patientProfile } = await adminClient
+    .from("profiles")
+    .select("role")
+    .eq("id", patientId)
+    .single();
+
+  if (!patientProfile || patientProfile.role !== "patient") {
+    return { error: "El usuario seleccionado no es un paciente válido" };
+  }
+
+  const exerciseIds = assignments.map((a) => a.exerciseId);
+
+  const { data: existing } = await adminClient
+    .from("patient_assignments")
+    .select("exercise_id")
+    .eq("patient_id", patientId)
+    .in("exercise_id", exerciseIds)
+    .in("status", ["assigned", "in_progress"]);
+
+  const existingIds = new Set((existing ?? []).map((e) => e.exercise_id));
+  const toInsert = assignments.filter((a) => !existingIds.has(a.exerciseId));
+
+  if (toInsert.length === 0) {
+    return { error: "Todos los ejercicios seleccionados ya están asignados a este paciente" };
+  }
+
+  const { error } = await adminClient.from("patient_assignments").insert(
+    toInsert.map((a) => ({
+      patient_id: patientId,
+      exercise_id: a.exerciseId,
+      assigned_by: user.id,
+      status: "assigned",
+      assigned_at: a.startDate ? new Date(a.startDate).toISOString() : new Date().toISOString(),
+      due_date: a.dueDate || null,
+    }))
+  );
+
+  if (error) {
+    return { error: "Error al asignar los ejercicios" };
+  }
+
+  revalidatePath(`/admin/pacientes/${patientId}`);
+  revalidatePath("/admin");
+  return { assigned: toInsert.length, skipped: existingIds.size };
 }

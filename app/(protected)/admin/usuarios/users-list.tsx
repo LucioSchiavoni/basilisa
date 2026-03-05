@@ -91,81 +91,85 @@ export function UsersList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y">
       {users.map((user) => (
-        <div
-          key={user.id}
-          className="flex items-center justify-between p-4 border rounded-lg"
-        >
-          <div className="space-y-1">
-            <p className="font-medium">{user.full_name || "Sin nombre"}</p>
-            <p className="text-sm text-muted-foreground">
-              {user.is_patient ? `@${user.username}` : user.email}
-            </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {user.id === currentUserId ? (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                  {roleLabels[user.role || "patient"] || user.role} (tú)
-                </span>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Select
-                    defaultValue={user.role || "patient"}
-                    onValueChange={(value) => handleRoleChange(user.id, value)}
-                    disabled={changingRole === user.id}
-                  >
-                    <SelectTrigger className="h-7 text-xs w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="patient">Paciente</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {changingRole === user.id && (
-                    <span className="text-xs text-muted-foreground">Guardando...</span>
-                  )}
-                  {roleSuccess === user.id && (
-                    <span className="text-xs text-green-600 dark:text-green-400">Rol actualizado</span>
-                  )}
-                </div>
-              )}
+        <div key={user.id} className="py-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-0.5">
+              <p className="font-medium truncate">{user.full_name || "Sin nombre"}</p>
+              <p className="text-sm text-muted-foreground truncate">
+                {user.is_patient ? `@${user.username}` : user.email}
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
               {user.is_patient && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                  Sin correo
-                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReset(user.id)}
+                  disabled={resetting === user.id}
+                  className="text-xs"
+                >
+                  {resetting === user.id ? "..." : "Resetear"}
+                </Button>
               )}
-              {!user.is_profile_complete && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-                  Perfil incompleto
-                </span>
-              )}
-              {user.must_change_password && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                  Pendiente cambio de contraseña
-                </span>
+              {user.id !== currentUserId && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDelete(user.id)}
+                  disabled={deleting === user.id}
+                  className="text-xs"
+                >
+                  {deleting === user.id ? "..." : "Eliminar"}
+                </Button>
               )}
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
-            {user.is_patient && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleReset(user.id)}
-                disabled={resetting === user.id}
-              >
-                {resetting === user.id ? "Reseteando..." : "Resetear contraseña"}
-              </Button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {user.id === currentUserId ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                {roleLabels[user.role || "patient"] || user.role} (tú)
+              </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Select
+                  defaultValue={user.role || "patient"}
+                  onValueChange={(value) => handleRoleChange(user.id, value)}
+                  disabled={changingRole === user.id}
+                >
+                  <SelectTrigger className="h-7 text-xs w-[130px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="patient">Paciente</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+                {changingRole === user.id && (
+                  <span className="text-xs text-muted-foreground">Guardando...</span>
+                )}
+                {roleSuccess === user.id && (
+                  <span className="text-xs text-green-600 dark:text-green-400">✓ Guardado</span>
+                )}
+              </div>
             )}
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDelete(user.id)}
-              disabled={deleting === user.id}
-            >
-              {deleting === user.id ? "Eliminando..." : "Eliminar"}
-            </Button>
+            {user.is_patient && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                Sin correo
+              </span>
+            )}
+            {!user.is_profile_complete && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                Perfil incompleto
+              </span>
+            )}
+            {user.must_change_password && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                Cambio de contraseña pendiente
+              </span>
+            )}
           </div>
         </div>
       ))}
