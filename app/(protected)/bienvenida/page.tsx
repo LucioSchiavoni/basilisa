@@ -1,29 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { FloatingParticles } from "@/components/home/floating-particles"
 import { ArrowRight } from "lucide-react"
 
 export default function BienvenidaPage() {
   const router = useRouter()
-  const [eyesOpen, setEyesOpen] = useState(true)
-
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>
-
-    function blink() {
-      setEyesOpen(false)
-      timeout = setTimeout(() => {
-        setEyesOpen(true)
-        timeout = setTimeout(blink, 2800 + Math.random() * 1400)
-      }, 180)
-    }
-
-    timeout = setTimeout(blink, 1500)
-    return () => clearTimeout(timeout)
-  }, [])
 
   return (
     <div
@@ -44,24 +26,6 @@ export default function BienvenidaPage() {
       <FloatingParticles />
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-6">
-        <div className="relative w-52 h-52 select-none">
-          <Image
-            src="/characters/rey_ojos_abiertos.png"
-            alt="Rey LISA"
-            fill
-            className="object-contain transition-opacity duration-100"
-            style={{ opacity: eyesOpen ? 1 : 0 }}
-            priority
-          />
-          <Image
-            src="/characters/rey_ojos_cerrados.png"
-            alt="Rey LISA"
-            fill
-            className="object-contain transition-opacity duration-100"
-            style={{ opacity: eyesOpen ? 0 : 1 }}
-          />
-        </div>
-
         <div
           className="w-full rounded-3xl shadow-xl p-8 flex flex-col gap-6"
           style={{ backgroundColor: "rgba(255,255,255,0.82)", backdropFilter: "blur(16px)" }}

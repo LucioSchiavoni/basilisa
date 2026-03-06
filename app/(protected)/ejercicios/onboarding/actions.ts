@@ -17,7 +17,7 @@ export async function saveDateOfBirth(
 
   const { error } = await supabase
     .from("profiles")
-    .update({ date_of_birth: dateStr, updated_at: new Date().toISOString() })
+    .update({ date_of_birth: dateStr, is_profile_complete: true, updated_at: new Date().toISOString() })
     .eq("id", user.id)
 
   if (error) return { error: "No se pudo guardar la fecha" }

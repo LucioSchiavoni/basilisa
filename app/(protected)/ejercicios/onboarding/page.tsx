@@ -8,22 +8,11 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("date_of_birth, full_name, phone")
+    .select("date_of_birth")
     .eq("id", user!.id)
     .single()
 
-  const missingDob = !profile?.date_of_birth
-  const missingFullName = !profile?.full_name
-  const missingPhone = !profile?.phone
-
-  if (!missingDob && !missingFullName && !missingPhone) {
-    redirect("/ejercicios")
-  }
-
-  if (!missingDob) {
-    if (missingFullName) redirect("/ejercicios/editar-perfil?tutorial=full_name")
-    if (missingPhone) redirect("/ejercicios/editar-perfil?tutorial=phone")
-  }
+  if (profile?.date_of_birth) redirect("/ejercicios")
 
   return (
     <div
@@ -40,10 +29,7 @@ export default async function OnboardingPage() {
             "radial-gradient(circle at 18% 78%, rgba(251,222,200,0.35) 0%, transparent 52%), radial-gradient(circle at 82% 18%, rgba(248,216,190,0.28) 0%, transparent 48%)",
         }}
       />
-      <OnboardingClient
-        missingFullName={missingFullName}
-        missingPhone={missingPhone}
-      />
+      <OnboardingClient />
     </div>
   )
 }

@@ -8,12 +8,9 @@ const schema = z.object({
   full_name: z
     .string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "El nombre solo puede contener letras"),
-  country_code: z.string().min(1, "El código de país es requerido"),
-  phone: z
-    .string()
-    .min(8, "El teléfono debe tener al menos 8 dígitos")
-    .regex(/^\d+$/, "El teléfono solo puede contener números"),
+    .regex(/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s._-]+$/, "El nombre contiene caracteres no permitidos"),
+  country_code: z.string().optional(),
+  phone: z.string().optional(),
   avatar_url: z.string().optional(),
 });
 
@@ -39,11 +36,18 @@ export async function editProfile(
   } = await supabase.auth.getUser();
   if (!user) return { error: "No se encontró el usuario" };
 
+  if (parsed.data.phone && (parsed.data.phone.length < 8 || !/^\d+$/.test(parsed.data.phone))) {
+    return { error: "El teléfono debe tener al menos 8 dígitos y solo números" };
+  }
+
   const updates: Record<string, unknown> = {
     full_name: parsed.data.full_name,
-    phone: `${parsed.data.country_code}${parsed.data.phone}`,
     updated_at: new Date().toISOString(),
   };
+
+  if (parsed.data.phone) {
+    updates.phone = `${parsed.data.country_code ?? "+598"}${parsed.data.phone}`;
+  }
 
   if (parsed.data.avatar_url) {
     updates.avatar_url = parsed.data.avatar_url;

@@ -8,7 +8,7 @@ const profileSchema = z.object({
   full_name: z
     .string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "El nombre solo puede contener letras"),
+    .regex(/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s._-]+$/, "El nombre contiene caracteres no permitidos"),
   date_of_birth: z.string().min(1, "La fecha de nacimiento es requerida"),
   country_code: z.string().min(1, "El código de país es requerido"),
   phone: z

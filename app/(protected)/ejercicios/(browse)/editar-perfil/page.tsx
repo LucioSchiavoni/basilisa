@@ -53,6 +53,8 @@ function EditarPerfilContent() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [phoneNum, setPhoneNum] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,6 +83,8 @@ function EditarPerfilContent() {
       if (profile) {
         setProfileData(profile);
         setAvatarUrl(profile.avatar_url);
+        setFullName(profile.full_name ?? "");
+        setPhoneNum(extractPhone(profile.phone).number);
       }
       setLoading(false);
     }
@@ -144,8 +148,14 @@ function EditarPerfilContent() {
     );
   }
 
-  const { countryCode, number: phoneNumber } = extractPhone(profileData?.phone ?? null);
+  const { countryCode } = extractPhone(profileData?.phone ?? null);
   const initials = getInitials(profileData?.full_name ?? null, userEmail);
+
+  const isDirty = profileData !== null && (
+    fullName !== (profileData.full_name ?? "") ||
+    phoneNum !== extractPhone(profileData.phone).number ||
+    avatarUrl !== (profileData.avatar_url ?? null)
+  );
 
   return (
     <div className="relative space-y-6 max-w-xl mx-auto">
@@ -232,11 +242,10 @@ function EditarPerfilContent() {
                 id="full_name"
                 name="full_name"
                 type="text"
-                defaultValue={profileData?.full_name ?? ""}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 placeholder="Juan Pérez"
-                onKeyDown={handleNameKeyDown}
                 autoFocus={tutorial === "full_name"}
-                required
               />
             </div>
 
@@ -257,19 +266,17 @@ function EditarPerfilContent() {
                   type="tel"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  defaultValue={phoneNumber}
+                  value={phoneNum}
+                  onChange={(e) => setPhoneNum(e.target.value.replace(/\D/g, ""))}
                   placeholder="91234567"
-                  onKeyDown={handlePhoneKeyDown}
-                  onInput={handlePhoneInput}
                   className="flex-1"
-                  required
                 />
               </div>
             </div>
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={pending || avatarUploading}>
+        <Button type="submit" className="w-full bg-[#579F93] hover:bg-[#4a8e83] text-white" disabled={!isDirty || pending || avatarUploading}>
           {pending ? "Guardando..." : "Guardar cambios"}
         </Button>
       </form>

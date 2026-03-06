@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { GemIcon } from "@/components/gem-icon";
 import { WorldThemeProvider } from "@/components/world-theme-context";
 import { ForceDarkOnWorldPages } from "@/components/force-dark-on-world-pages";
-import { ProfileIncompleteBanner } from "@/components/profile-incomplete-banner";
+import { DobReminderBanner } from "@/components/profile-incomplete-banner";
 
 export default async function BrowseEjerciciosLayout({
   children,
@@ -19,7 +19,7 @@ export default async function BrowseEjerciciosLayout({
   const [{ data: profile }, { data: gems }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, is_profile_complete, date_of_birth")
+      .select("date_of_birth")
       .eq("id", user!.id)
       .single(),
     supabase
@@ -29,7 +29,7 @@ export default async function BrowseEjerciciosLayout({
       .single(),
   ]);
 
-  const showBanner = !profile?.is_profile_complete || !profile?.full_name || !profile?.date_of_birth;
+  const showBanner = !profile?.date_of_birth;
 
   return (
     <WorldThemeProvider>
@@ -48,7 +48,7 @@ export default async function BrowseEjerciciosLayout({
               <div className="flex items-center gap-3">
                 {showBanner && (
                   <div className="hidden lg:block">
-                    <ProfileIncompleteBanner />
+                    <DobReminderBanner />
                   </div>
                 )}
                 <div className="hidden lg:flex items-center gap-1.5 rounded-2xl px-3 py-1.5 bg-card/80 border border-border dark:bg-black/35 dark:border-white/10 backdrop-blur-md shadow-sm">
@@ -62,7 +62,7 @@ export default async function BrowseEjerciciosLayout({
             </div>
             {showBanner && (
               <div className="mt-2 lg:hidden">
-                <ProfileIncompleteBanner />
+                <DobReminderBanner />
               </div>
             )}
           </div>

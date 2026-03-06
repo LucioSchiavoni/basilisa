@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useActionState } from "react"
+import { useEffect, useRef, useState, useActionState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, Check, Calendar } from "lucide-react"
 import { saveDateOfBirth } from "./actions"
@@ -11,11 +11,6 @@ const MONTHS = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ]
 const WEEK_DAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"]
-
-type Props = {
-  missingFullName: boolean
-  missingPhone: boolean
-}
 
 type Selected = { year: number; month: number; day: number }
 
@@ -28,7 +23,7 @@ function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate()
 }
 
-export function OnboardingClient({ missingFullName, missingPhone }: Props) {
+export function OnboardingClient() {
   const router = useRouter()
   const [state, formAction, pending] = useActionState(saveDateOfBirth, {})
 
@@ -37,20 +32,23 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
   const [viewMonth, setViewMonth] = useState(5)
   const [selected, setSelected] = useState<Selected | null>(null)
   const [showYearPicker, setShowYearPicker] = useState(false)
+  const yearPickerRef = useRef<HTMLDivElement>(null)
+  const selectedYearRef = useRef<HTMLButtonElement>(null)
 
   const yearRange = Array.from({ length: currentYear - 1949 }, (_, i) => 1950 + i).reverse()
 
   useEffect(() => {
-    if (state?.success) {
-      if (missingFullName) {
-        router.push("/ejercicios/editar-perfil?tutorial=full_name")
-      } else if (missingPhone) {
-        router.push("/ejercicios/editar-perfil?tutorial=phone")
-      } else {
-        router.push("/ejercicios")
-      }
+    if (showYearPicker && selectedYearRef.current && yearPickerRef.current) {
+      const container = yearPickerRef.current
+      const el = selectedYearRef.current
+      const offset = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2
+      container.scrollTop = offset
     }
-  }, [state?.success, missingFullName, missingPhone, router])
+  }, [showYearPicker])
+
+  useEffect(() => {
+    if (state?.success) router.push("/ejercicios")
+  }, [state?.success, router])
 
   const firstDay = getFirstWeekDay(viewYear, viewMonth)
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
@@ -99,7 +97,7 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
               <button
                 type="button"
                 onClick={() => setShowYearPicker(v => !v)}
-                className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700 hover:text-[#579F93] transition-colors px-2 py-1 rounded-lg hover:bg-[#579F93]/8"
+                className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700 dark:text-white hover:text-[#579F93] dark:hover:text-[#579F93] transition-colors px-2 py-1 rounded-lg hover:bg-[#579F93]/8"
               >
                 <Calendar className="h-3.5 w-3.5" />
                 {MONTHS[viewMonth]} {viewYear}
@@ -118,14 +116,15 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
             </div>
 
             {showYearPicker ? (
-              <div className="absolute inset-x-0 top-10 z-10 bg-white rounded-2xl shadow-lg border border-neutral-100 p-3 max-h-52 overflow-y-auto">
+              <div ref={yearPickerRef} className="absolute inset-x-0 top-10 z-10 bg-white rounded-2xl shadow-lg border border-neutral-100 p-3 max-h-72 overflow-y-auto">
                 <div className="grid grid-cols-4 gap-1.5">
                   {yearRange.map((y) => (
                     <button
                       key={y}
+                      ref={y === viewYear ? selectedYearRef : undefined}
                       type="button"
                       onClick={() => { setViewYear(y); setShowYearPicker(false) }}
-                      className="py-1.5 rounded-xl text-sm font-medium transition-all duration-150 hover:scale-105"
+                      className="py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:scale-105"
                       style={{
                         backgroundColor: y === viewYear ? "#579F93" : "transparent",
                         color: y === viewYear ? "white" : "#374151",
@@ -140,7 +139,7 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
               <>
                 <div className="grid grid-cols-7 mb-2">
                   {WEEK_DAYS.map((d) => (
-                    <div key={d} className="text-center text-[10px] font-semibold text-neutral-400 py-1">
+                    <div key={d} className="text-center text-[10px] font-semibold text-neutral-800 dark:text-white py-1">
                       {d}
                     </div>
                   ))}
@@ -152,10 +151,9 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
                         <button
                           type="button"
                           onClick={() => setSelected({ year: viewYear, month: viewMonth, day })}
-                          className="w-9 h-9 rounded-full text-sm font-medium transition-all duration-150 hover:scale-110 active:scale-95"
+                          className={`w-9 h-9 rounded-full text-sm font-medium transition-all duration-150 hover:scale-110 active:scale-95 ${isSelected(day) ? "text-white" : "text-neutral-800 dark:text-white"}`}
                           style={{
                             backgroundColor: isSelected(day) ? "#579F93" : "transparent",
-                            color: isSelected(day) ? "white" : "#374151",
                             boxShadow: isSelected(day) ? "0 2px 8px #579F9340" : "none",
                           }}
                         >
@@ -176,7 +174,7 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
             </div>
           )}
 
-          <form action={formAction} className="mt-4">
+          <form action={formAction} className="mt-4 mb-2">
             <input type="hidden" name="date_of_birth" value={selectedDateStr} />
             {state?.error && (
               <p className="text-xs text-red-500 mb-2 text-center">{state.error}</p>
@@ -198,7 +196,7 @@ export function OnboardingClient({ missingFullName, missingPhone }: Props) {
           <button
             type="button"
             onClick={() => router.replace("/ejercicios")}
-            className="w-full py-2.5 rounded-2xl text-sm font-medium text-neutral-400 border border-neutral-200 hover:bg-neutral-50 hover:text-neutral-600 transition-all duration-200"
+            className="w-full py-2.5 rounded-2xl text-sm font-medium text-neutral-500 border border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 transition-all duration-200"
           >
             Completar luego
           </button>
