@@ -38,7 +38,7 @@ export default async function ExercisePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: userGemsData }, { data: exercise }] = await Promise.all([
+  const [{ data: userGemsData }, { data: exercise }, { data: profileData }] = await Promise.all([
     admin
       .from("user_gems")
       .select("total_gems")
@@ -53,6 +53,11 @@ export default async function ExercisePage({
       .eq("is_active", true)
       .is("deleted_at", null)
       .single(),
+    supabase
+      .from("profiles")
+      .select("grade_year")
+      .eq("id", user!.id)
+      .maybeSingle(),
   ]);
 
   if (!exercise) {
@@ -60,6 +65,7 @@ export default async function ExercisePage({
   }
 
   const initialGems = userGemsData?.total_gems ?? 0;
+  const gradeYear = (profileData as { grade_year?: number | null } | null)?.grade_year ?? null;
 
   let worldId: string | undefined;
   let worldName: string | undefined;
@@ -98,6 +104,7 @@ export default async function ExercisePage({
   return (
     <ExercisePlayer
       initialGems={initialGems}
+      gradeYear={gradeYear}
       answerKey={buildAnswerKey(rawContent)}
       exercise={{
         id: exercise.id,

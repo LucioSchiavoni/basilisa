@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { awardExerciseGems } from "@/lib/gems";
+import { calculatePPM, getExerciseWordCount } from "@/lib/constants/reading-speeds";
 
 type CheckAnswerResult = {
   isCorrect: boolean;
@@ -92,7 +93,7 @@ export async function completeExercise(input: {
   const admin = createAdminClient();
   const patientId = user.id;
 
-  const [{ data: assignment }, { count }] = await Promise.all([
+  const [{ data: assignment }, { count }, { data: exerciseData }] = await Promise.all([
     admin
       .from("patient_assignments")
       .select("id")
@@ -107,6 +108,11 @@ export async function completeExercise(input: {
       .select("id", { count: "exact", head: true })
       .eq("exercise_id", input.exerciseId)
       .eq("patient_id", patientId),
+    admin
+      .from("exercises")
+      .select("content")
+      .eq("id", input.exerciseId)
+      .maybeSingle(),
   ]);
 
   const isAssigned = !!assignment;
@@ -133,6 +139,13 @@ export async function completeExercise(input: {
 
   const attemptNumber = (count ?? 0) + 1;
 
+  const exerciseContent = exerciseData?.content as Record<string, unknown> | undefined;
+  const readingWordCount = exerciseContent ? getExerciseWordCount(exerciseContent) : null;
+  const readingPpm =
+    readingWordCount !== null && input.readingTimeSeconds && input.readingTimeSeconds > 0
+      ? calculatePPM(readingWordCount, input.readingTimeSeconds)
+      : null;
+
   const { data: session, error: sessionError } = await admin
     .from("assignment_sessions")
     .insert({
@@ -144,6 +157,8 @@ export async function completeExercise(input: {
       ended_at: new Date().toISOString(),
       duration_seconds: Math.max(0, input.durationSeconds),
       reading_time_seconds: input.readingTimeSeconds ?? null,
+      reading_word_count: readingPpm !== null ? readingWordCount : null,
+      reading_ppm: readingPpm,
       is_completed: true,
     })
     .select("id")
@@ -259,6 +274,11 @@ export async function completeTimedReading(input: {
 
   const attemptNumber = (count ?? 0) + 1;
 
+  const timedReadingPpm =
+    input.wordCount > 0 && input.timeSeconds > 0
+      ? calculatePPM(input.wordCount, input.timeSeconds)
+      : null;
+
   const { data: session, error: sessionError } = await admin
     .from("assignment_sessions")
     .insert({
@@ -270,6 +290,8 @@ export async function completeTimedReading(input: {
       ended_at: new Date().toISOString(),
       duration_seconds: Math.max(0, input.timeSeconds),
       reading_time_seconds: Math.max(0, input.timeSeconds),
+      reading_word_count: timedReadingPpm !== null ? input.wordCount : null,
+      reading_ppm: timedReadingPpm,
       is_completed: true,
     })
     .select("id")

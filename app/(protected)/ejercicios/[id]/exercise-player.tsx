@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { completeExercise, completeTimedReading } from "./actions";
+import { calculateMaxReadingTime, getExerciseWordCount } from "@/lib/constants/reading-speeds";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
 import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes";
@@ -41,6 +42,7 @@ export type ExerciseProps = {
   };
   answerKey: Record<string, string>;
   initialGems: number;
+  gradeYear?: number | null;
   worldId?: string;
   worldName?: string;
   backHref: string;
@@ -64,14 +66,14 @@ function getWordCount(content: Record<string, unknown>): number {
   return (content.word_count as number) || 0;
 }
 
-export function ExercisePlayer({ exercise, answerKey, initialGems, worldId, worldName, backHref }: ExerciseProps) {
+export function ExercisePlayer({ exercise, answerKey, initialGems, gradeYear, worldId, worldName, backHref }: ExerciseProps) {
   if (exercise.typeName === "letter_gap") {
     return <LetterGapPlayer exercise={exercise} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />;
   }
-  return <BaseExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />;
+  return <BaseExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} gradeYear={gradeYear} worldId={worldId} worldName={worldName} backHref={backHref} />;
 }
 
-function BaseExercisePlayer({ exercise, answerKey, initialGems, worldId, worldName, backHref }: ExerciseProps) {
+function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, worldId, worldName, backHref }: ExerciseProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -109,6 +111,14 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, worldId, worldNa
   const hideTextDuringQuestions = isReadingComprehension
     ? (exercise.content.hide_text_during_questions as boolean) === true
     : true;
+
+  const exerciseReadingType: "text" | "word_list" =
+    isReadingComprehension || isTimedReading ? "text" : "word_list";
+  const exerciseWordCount = getExerciseWordCount(exercise.content);
+  const maxReadingTime =
+    exerciseWordCount !== null
+      ? calculateMaxReadingTime(exerciseWordCount, gradeYear ?? 1, exerciseReadingType)
+      : 30;
 
   const worldScheme = worldName ? getScheme(worldName) : null;
   const worldConfig = worldName ? getWorldConfig(worldName) : null;
@@ -208,10 +218,17 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, worldId, worldNa
       .finally(() => setIsCompleting(false));
   }, [exercise.id, wordCount]);
 
+  useEffect(() => {
+    if (!isTimedReading || phase !== "reading") return;
+    if (timerSeconds >= maxReadingTime) {
+      handleFinishReading();
+    }
+  }, [timerSeconds, maxReadingTime, isTimedReading, phase, handleFinishReading]);
+
   const handleCheck = useCallback((optionId: string) => {
     if (!currentQuestion) return;
     const elapsed = Math.round((Date.now() - questionStartRef.current) / 1000);
-    const timedOut = elapsed > 30;
+    const timedOut = elapsed > maxReadingTime;
     const correctOptionId = answerKey[currentQuestion.id] ?? "";
     const isCorrect = optionId === correctOptionId;
     answersRef.current.push({
@@ -236,7 +253,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, worldId, worldNa
         setSelectedOptionId(null);
       }
     });
-  }, [currentQuestion, answerKey, isLastQuestion, finishExercise]);
+  }, [currentQuestion, answerKey, isLastQuestion, finishExercise, maxReadingTime]);
 
   if (phase === "intro") {
     return (
@@ -294,6 +311,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, worldId, worldNa
         questions={questions}
         initialGems={initialGems}
         readingTimeSeconds={readingTimeSeconds}
+        maxReadingTime={maxReadingTime}
       />
     );
   }

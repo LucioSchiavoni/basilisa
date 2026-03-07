@@ -66,11 +66,12 @@ type Props = {
   totalPoints: number;
   totalTimeSeconds: number;
   readingTimeSeconds?: number;
+  maxReadingTime?: number;
   answers?: AnswerResult[];
   questions?: Question[];
 };
 
-function QuestionsReport({ questions, answers }: { questions: Question[]; answers: AnswerResult[] }) {
+function QuestionsReport({ questions, answers, maxSeconds }: { questions: Question[]; answers: AnswerResult[]; maxSeconds?: number }) {
   if (!questions.length || !answers.length) return null;
   const correctCount = answers.filter((a) => a.isCorrect).length;
   const totalCount = questions.length;
@@ -96,7 +97,7 @@ function QuestionsReport({ questions, answers }: { questions: Question[]; answer
         </p>
         <span className="text-sm font-semibold tabular-nums">{correctCount}/{totalCount}</span>
       </div>
-      <AnswersChart answers={chartItems} />
+      <AnswersChart answers={chartItems} maxSeconds={maxSeconds} />
     </div>
   );
 }
@@ -117,6 +118,7 @@ export function PhaseResults({
   totalPoints,
   totalTimeSeconds,
   readingTimeSeconds,
+  maxReadingTime,
   answers = [],
   questions = [],
 }: Props) {
@@ -133,11 +135,11 @@ export function PhaseResults({
     return (
       <>
         <GemCounter initialGems={initialGems} gemsAwarded={gemsAwarded} isCompleting={isCompleting} />
-        <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
           <div className="w-full max-w-lg text-center space-y-8">
             <div className="text-6xl">{getWpmEmoji(wordsPerMinute)}</div>
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">{getWpmMessage(wordsPerMinute)}</h1>
+              <h1 className="text-2xl sm:text-3xl font-light tracking-tight ">{getWpmMessage(wordsPerMinute)}</h1>
               <p className="text-muted-foreground">{exerciseTitle}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -168,12 +170,12 @@ export function PhaseResults({
   return (
     <>
       <GemCounter initialGems={initialGems} gemsAwarded={gemsAwarded} isCompleting={isCompleting} />
-      <div className="min-h-screen pt-10 pb-28 px-6">
+      <div className="min-h-screen pt-10 pb-28 px-6 bg-background text-foreground">
         <div className="w-full max-w-lg mx-auto space-y-6">
           <div className="text-center space-y-6">
             <div className="text-6xl">{getResultEmoji(percentage)}</div>
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">{getResultMessage(percentage)}</h1>
+              <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-foreground">{getResultMessage(percentage)}</h1>
               <p className="text-muted-foreground">{exerciseTitle}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -210,7 +212,7 @@ export function PhaseResults({
               </div>
             </div>
           </div>
-          <QuestionsReport questions={questions} answers={answers} />
+          <QuestionsReport questions={questions} answers={answers} maxSeconds={maxReadingTime} />
         </div>
       </div>
       <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-t p-4">

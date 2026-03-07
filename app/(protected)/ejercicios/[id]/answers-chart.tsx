@@ -13,8 +13,15 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const MAX_SECONDS = 30;
 const BAR_WIDTH = 64;
+
+function generateTicks(maxSec: number): number[] {
+  const step = Math.ceil(maxSec / 3 / 10) * 10;
+  const ticks: number[] = [];
+  for (let t = 0; t <= maxSec; t += step) ticks.push(t);
+  if (ticks[ticks.length - 1] !== maxSec) ticks.push(maxSec);
+  return ticks;
+}
 
 export type AnswersChartItem = {
   questionText: string;
@@ -33,8 +40,10 @@ function formatTimer(seconds: number): string {
 
 export function AnswersChart({
   answers,
+  maxSeconds = 30,
 }: {
   answers: AnswersChartItem[];
+  maxSeconds?: number;
 }) {
   if (!answers.length) return null;
 
@@ -42,9 +51,12 @@ export function AnswersChart({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  const ticks = generateTicks(maxSeconds);
+  const maxLabel = maxSeconds >= 60 ? formatTimer(maxSeconds) : `${maxSeconds}s`;
+
   const data = answers.map((a, i) => ({
     index: i + 1,
-    time: Math.min(a.timeSpentSeconds, MAX_SECONDS),
+    time: Math.min(a.timeSpentSeconds, maxSeconds),
     raw: a.timeSpentSeconds,
     correct: a.isCorrect,
     timedOut: a.timedOut,
@@ -123,19 +135,19 @@ export function AnswersChart({
                 tick={{ fontSize: 11 }}
               />
               <YAxis
-                domain={[0, MAX_SECONDS]}
+                domain={[0, maxSeconds]}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 11 }}
-                tickFormatter={(v) => `${v}s`}
-                ticks={[0, 10, 20, 30]}
+                tickFormatter={(v) => (v >= 60 ? formatTimer(v) : `${v}s`)}
+                ticks={ticks}
               />
               <ReferenceLine
-                y={30}
+                y={maxSeconds}
                 stroke="#94a3b8"
                 strokeDasharray="5 3"
                 label={{
-                  value: "30s",
+                  value: maxLabel,
                   position: "insideTopRight",
                   fontSize: 10,
                   fill: "#94a3b8",
