@@ -92,21 +92,28 @@ export async function completeExercise(input: {
   const admin = createAdminClient();
   const patientId = user.id;
 
-  const { data: assignment } = await admin
-    .from("patient_assignments")
-    .select("id")
-    .eq("patient_id", patientId)
-    .eq("exercise_id", input.exerciseId)
-    .in("status", ["assigned", "in_progress"])
-    .order("assigned_at", { ascending: false })
-    .limit(1)
-    .single();
+  const [{ data: assignment }, { count }] = await Promise.all([
+    admin
+      .from("patient_assignments")
+      .select("id")
+      .eq("patient_id", patientId)
+      .eq("exercise_id", input.exerciseId)
+      .in("status", ["pending", "assigned", "in_progress"])
+      .order("assigned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("assignment_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("exercise_id", input.exerciseId)
+      .eq("patient_id", patientId),
+  ]);
 
   const isAssigned = !!assignment;
   let assignmentId: string;
 
   if (isAssigned) {
-    assignmentId = assignment.id;
+    assignmentId = assignment!.id;
   } else {
     const { data: selfAssignment, error } = await admin
       .from("patient_assignments")
@@ -123,12 +130,6 @@ export async function completeExercise(input: {
       throw new Error("Error al registrar ejercicio");
     assignmentId = selfAssignment.id;
   }
-
-  const { count } = await admin
-    .from("assignment_sessions")
-    .select("id", { count: "exact", head: true })
-    .eq("exercise_id", input.exerciseId)
-    .eq("patient_id", patientId);
 
   const attemptNumber = (count ?? 0) + 1;
 
@@ -189,17 +190,15 @@ export async function completeExercise(input: {
 
   if (scoreError) throw new Error("Error al guardar puntaje");
 
-  if (isAssigned) {
-    await admin
-      .from("patient_assignments")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", assignmentId);
-  }
-
-  const gemResult = await awardExerciseGems(session.id, patientId);
+  const [gemResult] = await Promise.all([
+    awardExerciseGems(session.id, patientId),
+    isAssigned
+      ? admin
+          .from("patient_assignments")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .eq("id", assignmentId)
+      : Promise.resolve(null),
+  ]);
 
   return { gemsAwarded: gemResult.totalAwarded };
 }
@@ -219,21 +218,28 @@ export async function completeTimedReading(input: {
   const admin = createAdminClient();
   const patientId = user.id;
 
-  const { data: assignment } = await admin
-    .from("patient_assignments")
-    .select("id")
-    .eq("patient_id", patientId)
-    .eq("exercise_id", input.exerciseId)
-    .in("status", ["assigned", "in_progress"])
-    .order("assigned_at", { ascending: false })
-    .limit(1)
-    .single();
+  const [{ data: assignment }, { count }] = await Promise.all([
+    admin
+      .from("patient_assignments")
+      .select("id")
+      .eq("patient_id", patientId)
+      .eq("exercise_id", input.exerciseId)
+      .in("status", ["pending", "assigned", "in_progress"])
+      .order("assigned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("assignment_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("exercise_id", input.exerciseId)
+      .eq("patient_id", patientId),
+  ]);
 
   const isAssigned = !!assignment;
   let assignmentId: string;
 
   if (isAssigned) {
-    assignmentId = assignment.id;
+    assignmentId = assignment!.id;
   } else {
     const { data: selfAssignment, error } = await admin
       .from("patient_assignments")
@@ -250,12 +256,6 @@ export async function completeTimedReading(input: {
       throw new Error("Error al registrar ejercicio");
     assignmentId = selfAssignment.id;
   }
-
-  const { count } = await admin
-    .from("assignment_sessions")
-    .select("id", { count: "exact", head: true })
-    .eq("exercise_id", input.exerciseId)
-    .eq("patient_id", patientId);
 
   const attemptNumber = (count ?? 0) + 1;
 
@@ -311,17 +311,15 @@ export async function completeTimedReading(input: {
 
   if (scoreError) throw new Error("Error al guardar puntaje");
 
-  if (isAssigned) {
-    await admin
-      .from("patient_assignments")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", assignmentId);
-  }
-
-  const gemResult = await awardExerciseGems(session.id, patientId);
+  const [gemResult] = await Promise.all([
+    awardExerciseGems(session.id, patientId),
+    isAssigned
+      ? admin
+          .from("patient_assignments")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .eq("id", assignmentId)
+      : Promise.resolve(null),
+  ]);
 
   return { gemsAwarded: gemResult.totalAwarded };
 }
@@ -379,21 +377,28 @@ export async function completeLetterGap(input: {
   const admin = createAdminClient();
   const patientId = user.id;
 
-  const { data: assignment } = await admin
-    .from("patient_assignments")
-    .select("id")
-    .eq("patient_id", patientId)
-    .eq("exercise_id", input.exerciseId)
-    .in("status", ["assigned", "in_progress"])
-    .order("assigned_at", { ascending: false })
-    .limit(1)
-    .single();
+  const [{ data: assignment }, { count }] = await Promise.all([
+    admin
+      .from("patient_assignments")
+      .select("id")
+      .eq("patient_id", patientId)
+      .eq("exercise_id", input.exerciseId)
+      .in("status", ["pending", "assigned", "in_progress"])
+      .order("assigned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("assignment_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("exercise_id", input.exerciseId)
+      .eq("patient_id", patientId),
+  ]);
 
   const isAssigned = !!assignment;
   let assignmentId: string;
 
   if (isAssigned) {
-    assignmentId = assignment.id;
+    assignmentId = assignment!.id;
   } else {
     const { data: selfAssignment, error } = await admin
       .from("patient_assignments")
@@ -410,12 +415,6 @@ export async function completeLetterGap(input: {
       throw new Error("Error al registrar ejercicio");
     assignmentId = selfAssignment.id;
   }
-
-  const { count } = await admin
-    .from("assignment_sessions")
-    .select("id", { count: "exact", head: true })
-    .eq("exercise_id", input.exerciseId)
-    .eq("patient_id", patientId);
 
   const attemptNumber = (count ?? 0) + 1;
 
@@ -476,17 +475,15 @@ export async function completeLetterGap(input: {
 
   if (scoreError) throw new Error("Error al guardar puntaje");
 
-  if (isAssigned) {
-    await admin
-      .from("patient_assignments")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", assignmentId);
-  }
-
-  const gemResult = await awardExerciseGems(session.id, patientId);
+  const [gemResult] = await Promise.all([
+    awardExerciseGems(session.id, patientId),
+    isAssigned
+      ? admin
+          .from("patient_assignments")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .eq("id", assignmentId)
+      : Promise.resolve(null),
+  ]);
 
   return { gemsAwarded: gemResult.totalAwarded };
 }

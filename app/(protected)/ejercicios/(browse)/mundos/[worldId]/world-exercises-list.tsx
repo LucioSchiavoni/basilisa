@@ -215,7 +215,7 @@ export function WorldExercisesList({
                       </span>
                     )}
                     <div className="flex gap-0.5 items-center">
-                      {Array.from({ length: 5 }).map((_, i) => (
+                      {Array.from({ length: 6 }).map((_, i) => (
                         <div
                           key={i}
                           className="w-1.5 h-1.5 rounded-full"

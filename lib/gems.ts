@@ -13,6 +13,16 @@ const GEMS = {
   STREAK_30: 300,
 } as const;
 
+function todayInUY(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" });
+}
+
+function daysBetweenDateStrings(from: string, to: string): number {
+  const msFrom = new Date(from + "T12:00:00Z").getTime();
+  const msTo = new Date(to + "T12:00:00Z").getTime();
+  return Math.round((msTo - msFrom) / (1000 * 60 * 60 * 24));
+}
+
 const STREAK_MILESTONES = [
   { days: 30, amount: GEMS.STREAK_30, source: "streak_30" as const },
   { days: 14, amount: GEMS.STREAK_14, source: "streak_14" as const },
@@ -78,29 +88,33 @@ export async function awardExerciseGems(sessionId: string, patientId: string) {
     .select("id")
     .eq("session_id", sessionId)
     .in("source", ["exercise_completion", "free_exercise_completion"])
-    .single();
+    .maybeSingle();
 
   if (existingTx) return { alreadyAwarded: true, totalAwarded: 0 };
 
-  const { data: session, error: sessionError } = await supabase
-    .from("assignment_sessions")
-    .select("id, attempt_number, is_completed, is_assigned")
-    .eq("id", sessionId)
-    .eq("patient_id", patientId)
-    .single();
+  const [
+    { data: session, error: sessionError },
+    { data: score, error: scoreError },
+  ] = await Promise.all([
+    supabase
+      .from("assignment_sessions")
+      .select("id, attempt_number, is_completed, is_assigned")
+      .eq("id", sessionId)
+      .eq("patient_id", patientId)
+      .single(),
+    supabase
+      .from("assignment_scores")
+      .select("score_percentage")
+      .eq("session_id", sessionId)
+      .eq("patient_id", patientId)
+      .single(),
+  ]);
 
   if (sessionError || !session)
     throw new Error(`Session not found: ${sessionError?.message}`);
 
   if (!session.is_completed)
     throw new Error("Session is not completed");
-
-  const { data: score, error: scoreError } = await supabase
-    .from("assignment_scores")
-    .select("score_percentage")
-    .eq("session_id", sessionId)
-    .eq("patient_id", patientId)
-    .single();
 
   if (scoreError || !score)
     throw new Error(`Score not found: ${scoreError?.message}`);
@@ -115,57 +129,42 @@ export async function awardExerciseGems(sessionId: string, patientId: string) {
     ? "exercise_completion"
     : "free_exercise_completion";
 
-  await createTransaction(
-    supabase,
-    patientId,
-    completionAmount,
-    "earned",
-    completionSource,
-    sessionId
-  );
-  totalAwarded += completionAmount;
+  const isPerfect = Number(score.score_percentage) === 100;
+  const isFirstAttempt = isAssigned && session.attempt_number === 1;
 
-  if (Number(score.score_percentage) === 100) {
-    const perfectAmount = isAssigned
-      ? GEMS.ASSIGNED_PERFECT_SCORE
-      : GEMS.FREE_PERFECT_SCORE;
-    const perfectSource: GemSource = isAssigned
-      ? "perfect_score"
-      : "free_perfect_score";
+  const perfectAmount = isPerfect
+    ? isAssigned ? GEMS.ASSIGNED_PERFECT_SCORE : GEMS.FREE_PERFECT_SCORE
+    : 0;
+  const perfectSource: GemSource = isAssigned ? "perfect_score" : "free_perfect_score";
 
-    await createTransaction(
-      supabase,
-      patientId,
-      perfectAmount,
-      "bonus",
-      perfectSource,
-      sessionId
+  const pendingTransactions: Promise<void>[] = [
+    createTransaction(supabase, patientId, completionAmount, "earned", completionSource, sessionId),
+  ];
+  if (isPerfect) {
+    pendingTransactions.push(
+      createTransaction(supabase, patientId, perfectAmount, "bonus", perfectSource, sessionId)
     );
-    totalAwarded += perfectAmount;
+  }
+  if (isFirstAttempt) {
+    pendingTransactions.push(
+      createTransaction(supabase, patientId, GEMS.FIRST_ATTEMPT, "bonus", "first_attempt", sessionId)
+    );
   }
 
-  if (isAssigned && session.attempt_number === 1) {
-    await createTransaction(
-      supabase,
-      patientId,
-      GEMS.FIRST_ATTEMPT,
-      "bonus",
-      "first_attempt",
-      sessionId
-    );
-    totalAwarded += GEMS.FIRST_ATTEMPT;
-  }
+  await Promise.all(pendingTransactions);
+
+  totalAwarded += completionAmount + perfectAmount + (isFirstAttempt ? GEMS.FIRST_ATTEMPT : 0);
 
   await addGems(supabase, patientId, totalAwarded);
 
-  const streakGems = await updateStreak(patientId);
+  const streakGems = await updateStreak(patientId, supabase);
   totalAwarded += streakGems;
 
   return { alreadyAwarded: false, totalAwarded };
 }
 
-export async function updateStreak(patientId: string): Promise<number> {
-  const supabase = createAdminClient();
+export async function updateStreak(patientId: string, supabase?: ReturnType<typeof createAdminClient>): Promise<number> {
+  supabase = supabase ?? createAdminClient();
 
   const { data: userGems, error } = await supabase
     .from("user_gems")
@@ -182,16 +181,14 @@ export async function updateStreak(patientId: string): Promise<number> {
       total_gems: 0,
       current_streak: 1,
       best_streak: 1,
-      last_activity_date: new Date().toISOString().split("T")[0],
+      last_activity_date: todayInUY(),
     });
     if (insertError && insertError.code !== "23505")
       throw new Error(`Failed to create user gems: ${insertError.message}`);
     return 0;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = todayInUY();
 
   if (userGems.last_activity_date === todayStr) {
     return 0;
@@ -200,11 +197,7 @@ export async function updateStreak(patientId: string): Promise<number> {
   let newStreak: number;
 
   if (userGems.last_activity_date) {
-    const lastActivity = new Date(userGems.last_activity_date);
-    lastActivity.setHours(0, 0, 0, 0);
-    const diffMs = today.getTime() - lastActivity.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
+    const diffDays = daysBetweenDateStrings(userGems.last_activity_date, todayStr);
     newStreak = diffDays === 1 ? userGems.current_streak + 1 : 1;
   } else {
     newStreak = 1;
@@ -239,7 +232,7 @@ export async function updateStreak(patientId: string): Promise<number> {
           .eq("user_id", patientId)
           .eq("source", milestone.source)
           .gte("created_at", getStreakWindowStart(todayStr, newStreak))
-          .single();
+          .maybeSingle();
 
         if (!existingBonus) {
           await createTransaction(

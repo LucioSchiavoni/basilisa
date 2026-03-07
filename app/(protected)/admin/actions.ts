@@ -559,6 +559,29 @@ export async function createAccount(
   return createUser(prevState, formData);
 }
 
+export async function getExercisesForAssignment() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("exercises")
+    .select("id, title, difficulty_level, exercise_types(display_name)")
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .order("title");
+
+  return (data ?? []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    difficultyLevel: e.difficulty_level,
+    exerciseTypeDisplayName:
+      e.exercise_types && !Array.isArray(e.exercise_types)
+        ? e.exercise_types.display_name
+        : "Sin tipo",
+  }));
+}
+
 const assignExerciseSchema = z.object({
   patientId: z.string().uuid("ID de paciente inválido"),
   exerciseId: z.string().uuid("ID de ejercicio inválido"),

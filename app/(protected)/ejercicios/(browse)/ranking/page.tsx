@@ -31,15 +31,31 @@ export default async function RankingPage() {
 
   const adminClient = createAdminClient();
 
-  const { data: raw } = await adminClient
-    .from("user_gems")
-    .select("user_id, total_gems, current_streak, profiles(full_name)")
-    .order("total_gems", { ascending: false })
-    .limit(50);
+  const [{ data: raw }, { data: myRawData }] = await Promise.all([
+    adminClient
+      .from("user_gems")
+      .select("user_id, total_gems, current_streak, profiles(full_name)")
+      .order("total_gems", { ascending: false })
+      .limit(50),
+    adminClient
+      .from("user_gems")
+      .select("user_id, total_gems, current_streak, profiles(full_name)")
+      .eq("user_id", user!.id)
+      .maybeSingle(),
+  ]);
 
   const ranking = (raw ?? []) as unknown as RankEntry[];
+  const myEntry = myRawData as unknown as RankEntry | null;
   const myIndex = ranking.findIndex((r) => r.user_id === user!.id);
-  const myRank = myIndex + 1;
+
+  let myRank = myIndex >= 0 ? myIndex + 1 : 0;
+  if (myIndex === -1 && myEntry) {
+    const { count } = await adminClient
+      .from("user_gems")
+      .select("*", { count: "exact", head: true })
+      .gt("total_gems", myEntry.total_gems);
+    myRank = (count ?? 0) + 1;
+  }
 
   return (
     <div className="relative space-y-5">
@@ -52,7 +68,7 @@ export default async function RankingPage() {
         </p>
       </div>
 
-      {myRank > 0 && (
+      {myRank > 0 && myEntry && (
         <div className="rounded-2xl border-2 border-[#579F93]/40 bg-[#579F93]/8 p-3 flex items-center gap-3">
           <span className="text-sm font-bold text-[#579F93] w-8 text-center shrink-0">
             #{myRank}
@@ -60,29 +76,28 @@ export default async function RankingPage() {
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
             style={{
-              background:
-                myRank <= 3 ? MEDAL_COLORS[myRank - 1] : "#579F93",
+              background: myRank <= 3 ? MEDAL_COLORS[myRank - 1] : "#579F93",
             }}
           >
-            {getInitials(ranking[myIndex]?.profiles?.full_name ?? null)}
+            {getInitials(myEntry.profiles?.full_name ?? null)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#579F93] truncate">
-              {ranking[myIndex]?.profiles?.full_name ?? "Vos"}{" "}
+              {myEntry.profiles?.full_name ?? "Vos"}{" "}
               <span className="text-xs font-normal text-muted-foreground">
                 (vos)
               </span>
             </p>
-            {(ranking[myIndex]?.current_streak ?? 0) > 0 && (
+            {myEntry.current_streak > 0 && (
               <p className="text-xs text-muted-foreground">
-                🔥 {ranking[myIndex].current_streak} días seguidos
+                🔥 {myEntry.current_streak} días seguidos
               </p>
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <GemIcon size={22} />
             <span className="font-bold text-base text-[#579F93]">
-              {(ranking[myIndex]?.total_gems ?? 0).toLocaleString("es-AR")}
+              {myEntry.total_gems.toLocaleString("es-AR")}
             </span>
           </div>
         </div>

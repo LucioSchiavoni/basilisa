@@ -23,7 +23,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react"
-import { checkLetterGapAnswer, completeLetterGap } from "./actions"
+import { completeLetterGap } from "./actions"
 import type { LetterGapAnswerResult } from "./actions"
 import { AnswersChart, type AnswersChartItem } from "./answers-chart"
 import { ScorePie } from "./score-pie"
@@ -245,29 +245,26 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
     setStatus("placed")
     setOptions((prev) => prev.filter((w) => w !== word))
 
-    startTransition(async () => {
-      const result = await checkLetterGapAnswer(
-        exercise.id,
-        activeSentence.id,
-        word
-      )
+    const correctAnswer = activeSentence.correct_answer
+    const isCorrect = word.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
 
-      answersRef.current.push({
-        questionId: activeSentence.id,
-        patientAnswer: word,
-        correctAnswer: result.correctAnswer,
-        isCorrect: result.isCorrect,
-        timeSpentSeconds: elapsed,
-      })
+    answersRef.current.push({
+      questionId: activeSentence.id,
+      patientAnswer: word,
+      correctAnswer,
+      isCorrect,
+      timeSpentSeconds: elapsed,
+    })
 
-      const pts = activeSentence.points || 10
-      setTotalPoints((p) => p + pts)
+    const pts = activeSentence.points || 10
+    setTotalPoints((p) => p + pts)
 
-      if (result.isCorrect) {
-        setCorrectCount((c) => c + 1)
-        setEarnedPoints((p) => p + pts)
-      }
+    if (isCorrect) {
+      setCorrectCount((c) => c + 1)
+      setEarnedPoints((p) => p + pts)
+    }
 
+    startTransition(() => {
       if (isLastInQueue) {
         finishExercise()
       } else {

@@ -54,7 +54,6 @@ export default async function PatientDetailPage({
     { data: scores },
     { data: results },
     { data: assignments },
-    { data: availableExercises },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -86,7 +85,9 @@ export default async function PatientDetailPage({
       .select(
         "session_id, question_id, patient_answer, correct_answer, is_correct, time_spent_seconds"
       )
-      .eq("patient_id", id),
+      .eq("patient_id", id)
+      .order("answered_at", { ascending: false })
+      .limit(500),
     supabase
       .from("patient_assignments")
       .select("id, exercise_id, status, assigned_at, due_date, notes_for_patient, exercises(title)")
@@ -94,12 +95,6 @@ export default async function PatientDetailPage({
       .neq("assigned_by", id)
       .in("status", ["assigned", "in_progress", "pending", "completed"])
       .order("assigned_at", { ascending: false }),
-    supabase
-      .from("exercises")
-      .select("id, title, difficulty_level, exercise_types(display_name)")
-      .eq("is_active", true)
-      .is("deleted_at", null)
-      .order("title"),
   ]);
 
   if (!profile) {
@@ -198,16 +193,6 @@ export default async function PatientDetailPage({
     };
   });
 
-  const exercisesForDialog = (availableExercises ?? []).map((e) => {
-    const exerciseType = e.exercise_types as { display_name: string } | null;
-    return {
-      id: e.id,
-      title: e.title,
-      exerciseTypeDisplayName: exerciseType?.display_name ?? "Sin tipo",
-      difficultyLevel: e.difficulty_level,
-    };
-  });
-
   const assignmentsList = (assignments ?? []).map((a) => {
     const exercise = a.exercises as { title: string } | null;
     return {
@@ -246,10 +231,7 @@ export default async function PatientDetailPage({
             {profile.full_name || "Paciente"}
           </h1>
         </div>
-        <AssignExerciseDialog
-          patientId={id}
-          exercises={exercisesForDialog}
-        />
+        <AssignExerciseDialog patientId={id} />
       </div>
 
       <PatientStatsCards

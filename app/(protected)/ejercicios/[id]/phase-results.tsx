@@ -164,8 +164,6 @@ export function PhaseResults({
   }
 
   const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
-  const answersTotal = answers.reduce((s, a) => s + a.timeSpentSeconds, 0);
-  const displayedTotal = (readingTimeSeconds ?? 0) + answersTotal;
 
   return (
     <>
@@ -196,7 +194,7 @@ export function PhaseResults({
                           <Clock className="h-3 w-3" />
                           Total
                         </span>
-                        <span className="tabular-nums font-semibold">{formatTimer(displayedTotal)}</span>
+                        <span className="tabular-nums font-semibold">{formatTimer(totalTimeSeconds)}</span>
                       </div>
                     </div>
                   </>
@@ -204,7 +202,7 @@ export function PhaseResults({
                   <>
                     <Clock className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-2xl font-bold tabular-nums">{formatTimer(displayedTotal)}</p>
+                      <p className="text-2xl font-bold tabular-nums">{formatTimer(totalTimeSeconds)}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Tiempo total</p>
                     </div>
                   </>

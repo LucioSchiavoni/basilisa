@@ -16,6 +16,12 @@ function stripAnswers(content: Record<string, unknown>): Record<string, unknown>
   };
 }
 
+function buildAnswerKey(content: Record<string, unknown>): Record<string, string> {
+  const questions =
+    (content.questions as Array<{ id: string; correct_option_id: string }>) || [];
+  return Object.fromEntries(questions.map((q) => [q.id, q.correct_option_id]));
+}
+
 export default async function ExercisePage({
   params,
   searchParams,
@@ -32,27 +38,28 @@ export default async function ExercisePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: userGemsData } = await admin
-    .from("user_gems")
-    .select("total_gems")
-    .eq("user_id", user!.id)
-    .maybeSingle();
-
-  const initialGems = userGemsData?.total_gems ?? 0;
-
-  const { data: exercise } = await supabase
-    .from("exercises")
-    .select(
-      "id, title, instructions, instructions_audio_url, difficulty_level, content, world_id, exercise_types(name, display_name)"
-    )
-    .eq("id", id)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .single();
+  const [{ data: userGemsData }, { data: exercise }] = await Promise.all([
+    admin
+      .from("user_gems")
+      .select("total_gems")
+      .eq("user_id", user!.id)
+      .maybeSingle(),
+    supabase
+      .from("exercises")
+      .select(
+        "id, title, instructions, instructions_audio_url, difficulty_level, content, world_id, exercise_types(name, display_name)"
+      )
+      .eq("id", id)
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .single(),
+  ]);
 
   if (!exercise) {
     notFound();
   }
+
+  const initialGems = userGemsData?.total_gems ?? 0;
 
   let worldId: string | undefined;
   let worldName: string | undefined;
@@ -86,16 +93,19 @@ export default async function ExercisePage({
       ? exercise.exercise_types.display_name
       : "";
 
+  const rawContent = exercise.content as Record<string, unknown>;
+
   return (
     <ExercisePlayer
       initialGems={initialGems}
+      answerKey={buildAnswerKey(rawContent)}
       exercise={{
         id: exercise.id,
         title: exercise.title,
         instructions: exercise.instructions ?? "",
         instructionsAudioUrl: exercise.instructions_audio_url,
         difficultyLevel: exercise.difficulty_level,
-        content: stripAnswers(exercise.content as Record<string, unknown>),
+        content: stripAnswers(rawContent),
         typeName,
         typeDisplayName,
         worldId: exercise.world_id ?? null,

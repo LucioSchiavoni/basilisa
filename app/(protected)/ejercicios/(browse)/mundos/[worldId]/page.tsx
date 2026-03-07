@@ -17,27 +17,31 @@ export default async function WorldDetailPage({
 
   const { data: world } = await supabase
     .from("worlds")
-    .select("id, name, display_name, description, icon_url, character_image_url")
+    .select("id, name, display_name, description, icon_url")
     .eq("id", worldId)
     .eq("is_active", true)
     .single();
 
   if (!world) notFound();
 
-  const [{ data: exercisesData }, { data: completedSessionsData }] = await Promise.all([
-    supabase
-      .from("exercises")
-      .select("id, title, instructions, difficulty_level, exercise_types(display_name)")
-      .eq("world_id", world.name)
-      .eq("is_active", true)
-      .is("deleted_at", null)
-      .order("created_at"),
-    supabase
-      .from("assignment_sessions")
-      .select("exercise_id")
-      .eq("patient_id", user!.id)
-      .eq("is_completed", true),
-  ]);
+  const { data: exercisesData } = await supabase
+    .from("exercises")
+    .select("id, title, instructions, difficulty_level, exercise_types(display_name)")
+    .eq("world_id", world.name)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .order("created_at");
+
+  const worldExerciseIds = (exercisesData ?? []).map((e) => e.id);
+
+  const { data: completedSessionsData } = worldExerciseIds.length > 0
+    ? await supabase
+        .from("assignment_sessions")
+        .select("exercise_id")
+        .eq("patient_id", user!.id)
+        .eq("is_completed", true)
+        .in("exercise_id", worldExerciseIds)
+    : { data: [] };
 
   const exercises = (exercisesData ?? []).map((ex, index) => {
     const typeName =

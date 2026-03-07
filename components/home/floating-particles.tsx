@@ -70,6 +70,11 @@ export function FloatingParticles() {
     })
 
     const animate = () => {
+      if (document.hidden) {
+        animationRef.current = requestAnimationFrame(animate)
+        return
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       for (const p of particlesRef.current) {

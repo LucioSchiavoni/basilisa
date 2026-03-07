@@ -20,7 +20,7 @@ type WorldData = {
   completedExercises: number;
 };
 
-function WorldCard({ world, index }: { world: WorldData; index: number }) {
+function WorldCard({ world, index, isEven }: { world: WorldData; index: number; isEven: boolean }) {
   const scheme = getScheme(world.name);
   const progress =
     world.totalExercises > 0
@@ -30,7 +30,7 @@ function WorldCard({ world, index }: { world: WorldData; index: number }) {
   return (
     <Link
       href={`/ejercicios/mundos/${world.id}`}
-      className="relative flex h-44 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+      className={`relative flex h-44 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl sm:hover:translate-x-0 transition-all duration-300 ${isEven ? "sm:translate-x-[-36px]" : "sm:translate-x-[36px]"}`}
       style={{
         animation: "fadeInUp 0.4s ease-out backwards",
         animationDelay: `${index * 80}ms`,
@@ -116,7 +116,7 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
       accentColor: scheme.accentColor,
       buttonGradient: scheme.buttonGradient,
     });
-  }, [worlds]);
+  }, [worlds, setTheme]);
 
   if (worlds.length === 0) {
     return (
@@ -132,7 +132,7 @@ export function WorldsGrid({ worlds }: { worlds: WorldData[] }) {
 
       <div className="flex flex-col gap-3 px-4 max-w-2xl mx-auto pb-32">
         {worlds.map((world, index) => (
-          <WorldCard key={world.id} world={world} index={index} />
+          <WorldCard key={world.id} world={world} index={index} isEven={index % 2 === 0} />
         ))}
       </div>
     </>

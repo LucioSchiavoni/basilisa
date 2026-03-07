@@ -12,14 +12,7 @@ const difficultyLabels: Record<number, string> = {
   6: "Muy difícil",
 };
 
-const difficultyAccent: Record<number, string> = {
-  1: "#22c55e",
-  2: "#84cc16",
-  3: "#eab308",
-  4: "#f97316",
-  5: "#ef4444",
-  6: "#dc2626",
-};
+const palette = ["#C73341", "#579F93", "#D3A021", "#2E85C8"];
 
 function formatDueDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -94,7 +87,7 @@ export default async function AsignadosPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {assignments.map((assignment) => {
+          {assignments.map((assignment, index) => {
             const exercise = assignment.exercises as unknown as {
               id: string;
               title: string;
@@ -103,7 +96,7 @@ export default async function AsignadosPage() {
               exercise_types: { display_name: string } | null;
             };
 
-            const accent = difficultyAccent[exercise.difficulty_level] ?? "#94a3b8";
+            const accent = palette[index % palette.length];
             const isInProgress = assignment.status === "in_progress";
             const due = assignment.due_date ? formatDueDate(assignment.due_date) : null;
             const isOverdue = due && due.diffDays < 0;
@@ -112,82 +105,69 @@ export default async function AsignadosPage() {
             return (
               <div
                 key={assignment.id}
-                className="relative flex flex-col rounded-2xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                className="relative flex flex-col rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow"
+                style={{ border: `1.5px solid ${accent}30` }}
               >
-                <div className="h-1.5 w-full" style={{ background: accent }} />
-
-                <div className="flex flex-col flex-1 gap-3 p-4">
+                <div
+                  className="px-5 pt-4 pb-3"
+                  style={{ background: accent }}
+                >
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-bold text-base leading-snug text-foreground line-clamp-2">
+                    <h2 className="flex-1 font-bold text-base leading-snug text-white line-clamp-2">
                       {exercise.title}
                     </h2>
                     {isInProgress && (
-                      <span
-                        className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                        style={{
-                          background: `${accent}20`,
-                          color: accent,
-                          border: `1px solid ${accent}40`,
-                        }}
-                      >
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
                         En curso
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap mt-2.5">
                     {exercise.exercise_types && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
                         {exercise.exercise_types.display_name}
                       </span>
                     )}
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
                       {difficultyLabels[exercise.difficulty_level] ?? `Nivel ${exercise.difficulty_level}`}
                     </span>
-                    <div className="flex items-center gap-0.5 ml-auto">
-                      {Array.from({ length: Math.min(exercise.difficulty_level, 6) }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-2 h-2 rounded-full"
-                          style={{ background: accent }}
-                        />
-                      ))}
-                    </div>
                   </div>
+                </div>
 
+                <div className="flex flex-col flex-1 gap-2.5 px-5 py-3 bg-card">
                   {due && (
                     <div
                       className="flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5"
                       style={{
                         background: isOverdue
-                          ? "rgba(239,68,68,0.1)"
+                          ? "rgba(239,68,68,0.08)"
                           : isUrgent
-                          ? "rgba(249,115,22,0.1)"
-                          : "rgba(0,0,0,0.04)",
-                        color: isOverdue
-                          ? "#ef4444"
-                          : isUrgent
-                          ? "#f97316"
-                          : undefined,
+                          ? "rgba(249,115,22,0.08)"
+                          : `${accent}0a`,
+                        color: isOverdue ? "#ef4444" : isUrgent ? "#f97316" : accent,
                       }}
                     >
                       {isOverdue ? (
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                       ) : (
-                        <CalendarClock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" style={isUrgent ? { color: "#f97316" } : undefined} />
+                        <CalendarClock className="h-3.5 w-3.5 shrink-0" />
                       )}
-                      <span className={!isOverdue && !isUrgent ? "text-muted-foreground" : ""}>
+                      <span>
                         {isOverdue
                           ? `Venció el ${due.label}`
                           : isUrgent
-                          ? `Vence ${due.diffDays === 0 ? "hoy" : "mañana"}`
+                          ? `Vence ${due.diffDays === 0 ? "hoy" : due.diffDays === 1 ? "mañana" : "en 2 días"}`
                           : `Vence el ${due.label}`}
                       </span>
                     </div>
                   )}
 
                   {assignment.notes_for_patient && (
-                    <p className="text-xs text-muted-foreground italic border-l-2 pl-2.5 line-clamp-2" style={{ borderColor: `${accent}60` }}>
+                    <p
+                      className="text-xs text-muted-foreground italic border-l-2 pl-2.5 line-clamp-2"
+                      style={{ borderColor: `${accent}70` }}
+                    >
                       &ldquo;{assignment.notes_for_patient}&rdquo;
                     </p>
                   )}

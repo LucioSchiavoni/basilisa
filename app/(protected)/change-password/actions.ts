@@ -5,14 +5,19 @@ import { z } from "zod";
 
 const schema = z
   .object({
-    currentPassword: z.string().min(1, "Ingresa tu contraseña actual"),
+    isSettingNew: z.string().optional(),
+    currentPassword: z.string().optional(),
     password: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
-  });
+  })
+  .refine(
+    (data) => data.isSettingNew === "1" || (data.currentPassword ?? "").length > 0,
+    { message: "Ingresa tu contraseña actual", path: ["currentPassword"] }
+  );
 
 export type ChangePasswordState = {
   error?: string;
@@ -24,7 +29,8 @@ export async function changePassword(
   formData: FormData
 ): Promise<ChangePasswordState> {
   const rawData = {
-    currentPassword: formData.get("currentPassword") as string,
+    isSettingNew: formData.get("isSettingNew") as string | null,
+    currentPassword: formData.get("currentPassword") as string | null,
     password: formData.get("password") as string,
     confirmPassword: formData.get("confirmPassword") as string,
   };
@@ -41,13 +47,14 @@ export async function changePassword(
     return { error: "No se pudo obtener el usuario" };
   }
 
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email: user.email,
-    password: parsed.data.currentPassword,
-  });
-
-  if (signInError) {
-    return { error: "La contraseña actual es incorrecta" };
+  if (parsed.data.isSettingNew !== "1") {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: parsed.data.currentPassword!,
+    });
+    if (signInError) {
+      return { error: "La contraseña actual es incorrecta" };
+    }
   }
 
   const { error } = await supabase.auth.updateUser({

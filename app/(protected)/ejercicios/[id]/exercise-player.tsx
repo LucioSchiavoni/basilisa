@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
-import { checkAnswer, completeExercise, completeTimedReading } from "./actions";
+import { completeExercise, completeTimedReading } from "./actions";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
 import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes";
@@ -39,6 +39,7 @@ export type ExerciseProps = {
     typeDisplayName: string;
     worldId?: string | null;
   };
+  answerKey: Record<string, string>;
   initialGems: number;
   worldId?: string;
   worldName?: string;
@@ -63,14 +64,14 @@ function getWordCount(content: Record<string, unknown>): number {
   return (content.word_count as number) || 0;
 }
 
-export function ExercisePlayer({ exercise, initialGems, worldId, worldName, backHref }: ExerciseProps) {
+export function ExercisePlayer({ exercise, answerKey, initialGems, worldId, worldName, backHref }: ExerciseProps) {
   if (exercise.typeName === "letter_gap") {
     return <LetterGapPlayer exercise={exercise} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />;
   }
-  return <BaseExercisePlayer exercise={exercise} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />;
+  return <BaseExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />;
 }
 
-function BaseExercisePlayer({ exercise, initialGems, worldId, worldName, backHref }: ExerciseProps) {
+function BaseExercisePlayer({ exercise, answerKey, initialGems, worldId, worldName, backHref }: ExerciseProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -211,22 +212,23 @@ function BaseExercisePlayer({ exercise, initialGems, worldId, worldName, backHre
     if (!currentQuestion) return;
     const elapsed = Math.round((Date.now() - questionStartRef.current) / 1000);
     const timedOut = elapsed > 30;
-    startTransition(async () => {
-      const result = await checkAnswer(exercise.id, currentQuestion.id, optionId);
-      answersRef.current.push({
-        questionId: currentQuestion.id,
-        selectedOptionId: optionId,
-        correctOptionId: result.correctOptionId,
-        isCorrect: result.isCorrect,
-        timeSpentSeconds: elapsed,
-        timedOut,
-      });
-      const pts = currentQuestion.points || 1;
-      setTotalPoints((p) => p + pts);
-      if (result.isCorrect) {
-        setCorrectCount((c) => c + 1);
-        setEarnedPoints((p) => p + pts);
-      }
+    const correctOptionId = answerKey[currentQuestion.id] ?? "";
+    const isCorrect = optionId === correctOptionId;
+    answersRef.current.push({
+      questionId: currentQuestion.id,
+      selectedOptionId: optionId,
+      correctOptionId,
+      isCorrect,
+      timeSpentSeconds: elapsed,
+      timedOut,
+    });
+    const pts = currentQuestion.points || 1;
+    setTotalPoints((p) => p + pts);
+    if (isCorrect) {
+      setCorrectCount((c) => c + 1);
+      setEarnedPoints((p) => p + pts);
+    }
+    startTransition(() => {
       if (isLastQuestion) {
         finishExercise();
       } else {
@@ -234,7 +236,7 @@ function BaseExercisePlayer({ exercise, initialGems, worldId, worldName, backHre
         setSelectedOptionId(null);
       }
     });
-  }, [currentQuestion, exercise.id, isLastQuestion, finishExercise]);
+  }, [currentQuestion, answerKey, isLastQuestion, finishExercise]);
 
   if (phase === "intro") {
     return (

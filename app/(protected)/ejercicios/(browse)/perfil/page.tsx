@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { FloatingParticles } from "@/components/home/floating-particles";
 import { Pencil, Mail, Phone, Calendar, Flame, LogOut, KeyRound } from "lucide-react";
 import { GemIcon } from "@/components/gem-icon";
@@ -56,6 +57,8 @@ export default async function PerfilPage() {
       .single(),
   ]);
 
+  const providers = (user.app_metadata?.providers as string[] | undefined) ?? [];
+  const hasPasswordSet = providers.includes("email");
   const initials = getInitials(profile?.full_name ?? null, user.email ?? "?");
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("es-UY", { year: "numeric", month: "long" })
@@ -83,9 +86,11 @@ export default async function PerfilPage() {
 
       <div className="flex flex-col items-center gap-4 py-6 rounded-2xl border border-border bg-card shadow-sm">
         {profile?.avatar_url ? (
-          <img
+          <Image
             src={profile.avatar_url}
             alt={profile.full_name ?? "Avatar"}
+            width={96}
+            height={96}
             className="w-24 h-24 rounded-full object-cover ring-4 ring-border"
           />
         ) : (
@@ -160,11 +165,11 @@ export default async function PerfilPage() {
       </div>
 
       <Link
-        href="/change-password"
+        href={hasPasswordSet ? "/change-password" : "/change-password?set=1"}
         className="flex items-center justify-center gap-2 w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-sm"
       >
         <KeyRound className="h-4 w-4" />
-        Cambiar contraseña
+        {hasPasswordSet ? "Cambiar contraseña" : "Agregar contraseña"}
       </Link>
 
       <form action={logout}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, Check } from "lucide-react";
-import { assignExercise } from "../../actions";
+import { assignExercise, getExercisesForAssignment } from "../../actions";
 
 type Exercise = {
   id: string;
@@ -27,18 +27,26 @@ type Exercise = {
 
 export function AssignExerciseDialog({
   patientId,
-  exercises,
 }: {
   patientId: string;
-  exercises: Exercise[];
 }) {
   const [open, setOpen] = useState(false);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [loadingExercises, setLoadingExercises] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || exercises.length > 0) return;
+    setLoadingExercises(true);
+    getExercisesForAssignment()
+      .then(setExercises)
+      .finally(() => setLoadingExercises(false));
+  }, [open, exercises.length]);
 
   const filtered = exercises.filter((e) =>
     e.title.toLowerCase().includes(search.toLowerCase())
@@ -127,7 +135,11 @@ export function AssignExerciseDialog({
           </div>
 
           <div className="max-h-48 overflow-y-auto border rounded-md">
-            {filtered.length === 0 ? (
+            {loadingExercises ? (
+              <p className="p-4 text-sm text-muted-foreground text-center">
+                Cargando ejercicios...
+              </p>
+            ) : filtered.length === 0 ? (
               <p className="p-4 text-sm text-muted-foreground text-center">
                 No se encontraron ejercicios
               </p>
