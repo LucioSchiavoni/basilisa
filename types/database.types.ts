@@ -644,6 +644,10 @@ export type Database = {
     }
     Functions: {
       get_user_role: { Args: never; Returns: string }
+      get_world_progress: {
+        Args: { p_patient_id: string }
+        Returns: { world_name: string; total_exercises: number; completed_exercises: number }[]
+      }
       increment_user_gems: {
         Args: { p_amount: number; p_user_id: string }
         Returns: undefined
