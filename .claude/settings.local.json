@@ -25,7 +25,8 @@
       "mcp__supabase__generate_typescript_types",
       "Bash(grep:*)",
       "Bash(tail:*)",
-      "WebFetch(domain:pfwzmsebtugnphlclqhu.supabase.co)"
+      "WebFetch(domain:pfwzmsebtugnphlclqhu.supabase.co)",
+      "Bash(git checkout:*)"
     ]
   },
   "enabledMcpjsonServers": [

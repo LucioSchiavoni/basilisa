@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
-import { completeExercise, completeTimedReading } from "./actions";
-import { calculateMaxReadingTime, getExerciseWordCount } from "@/lib/constants/reading-speeds";
+import { completeExercise, completeTimedReading, getPreviousAttempts } from "./actions";
+import { calculateMaxReadingTime, getExerciseWordCount, EXPECTED_READING_SPEEDS } from "@/lib/constants/reading-speeds";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
 import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes";
@@ -83,6 +83,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
   const [isPending, startTransition] = useTransition();
   const [gemsAwarded, setGemsAwarded] = useState<number | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [previousAttempts, setPreviousAttempts] = useState<{ score: number; date: string }[]>([]);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [finalTimeSeconds, setFinalTimeSeconds] = useState(0);
   const [wordsPerMinute, setWordsPerMinute] = useState(0);
@@ -119,6 +120,10 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     exerciseWordCount !== null
       ? calculateMaxReadingTime(exerciseWordCount, gradeYear ?? 1, exerciseReadingType)
       : 30;
+
+  const grade = Math.min(Math.max(gradeYear ?? 1, 1), 6);
+  const expectedPPM = EXPECTED_READING_SPEEDS[grade][exerciseReadingType === "text" ? "textPPM" : "wordListPPM"];
+  const readingWordCount = exerciseWordCount ?? wordCount ?? 0;
 
   const worldScheme = worldName ? getScheme(worldName) : null;
   const worldConfig = worldName ? getWorldConfig(worldName) : null;
@@ -192,6 +197,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     })
       .then((result) => {
         setGemsAwarded(result.gemsAwarded);
+        getPreviousAttempts(exercise.id).then(setPreviousAttempts).catch(() => {});
       })
       .catch(() => setGemsAwarded(0))
       .finally(() => setIsCompleting(false));
@@ -213,6 +219,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     })
       .then((result) => {
         setGemsAwarded(result.gemsAwarded);
+        getPreviousAttempts(exercise.id).then(setPreviousAttempts).catch(() => {});
       })
       .catch(() => setGemsAwarded(0))
       .finally(() => setIsCompleting(false));
@@ -310,8 +317,11 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
         answers={answersRef.current}
         questions={questions}
         initialGems={initialGems}
+        previousAttempts={previousAttempts}
         readingTimeSeconds={readingTimeSeconds}
         maxReadingTime={maxReadingTime}
+        expectedPPM={expectedPPM}
+        readingWordCount={readingWordCount}
       />
     );
   }

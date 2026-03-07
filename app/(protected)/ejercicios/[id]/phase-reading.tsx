@@ -38,8 +38,8 @@ export function PhaseReading({
   onDone,
 }: Props) {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
-      <header className="sticky top-0 z-10 bg-white border-b p-4">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-stone-900 text-gray-900 dark:text-stone-100">
+      <header className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b p-4">
         <div className="max-w-prose mx-auto flex items-center justify-between">
           <button
             type="button"
@@ -52,7 +52,7 @@ export function PhaseReading({
           </button>
           {isTimedReading ? (
             <div className="flex items-center gap-4">
-              <p className="text-sm font-medium text-gray-700">Lee a tu ritmo</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-stone-300">Lee a tu ritmo</p>
               {showTimer && (
                 <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5">
                   <Clock className="h-4 w-4 text-gray-700" />
@@ -63,7 +63,7 @@ export function PhaseReading({
               )}
             </div>
           ) : (
-            <p className="text-sm font-medium text-gray-900">Lee el siguiente texto con atención</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-stone-100">Lee el siguiente texto con atención</p>
           )}
         </div>
       </header>
@@ -71,14 +71,14 @@ export function PhaseReading({
         <div className="max-w-prose mx-auto space-y-4">
           {readingAudioUrl && <AudioPlayer src={readingAudioUrl} />}
           <div className="space-y-5" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            {readingText.split(/\n+/).filter(Boolean).map((paragraph, idx) => (
+            {readingText.split(/\n+/).filter((p) => p.trim()).map((paragraph, idx) => (
               <div key={idx} className="relative">
                 <p
                   onClick={() => onActiveParagraphChange(idx === activeParagraph ? null : idx)}
                   onTouchStart={() => onActiveParagraphChange(idx === activeParagraph ? null : idx)}
                   className={cn(
                     "text-lg sm:text-xl leading-loose tracking-wide cursor-pointer px-1 py-1 transition-colors duration-200 select-none font-light",
-                    idx === activeParagraph ? "text-gray-900" : "text-gray-700"
+                    idx === activeParagraph ? "text-gray-900 dark:text-stone-100" : "text-gray-700 dark:text-stone-300"
                   )}
                 >
                   {paragraph}

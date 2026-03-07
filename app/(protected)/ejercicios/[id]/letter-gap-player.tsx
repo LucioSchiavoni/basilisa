@@ -445,8 +445,8 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
 
   if (phase === "reading") {
     return (
-      <div className="min-h-screen flex flex-col bg-white text-gray-900">
-        <header className="sticky top-0 z-10 bg-white border-b p-4">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-stone-900 text-gray-900 dark:text-stone-100">
+        <header className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b p-4">
           <div className="max-w-prose mx-auto flex items-center justify-between">
             <button
               type="button"
@@ -457,7 +457,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
               <ArrowLeft className="h-4 w-4" />
               Volver
             </button>
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-gray-900 dark:text-stone-100">
               Lee el siguiente texto con atención
             </p>
           </div>
@@ -479,7 +479,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
                     onTouchStart={() => setActiveParagraph(idx === activeParagraph ? null : idx)}
                     className={cn(
                       "text-lg sm:text-xl leading-loose tracking-wide cursor-pointer px-1 py-1 transition-colors duration-200 select-none font-light",
-                      idx === activeParagraph ? "text-gray-900" : "text-gray-700"
+                      idx === activeParagraph ? "text-gray-900 dark:text-stone-100" : "text-gray-700 dark:text-stone-300"
                     )}
                   >
                     {paragraph}
@@ -632,7 +632,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
                       <SheetTitle>Texto de lectura</SheetTitle>
                     </SheetHeader>
                     <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-4">
-                      <div className="bg-white text-gray-900 rounded-2xl p-6 shadow-lg">
+                      <div className="bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 rounded-2xl p-6 shadow-lg">
                         <p className="text-lg leading-loose tracking-wide font-light whitespace-pre-wrap">
                           {readingText}
                         </p>
@@ -710,12 +710,12 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
                         borderRight: `12px solid ${bubbleBg}`,
                       }}
                     />
-                    <p className="text-sm sm:text-base font-normal text-gray-900 leading-relaxed">
+                    <p className="text-sm sm:text-base font-normal text-gray-900 dark:text-stone-100 leading-relaxed">
                       {parts[0]}
                       <span
                         className={cn(
                           "inline-flex items-center justify-center min-w-[80px] h-9 mx-1 rounded-lg border-2 border-dashed px-3 text-center font-semibold transition-all align-middle text-sm",
-                          status === "empty" && "border-gray-300 text-gray-400",
+                          status === "empty" && "border-gray-300 dark:border-stone-600 text-gray-400 dark:text-stone-500",
                           status === "placed" && "border-blue-400 bg-blue-100 text-blue-700 cursor-pointer",
                         )}
                       >

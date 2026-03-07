@@ -30,7 +30,7 @@ function WorldCard({ world, index, isEven }: { world: WorldData; index: number; 
   return (
     <Link
       href={`/ejercicios/mundos/${world.id}`}
-      className={`relative flex h-44 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl sm:hover:translate-x-0 transition-all duration-300 ${isEven ? "sm:translate-x-[-36px]" : "sm:translate-x-[36px]"}`}
+      className="relative flex h-44 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300"
       style={{
         animation: "fadeInUp 0.4s ease-out backwards",
         animationDelay: `${index * 80}ms`,

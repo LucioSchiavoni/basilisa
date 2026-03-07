@@ -6,7 +6,6 @@ import { FloatingParticles } from "@/components/home/floating-particles";
 type RankEntry = {
   user_id: string;
   total_gems: number;
-  current_streak: number;
   profiles: { full_name: string | null } | null;
 };
 
@@ -34,12 +33,12 @@ export default async function RankingPage() {
   const [{ data: raw }, { data: myRawData }] = await Promise.all([
     adminClient
       .from("user_gems")
-      .select("user_id, total_gems, current_streak, profiles(full_name)")
+      .select("user_id, total_gems, profiles(full_name)")
       .order("total_gems", { ascending: false })
       .limit(50),
     adminClient
       .from("user_gems")
-      .select("user_id, total_gems, current_streak, profiles(full_name)")
+      .select("user_id, total_gems, profiles(full_name)")
       .eq("user_id", user!.id)
       .maybeSingle(),
   ]);
@@ -88,11 +87,6 @@ export default async function RankingPage() {
                 (vos)
               </span>
             </p>
-            {myEntry.current_streak > 0 && (
-              <p className="text-xs text-muted-foreground">
-                🔥 {myEntry.current_streak} días seguidos
-              </p>
-            )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <GemIcon size={22} />
@@ -162,11 +156,6 @@ export default async function RankingPage() {
                       </span>
                     )}
                   </p>
-                  {entry.current_streak > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      🔥 {entry.current_streak} días seguidos
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">

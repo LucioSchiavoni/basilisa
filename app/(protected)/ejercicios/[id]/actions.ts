@@ -346,6 +346,58 @@ export async function completeTimedReading(input: {
   return { gemsAwarded: gemResult.totalAwarded };
 }
 
+export async function getPreviousAttempts(
+  exerciseId: string
+): Promise<{ score: number; date: string }[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const admin = createAdminClient();
+
+  const { data: sessions } = await admin
+    .from("assignment_sessions")
+    .select("id, ended_at")
+    .eq("exercise_id", exerciseId)
+    .eq("patient_id", user.id)
+    .eq("is_completed", true)
+    .not("ended_at", "is", null)
+    .order("ended_at", { ascending: false })
+    .limit(5);
+
+  if (!sessions || sessions.length === 0) return [];
+
+  const sessionIds = sessions.map((s) => s.id);
+
+  const { data: scores } = await admin
+    .from("assignment_scores")
+    .select("session_id, score_percentage")
+    .in("session_id", sessionIds);
+
+  if (!scores) return [];
+
+  const today = new Date();
+
+  return sessions
+    .map((s) => {
+      const score = scores.find((sc) => sc.session_id === s.id);
+      if (!score || !s.ended_at) return null;
+      const d = new Date(s.ended_at);
+      const isToday =
+        d.getDate() === today.getDate() &&
+        d.getMonth() === today.getMonth() &&
+        d.getFullYear() === today.getFullYear();
+      const date = isToday
+        ? "Hoy"
+        : d.toLocaleDateString("es-UY", { day: "numeric", month: "short" });
+      return { score: Math.round(Number(score.score_percentage)), date };
+    })
+    .filter((x): x is { score: number; date: string } => x !== null)
+    .reverse();
+}
+
 export async function checkLetterGapAnswer(
   exerciseId: string,
   sentenceId: string,

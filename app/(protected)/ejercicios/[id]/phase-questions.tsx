@@ -80,7 +80,7 @@ export function PhaseQuestions({
                       <SheetTitle>Texto de lectura</SheetTitle>
                     </SheetHeader>
                     <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-4">
-                      <div className="bg-white text-gray-900 rounded-2xl p-6 shadow-lg">
+                      <div className="bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 rounded-2xl p-6 shadow-lg">
                         <p className="text-lg leading-loose tracking-wide font-light whitespace-pre-wrap">
                           {readingText}
                         </p>
@@ -131,25 +131,17 @@ export function PhaseQuestions({
               </div>
               <div
                 key={activeIndex}
-                className="relative flex-1 rounded-2xl rounded-bl-sm p-4 sm:p-5 animate-in fade-in slide-in-from-left-4 duration-500"
-                style={{
-                  background: "rgba(255,255,255,0.95)",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
-                }}
+                className="relative flex-1 rounded-2xl rounded-bl-sm p-4 sm:p-5 animate-in fade-in slide-in-from-left-4 duration-500 bg-white dark:bg-stone-800"
+                style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.18)" }}
               >
                 <div
-                  className="absolute -left-2 bottom-4 w-0 h-0"
-                  style={{
-                    borderTop: "8px solid transparent",
-                    borderBottom: "8px solid transparent",
-                    borderRight: "10px solid rgba(255,255,255,0.95)",
-                  }}
+                  className="absolute -left-2 bottom-4 w-0 h-0 border-t-[8px] border-b-[8px] border-r-[10px] border-t-transparent border-b-transparent border-r-white dark:border-r-stone-800"
                 />
-                <p className="text-sm sm:text-base font-normal text-gray-900 leading-snug">
+                <p className="text-sm sm:text-base font-normal text-gray-900 dark:text-stone-100 leading-snug">
                   {activeQuestion?.text}
                 </p>
                 {activeQuestion?.description && (
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1.5 leading-relaxed font-light">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-stone-400 mt-1.5 leading-relaxed font-light">
                     {activeQuestion.description}
                   </p>
                 )}
@@ -197,10 +189,10 @@ export function PhaseQuestions({
                   }}
                   style={{ animationDelay: `${index * 80}ms` }}
                   className={cn(
-                    "w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 min-h-[56px] text-sm sm:text-base bg-white text-gray-900 font-normal",
+                    "w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 min-h-[56px] text-sm sm:text-base bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 font-normal",
                     "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    !isSelected && !isPending && "border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 active:scale-[0.98]",
+                    !isSelected && !isPending && "border-gray-200 dark:border-stone-700 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:border-blue-500 dark:hover:bg-blue-950/30 active:scale-[0.98]",
                     isSelected && "border-blue-500 bg-blue-50",
                     isPending && "cursor-default"
                   )}
@@ -209,7 +201,7 @@ export function PhaseQuestions({
                     <span
                       className={cn(
                         "flex shrink-0 items-center justify-center h-8 w-8 rounded-xl border-2 text-xs font-bold transition-colors",
-                        !isSelected && "border-gray-200 text-gray-400",
+                        !isSelected && "border-gray-200 dark:border-stone-600 text-gray-400 dark:text-stone-500",
                         isSelected && "border-blue-500 bg-blue-500 text-white",
                       )}
                     >

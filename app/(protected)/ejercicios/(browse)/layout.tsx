@@ -3,7 +3,6 @@ import { PatientBottomNav } from "@/components/patient-bottom-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GemIcon } from "@/components/gem-icon";
 import { WorldThemeProvider } from "@/components/world-theme-context";
-import { ForceDarkOnWorldPages } from "@/components/force-dark-on-world-pages";
 import { DobReminderBanner } from "@/components/profile-incomplete-banner";
 
 export default async function BrowseEjerciciosLayout({
@@ -33,8 +32,7 @@ export default async function BrowseEjerciciosLayout({
 
   return (
     <WorldThemeProvider>
-      <ForceDarkOnWorldPages />
-      <div className="fixed inset-0 -z-10 bg-background" />
+<div className="fixed inset-0 -z-10 bg-background" />
       <div className="min-h-dvh overflow-x-hidden p-4 pb-40 lg:pl-60 lg:pr-8 lg:py-8 lg:pb-8">
         <div className="max-w-4xl mx-auto">
           <div className="sticky top-0 z-50 mb-4">
