@@ -221,10 +221,13 @@ export async function forgotPassword(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?next=/reset-password`,
   });
 
   if (error) {
+    if (error.status === 429) {
+      return { error: "Demasiados intentos. Espera unos minutos antes de volver a intentarlo." };
+    }
     return { error: "Error al enviar el email de recuperación" };
   }
 

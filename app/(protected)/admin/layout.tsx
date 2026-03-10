@@ -30,7 +30,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen lg:flex bg-background">
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-card border-r">
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen lg:w-64 bg-card border-r">
         <div className="p-6">
           <h2 className="text-xl font-bold">Panel Admin</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -148,7 +148,7 @@ export default async function AdminLayout({
           <ThemeToggle />
         </div>
       </div>
-      <main className="flex-1 p-4 pb-20 lg:p-8 lg:pb-8">
+      <main className="flex-1 p-4 pb-20 lg:ml-64 lg:p-8 lg:pb-8">
         {children}
       </main>
       <AdminBottomNav />

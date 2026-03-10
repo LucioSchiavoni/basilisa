@@ -10,7 +10,11 @@ const schema = z.object({
     .min(2, "El nombre debe tener al menos 2 caracteres")
     .regex(/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s._-]+$/, "El nombre contiene caracteres no permitidos"),
   country_code: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+$/.test(v), { message: "El teléfono solo puede contener números" })
+    .refine((v) => !v || v.length >= 8, { message: "El teléfono debe tener al menos 8 dígitos" }),
   avatar_url: z.string().optional(),
 });
 
@@ -35,10 +39,6 @@ export async function editProfile(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "No se encontró el usuario" };
-
-  if (parsed.data.phone && (parsed.data.phone.length < 8 || !/^\d+$/.test(parsed.data.phone))) {
-    return { error: "El teléfono debe tener al menos 8 dígitos y solo números" };
-  }
 
   const updates: Record<string, unknown> = {
     full_name: parsed.data.full_name,

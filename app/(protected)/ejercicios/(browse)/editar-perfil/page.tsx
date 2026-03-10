@@ -268,8 +268,11 @@ function EditarPerfilContent() {
                   pattern="[0-9]*"
                   value={phoneNum}
                   onChange={(e) => setPhoneNum(e.target.value.replace(/\D/g, ""))}
+                  onKeyDown={handlePhoneKeyDown}
+                  onInput={handlePhoneInput}
                   placeholder="91234567"
                   className="flex-1"
+                  autoFocus={tutorial === "phone"}
                 />
               </div>
             </div>

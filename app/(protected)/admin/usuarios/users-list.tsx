@@ -17,6 +17,8 @@ type User = {
   email: string;
   role: string | null;
   is_profile_complete: boolean | null;
+  needs_grade_review: boolean | null;
+  grade_year: number | null;
   created_at: string | null;
   is_patient: boolean;
   username: string | null;
@@ -168,6 +170,11 @@ export function UsersList({
             {user.must_change_password && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                 Cambio de contraseña pendiente
+              </span>
+            )}
+            {user.needs_grade_review && user.role === "patient" && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                Revisar grado ({user.grade_year}°)
               </span>
             )}
           </div>

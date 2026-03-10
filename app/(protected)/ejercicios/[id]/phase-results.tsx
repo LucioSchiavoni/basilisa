@@ -377,33 +377,40 @@ export function PhaseResults({
     return (
       <>
         <GemCounter initialGems={initialGems} gemsAwarded={gemsAwarded} isCompleting={isCompleting} />
-        <div className="min-h-screen bg-gradient-to-b from-[#fefcf8] to-[#f5f0e8] dark:from-stone-900 dark:to-stone-950 flex justify-center px-4 pt-10 pb-36">
-          <div className="w-full max-w-[420px] flex flex-col gap-4">
+        <div className="min-h-screen bg-gradient-to-b from-[#fefcf8] to-[#f5f0e8] dark:from-stone-900 dark:to-stone-950 flex justify-center px-4 pt-10 pb-36 md:pb-12">
+          <div className="w-full max-w-[420px] md:max-w-[860px] flex flex-col gap-4">
             <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="text-center">
               <div className="text-5xl leading-none mb-1">{msg.emoji}</div>
               <h1 className="text-2xl font-black text-stone-900 dark:text-stone-100 mt-1">{msg.title}</h1>
               <p className="text-stone-500 dark:text-stone-400 dark:text-stone-500 text-sm">{msg.subtitle}</p>
               <p className="text-stone-400 dark:text-stone-500 text-xs mt-1">{exerciseTitle}</p>
             </motion.div>
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15}>
-              <TimeCard totalTimeSeconds={finalTimeSeconds} wordCount={readingWordCount ?? wordCount} />
-            </motion.div>
-            {hasSpeed && (
-              <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
-                <SpeedMeter actualPPM={wordsPerMinute} expectedPPM={expectedPPM} />
+            <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6">
+              <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className={!hasSpeed ? "md:col-span-2" : ""}>
+                <TimeCard totalTimeSeconds={finalTimeSeconds} wordCount={readingWordCount ?? wordCount} />
               </motion.div>
-            )}
+              {hasSpeed && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
+                  <SpeedMeter actualPPM={wordsPerMinute} expectedPPM={expectedPPM} />
+                </motion.div>
+              )}
+            </div>
             {previousAttempts.length > 0 && (
               <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.45 : 0.3}>
                 <MiniEvolutionChart attempts={previousAttempts} />
               </motion.div>
             )}
-            <div className="fixed bottom-0 left-0 right-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-[#f5f0e8] dark:from-stone-950 to-transparent">
-              <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" asChild>
+            <div className="hidden md:block mt-2">
+              <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" style={{ backgroundColor: "#2E85C8", color: "#fff" }} asChild>
                 <Link href={backHref}>Volver a ejercicios</Link>
               </Button>
             </div>
           </div>
+        </div>
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-[#f5f0e8] dark:from-stone-950 to-transparent">
+          <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" style={{ backgroundColor: "#2E85C8", color: "#fff" }} asChild>
+            <Link href={backHref}>Volver a ejercicios</Link>
+          </Button>
         </div>
       </>
     );
@@ -417,8 +424,8 @@ export function PhaseResults({
   return (
     <>
       <GemCounter initialGems={initialGems} gemsAwarded={gemsAwarded} isCompleting={isCompleting} />
-      <div className="min-h-screen bg-gradient-to-b from-[#fefcf8] to-[#f5f0e8] dark:from-stone-900 dark:to-stone-950 flex justify-center px-4 pt-6 pb-36">
-        <div className="w-full max-w-[420px] flex flex-col gap-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#fefcf8] to-[#f5f0e8] dark:from-stone-900 dark:to-stone-950 flex justify-center px-4 pt-6 pb-36 md:pb-12">
+        <div className="w-full max-w-[420px] md:max-w-[900px] flex flex-col gap-4">
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="text-center">
             <div className="text-5xl leading-none mb-1">{msg.emoji}</div>
@@ -427,42 +434,52 @@ export function PhaseResults({
             <p className="text-stone-400 dark:text-stone-500 text-xs mt-1">{exerciseTitle}</p>
           </motion.div>
 
-          <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className="flex flex-col gap-3">
-            <div className="flex gap-3">
-              <div className="shrink-0 rounded-2xl bg-[#faf7f2] dark:bg-stone-800 py-4 px-3 flex flex-col items-center gap-2">
-                <DonutChart percentage={percentage} />
-                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Aciertos</span>
-              </div>
-              <ScoreCountCard correct={correctCount} total={totalQuestions} />
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6">
+            <div className="contents md:flex md:flex-col md:gap-4">
+              <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <div className="shrink-0 rounded-2xl bg-[#faf7f2] dark:bg-stone-800 py-4 px-3 flex flex-col items-center gap-2">
+                    <DonutChart percentage={percentage} />
+                    <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Aciertos</span>
+                  </div>
+                  <ScoreCountCard correct={correctCount} total={totalQuestions} />
+                </div>
+                <TimeCard
+                  readingTimeSeconds={readingTimeSeconds}
+                  totalTimeSeconds={totalTimeSeconds}
+                  wordCount={readingWordCount && readingWordCount > 0 ? readingWordCount : undefined}
+                />
+              </motion.div>
+              {hasSpeed && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
+                  <SpeedMeter actualPPM={actualPPM} expectedPPM={expectedPPM!} />
+                </motion.div>
+              )}
             </div>
-            <TimeCard
-              readingTimeSeconds={readingTimeSeconds}
-              totalTimeSeconds={totalTimeSeconds}
-              wordCount={readingWordCount && readingWordCount > 0 ? readingWordCount : undefined}
-            />
-          </motion.div>
 
-          {hasSpeed && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
-              <SpeedMeter actualPPM={actualPPM} expectedPPM={expectedPPM!} />
-            </motion.div>
-          )}
+            <div className="contents md:flex md:flex-col md:gap-4">
+              {previousAttempts.length > 0 && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.45 : 0.3}>
+                  <MiniEvolutionChart attempts={previousAttempts} />
+                </motion.div>
+              )}
+              {questions.length > 0 && answers.length > 0 && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.6 : previousAttempts.length > 0 ? 0.45 : 0.3}>
+                  <QuestionTimeline questions={questions} answers={answers} maxSeconds={maxReadingTime} />
+                </motion.div>
+              )}
+            </div>
+          </div>
 
-          {previousAttempts.length > 0 && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.45 : 0.3}>
-              <MiniEvolutionChart attempts={previousAttempts} />
-            </motion.div>
-          )}
-
-          {questions.length > 0 && answers.length > 0 && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.6 : previousAttempts.length > 0 ? 0.45 : 0.3}>
-              <QuestionTimeline questions={questions} answers={answers} maxSeconds={maxReadingTime} />
-            </motion.div>
-          )}
+          <div className="hidden md:block mt-2">
+            <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" asChild>
+              <Link href={backHref}>Volver a ejercicios</Link>
+            </Button>
+          </div>
 
         </div>
       </div>
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-[#f5f0e8] dark:from-stone-950 to-transparent">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-[#f5f0e8] dark:from-stone-950 to-transparent">
         <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" asChild>
           <Link href={backHref}>Volver a ejercicios</Link>
         </Button>

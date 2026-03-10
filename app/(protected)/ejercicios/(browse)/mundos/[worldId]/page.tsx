@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { ArrowLeft } from "lucide-react";
 import { WorldExercisesList } from "./world-exercises-list";
+import { WorldBackButton } from "./world-back-button";
 
 export default async function WorldDetailPage({
   params,
@@ -63,19 +62,13 @@ export default async function WorldDetailPage({
 
   return (
     <>
-      <Link
-        href="/ejercicios"
-        className="relative z-50 inline-flex items-center gap-1.5 text-sm font-semibold transition-colors mb-6 px-3 py-1.5 rounded-xl"
-        style={{ color: "#0B1926", background: "white" }}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Volver
-      </Link>
+      <WorldBackButton worldName={world.name} displayName={world.display_name} />
 
       <WorldExercisesList
         exercises={exercises}
         completedExerciseIds={completedIds}
         worldName={world.name}
+        displayName={world.display_name}
       />
     </>
   );

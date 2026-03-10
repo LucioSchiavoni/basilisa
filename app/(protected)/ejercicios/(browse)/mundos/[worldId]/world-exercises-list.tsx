@@ -7,6 +7,7 @@ import { CheckCircle2, PlayCircle } from "lucide-react";
 import { getScheme } from "../world-color-schemes";
 import { WorldCanvas } from "../world-canvas";
 import { getWorldConfig } from "@/lib/worlds";
+import { BookOpenAnimation } from "../book-open-animation";
 
 type ExerciseItem = {
   id: string;
@@ -22,10 +23,12 @@ export function WorldExercisesList({
   exercises,
   completedExerciseIds,
   worldName,
+  displayName,
 }: {
   exercises: ExerciseItem[];
   completedExerciseIds: string[];
   worldName: string;
+  displayName: string;
 }) {
   const scheme = getScheme(worldName);
   const completedSet = new Set(completedExerciseIds);
@@ -55,6 +58,7 @@ export function WorldExercisesList({
     const worldConfig = getWorldConfig(worldName);
     return (
       <>
+        <BookOpenAnimation worldName={worldName} displayName={displayName} />
         <div
           className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
           style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
@@ -102,6 +106,7 @@ export function WorldExercisesList({
 
   return (
     <>
+      <BookOpenAnimation worldName={worldName} displayName={displayName} />
       <div
         className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
         style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
@@ -205,10 +210,11 @@ export function WorldExercisesList({
                   <div className="flex items-center gap-2 mt-1">
                     {exercise.typeName && (
                       <span
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0"
                         style={{
-                          background: "rgba(0,0,0,0.05)",
-                          color: "rgba(0,0,0,0.4)",
+                          background: `${scheme.particles}20`,
+                          color: scheme.particles,
+                          border: `1px solid ${scheme.particles}40`,
                         }}
                       >
                         {exercise.typeName}

@@ -145,11 +145,6 @@ export function PhaseQuestions({
                     {activeQuestion.description}
                   </p>
                 )}
-                {activeQuestion?.question_audio_url && (
-                  <div className="mt-3">
-                    <AudioPlayer src={activeQuestion.question_audio_url} />
-                  </div>
-                )}
               </div>
             </div>
           ) : (
@@ -158,10 +153,13 @@ export function PhaseQuestions({
               {activeQuestion?.description && (
                 <p className="text-muted-foreground font-light">{activeQuestion.description}</p>
               )}
-              {activeQuestion?.question_audio_url && (
-                <AudioPlayer src={activeQuestion.question_audio_url} />
-              )}
             </>
+          )}
+
+          {activeQuestion?.question_audio_url && (
+            <div className="flex justify-center">
+              <AudioPlayer src={activeQuestion.question_audio_url} />
+            </div>
           )}
 
           {activeQuestion?.question_image_url && (

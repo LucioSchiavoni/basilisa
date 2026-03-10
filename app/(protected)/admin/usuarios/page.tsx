@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
 
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, full_name, role, created_at, is_profile_complete")
+    .select("id, full_name, role, created_at, is_profile_complete, needs_grade_review, grade_year")
     .order("created_at", { ascending: false });
 
   const usersWithDetails = (profiles ?? []).map((profile) => {

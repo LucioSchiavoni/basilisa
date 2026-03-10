@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lexend, Caveat } from "next/font/google";
+import { Lexend, Caveat, Fredoka } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -13,6 +13,12 @@ const caveat = Caveat({
   variable: "--font-caveat",
   subsets: ["latin"],
   weight: ["400", "700"],
+});
+
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -60,7 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning style={{ backgroundColor: "#fdf9f4" }}>
-      <body className={`${lexend.variable} ${caveat.variable} antialiased`}>
+      <body className={`${lexend.variable} ${caveat.variable} ${fredoka.variable} antialiased`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

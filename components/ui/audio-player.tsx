@@ -1,114 +1,95 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Play, Pause } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-
-function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) return "00:00"
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
-}
+import { Play, Volume2, RotateCcw } from "lucide-react"
 
 interface AudioPlayerProps {
   src: string
   autoPlay?: boolean
 }
 
-export function AudioPlayer({ src, autoPlay = false }: AudioPlayerProps) {
+export function AudioPlayer({ src, autoPlay = true }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [ended, setEnded] = useState(false)
 
   useEffect(() => {
     setPlaying(false)
-    setCurrentTime(0)
-    setDuration(0)
+    setEnded(false)
   }, [src])
 
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
-    setDuration(audio.duration)
     if (autoPlay) {
       audio.play().catch(() => {})
     }
   }, [autoPlay])
 
-  const handleTimeUpdate = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    setCurrentTime(audio.currentTime)
+  const handlePlay = useCallback(() => {
+    setPlaying(true)
+    setEnded(false)
   }, [])
+
+  const handlePause = useCallback(() => setPlaying(false), [])
 
   const handleEnded = useCallback(() => {
     setPlaying(false)
-    setCurrentTime(0)
+    setEnded(true)
   }, [])
 
-  const handlePlay = useCallback(() => setPlaying(true), [])
-  const handlePause = useCallback(() => setPlaying(false), [])
-
-  const togglePlay = useCallback(() => {
+  const handleClick = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
-    if (audio.paused) {
-      audio.play().catch(() => {})
-    } else {
-      audio.pause()
-    }
-  }, [])
-
-  const handleSeek = useCallback((value: number[]) => {
-    const audio = audioRef.current
-    if (!audio || !isFinite(audio.duration)) return
-    audio.currentTime = value[0]
-    setCurrentTime(value[0])
+    audio.currentTime = 0
+    audio.play().catch(() => {})
   }, [])
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-3 py-2">
+    <div className="flex flex-col items-center gap-2">
       <audio
         ref={audioRef}
         src={src}
         preload="metadata"
         onLoadedMetadata={handleLoadedMetadata}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleEnded}
         onPlay={handlePlay}
         onPause={handlePause}
+        onEnded={handleEnded}
       />
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        onClick={togglePlay}
-        aria-label={playing ? "Pausar" : "Reproducir"}
-      >
-        {playing ? (
-          <Pause className="size-4" />
-        ) : (
-          <Play className="size-4" />
+      <div className="relative flex items-center justify-center">
+        {playing && (
+          <>
+            <span className="absolute inset-0 rounded-full bg-amber-400/40 animate-ping" />
+            <span
+              className="absolute rounded-full bg-amber-400/20 animate-ping"
+              style={{ inset: "-10px", animationDelay: "200ms" }}
+            />
+          </>
         )}
-      </Button>
-
-      <Slider
-        value={[currentTime]}
-        min={0}
-        max={duration || 1}
-        step={0.1}
-        onValueChange={handleSeek}
-        className="flex-1"
-        aria-label="Progreso del audio"
-      />
-
-      <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-        {formatTime(currentTime)} / {formatTime(duration)}
-      </span>
+        <button
+          type="button"
+          onClick={handleClick}
+          aria-label={ended ? "Escuchar de nuevo" : "Escuchar audio"}
+          className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95"
+          style={{
+            background: "linear-gradient(135deg, #fbbf24 0%, #f97316 100%)",
+            boxShadow: playing
+              ? "0 0 0 6px rgba(251,191,36,0.25), 0 8px 24px rgba(249,115,22,0.45)"
+              : "0 6px 20px rgba(249,115,22,0.40)",
+          }}
+        >
+          {ended ? (
+            <RotateCcw className="w-8 h-8 text-white" strokeWidth={2.5} />
+          ) : playing ? (
+            <Volume2 className="w-8 h-8 text-white" strokeWidth={2.5} />
+          ) : (
+            <Play className="w-8 h-8 text-white" strokeWidth={2.5} fill="white" style={{ marginLeft: "4px" }} />
+          )}
+        </button>
+      </div>
+      <p className="text-xs font-medium opacity-60">
+        {ended ? "Toca para escuchar de nuevo" : playing ? "Escuchando..." : "Toca para escuchar"}
+      </p>
     </div>
   )
 }

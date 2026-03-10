@@ -69,7 +69,11 @@ export function PhaseReading({
       </header>
       <main className="flex-1 p-4 sm:p-6">
         <div className="max-w-prose mx-auto space-y-4">
-          {readingAudioUrl && <AudioPlayer src={readingAudioUrl} />}
+          {readingAudioUrl && (
+            <div className="flex justify-center py-2">
+              <AudioPlayer src={readingAudioUrl} />
+            </div>
+          )}
           <div className="space-y-5" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             {readingText.split(/\n+/).filter((p) => p.trim()).map((paragraph, idx) => (
               <div key={idx} className="relative">

@@ -92,7 +92,7 @@ export function PhaseIntro({
               {exercise.instructions}
             </p>
             {exercise.instructionsAudioUrl && (
-              <div className="mt-4">
+              <div className="mt-6 flex justify-center">
                 <AudioPlayer src={exercise.instructionsAudioUrl} />
               </div>
             )}
