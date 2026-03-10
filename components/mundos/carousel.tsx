@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState, useRef, useId, useEffect } from "react";
-import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ChevronLeft, ChevronRight, BookOpen, X } from "lucide-react";
 
 export interface WorldData {
     id: string;
@@ -65,37 +66,83 @@ const DifficultyBadge = ({ level, label }: { level: number; label: string }) => 
     </div>
 );
 
-/* ─── Lore overlay (hover / leer más) ──────────────────────── */
-const LoreOverlay = ({
+/* ─── Lore modal ────────────────────────────────────────────── */
+const LoreModal = ({
     lore,
     description,
-    visible,
+    worldName,
+    open,
+    onClose,
 }: {
     lore?: string;
     description: string;
-    visible: boolean;
-}) => (
-    <div
-        className={`absolute inset-0 z-40 flex items-start md:items-center justify-center rounded-2xl transition-all duration-500 ease-in-out ${visible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-            }`}
-        style={{ background: "rgba(20,14,10,0.78)", backdropFilter: "blur(2px)" }}
-    >
+    worldName: string;
+    open: boolean;
+    onClose: () => void;
+}) => {
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        document.addEventListener("keydown", handler);
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.removeEventListener("keydown", handler);
+            document.body.style.overflow = "";
+        };
+    }, [open, onClose]);
+
+    if (!open) return null;
+
+    return createPortal(
         <div
-            className="mx-4 md:mx-8 px-4 md:px-6 py-4 md:py-6 rounded-xl overflow-y-scroll md:overflow-y-auto scrollbar-thin mt-10 md:mt-0"
-            style={{
-                background: "rgba(255,250,240,0.08)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                maxHeight: "calc(100% - 4.5rem)",
-                scrollbarColor: "rgba(255,255,255,0.35) transparent",
-                scrollbarWidth: "thin",
-            }}
+            className="fixed inset-0 z-[999] flex items-end md:items-center justify-center p-0 md:p-6"
+            style={{ background: "rgba(10,8,6,0.72)", backdropFilter: "blur(6px)" }}
+            onClick={onClose}
         >
-            <p className="text-white/95 text-sm md:text-base leading-loose text-pretty font-[family-name:var(--font-lexend)]">
-                {lore || description}
-            </p>
-        </div>
-    </div>
-);
+            <div
+                className="relative w-full md:max-w-lg md:rounded-2xl rounded-t-2xl overflow-hidden flex flex-col"
+                style={{
+                    background: "linear-gradient(160deg, #1c1208 0%, #0f0a05 100%)",
+                    boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+                    maxHeight: "80dvh",
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Handle bar mobile */}
+                <div className="flex md:hidden justify-center pt-3 pb-1">
+                    <div className="w-10 h-1 rounded-full bg-white/20" />
+                </div>
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4">
+                    <div className="flex items-center gap-2.5">
+                        <BookOpen className="w-4 h-4 text-amber-300/80" />
+                        <span className="text-amber-200/90 font-semibold text-sm font-[family-name:var(--font-lexend)] tracking-wide">
+                            {worldName}
+                        </span>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center w-7 h-7 rounded-full transition-colors hover:bg-white/10 text-white/50 hover:text-white/90"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div
+                    className="overflow-y-auto px-6 pb-8"
+                    style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) transparent" }}
+                >
+                    <p className="text-white/85 text-lg leading-9 text-pretty font-[family-name:var(--font-lexend)]">
+                        {lore || description}
+                    </p>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
 
 /* ─── Slide ─────────────────────────────────────────────────── */
 interface SlideProps {
@@ -113,8 +160,8 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
     const [showLore, setShowLore] = useState(false);
 
     useEffect(() => {
-        if (!isActive) setShowLore(false);
-    });
+        if (current !== index) setShowLore(false);
+    }, [current, index]);
 
     useEffect(() => {
         const animate = () => {
@@ -205,17 +252,19 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
                     {/* Vignette */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
 
-                    {/* Lore overlay */}
-                    <LoreOverlay
+                    {/* Lore modal */}
+                    <LoreModal
                         lore={slide.lore}
                         description={slide.description}
-                        visible={showLore && isActive}
+                        worldName={slide.displayName}
+                        open={showLore}
+                        onClose={() => setShowLore(false)}
                     />
 
                     {/* ── UI content (moves with card on hover) ── */}
                     <div className={`absolute inset-0 transition-opacity duration-500 ${isActive ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
 
-                        {/* Header: progress bar mejorada */}
+                        {/* Header: progress bar */}
                         <div
                             className="absolute top-0 z-20 rounded-tr-2xl"
                             style={{ left: "2rem", right: 0, padding: "0.55rem 1rem 0.55rem 0.75rem", background: "rgba(0,0,0,0.36)", backdropFilter: "blur(6px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
@@ -270,44 +319,41 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
                             </div>
                         </div>
 
-                        {/* Título + Comenzar + etiquetas del mundo — centrados, ocultos con lore */}
-                        {!showLore && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4" style={{ paddingLeft: "2.5rem" }}>
-                                <h2
-                                    className="text-3xl md:text-5xl font-semibold text-center  text-white drop-shadow-md -mt-4 leading-none"
-                                    style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}
-                                >
-                                    {slide.displayName}
-                                </h2>
-                                <Link
-                                    href={`/ejercicios/mundos/${slide.id}`}
-                                    className="flex items-center gap-2 px-5 py-2.5 font-sans font-semibold text-sm rounded-full transition-all duration-300 hover:scale-[1.04] active:scale-95 shadow-lg"
+                        {/* Título + Comenzar + etiquetas del mundo */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4" style={{ paddingLeft: "2.5rem" }}>
+                            <h2
+                                className="text-3xl md:text-5xl font-semibold text-center text-white drop-shadow-md -mt-4 leading-none"
+                                style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}
+                            >
+                                {slide.displayName}
+                            </h2>
+                            <Link
+                                href={`/ejercicios/mundos/${slide.id}`}
+                                className="flex items-center gap-2 px-5 py-2.5 font-sans font-semibold text-sm rounded-full transition-all duration-300 hover:scale-[1.04] active:scale-95 shadow-lg"
+                                style={{
+                                    background: "#C73341",
+                                    color: "#fff",
+                                    boxShadow: "0 2px 18px rgba(199,51,65,0.45), 0 1px 4px rgba(0,0,0,0.2)",
+                                    border: "1.5px solid rgba(255,255,255,0.18)",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                Comenzar aventura
+                            </Link>
+                            {slide.therapeuticDescription && (
+                                <span
+                                    className="text-xs md:text-sm font-sans font-medium px-2.5 py-0.5 rounded-full"
                                     style={{
-                                        background: "#C73341",
-                                        color: "#fff",
-                                        boxShadow: "0 2px 18px rgba(199,51,65,0.45), 0 1px 4px rgba(0,0,0,0.2)",
-                                        border: "1.5px solid rgba(255,255,255,0.18)",
+                                        background: "rgba(0,0,0,0.30)",
+                                        color: "rgba(255,255,255,0.60)",
+                                        backdropFilter: "blur(4px)",
+                                        border: "1px solid rgba(255,255,255,0.08)",
                                     }}
-                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    Comenzar aventura
-                                </Link>
-                                {/* Etiquetas del mundo (therapeutic description como chip) */}
-                                {slide.therapeuticDescription && (
-                                    <span
-                                        className="text-xs md:text-sm font-sans font-medium px-2.5 py-0.5 rounded-full"
-                                        style={{
-                                            background: "rgba(0,0,0,0.30)",
-                                            color: "rgba(255,255,255,0.60)",
-                                            backdropFilter: "blur(4px)",
-                                            border: "1px solid rgba(255,255,255,0.08)",
-                                        }}
-                                    >
-                                        {slide.therapeuticDescription}
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                                    {slide.therapeuticDescription}
+                                </span>
+                            )}
+                        </div>
 
                         {/* Ejercicios — abajo izquierda */}
                         <div className="absolute bottom-4 z-20" style={{ left: "2.75rem" }}>
@@ -323,7 +369,7 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
                             </span>
                         </div>
 
-                        {/* Leer historia / Ocultar — abajo derecha, siempre encima del overlay */}
+                        {/* Leer historia — abajo derecha */}
                         <div className="absolute bottom-4 right-4 z-50">
                             <button
                                 className="flex items-center gap-1.5 text-[11px] font-sans font-semibold px-3 py-2.5 md:py-2 rounded-full transition-all duration-200 hover:scale-[1.04] active:scale-95"
@@ -335,11 +381,11 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
                                 }}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowLore((v) => !v);
+                                    setShowLore(true);
                                 }}
                             >
                                 <BookOpen className="w-3 h-3" />
-                                {showLore ? "Ocultar" : "Leer historia"}
+                                Leer historia
                             </button>
                         </div>
                     </div>
@@ -358,7 +404,8 @@ interface CarouselControlProps {
 
 const CarouselControl = ({ type, title, handleClick }: CarouselControlProps) => (
     <button
-        className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl transition-all duration-200 hover:opacity-80 active:scale-95 focus:outline-none text-muted-foreground md:text-foreground md:border md:border-border md:bg-background/80 md:shadow-sm md:hover:shadow-md md:backdrop-blur-sm"
+        className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl transition-all duration-200 hover:opacity-80 active:scale-95 focus:outline-none text-white shadow-sm"
+        style={{ background: "#579F93" }}
         title={title}
         onClick={handleClick}
         aria-label={title}
@@ -407,29 +454,58 @@ export default function Carousel({ slides, title, description }: CarouselProps) 
             aria-labelledby={`carousel-heading-${id}`}
         >
             {(title || description) && (
-                <div className="flex items-end gap-4 w-full px-4 md:px-10 pb-1">
-                    <CarouselControl
-                        type="previous"
-                        title="Mundo anterior"
-                        handleClick={handlePreviousClick}
-                    />
-                    <div className="flex-1 text-center">
+                <div className="w-full px-4 md:px-10 pb-1">
+                    {/* Mobile */}
+                    <div className="md:hidden flex flex-col items-center gap-2">
                         {title && (
-                            <h1 id={`carousel-heading-${id}`} className="text-xl md:text-4xl font-semibold tracking-tight mb-1 md:mb-2">
+                            <h1
+                                id={`carousel-heading-${id}`}
+                                className="w-full text-center text-3xl font-semibold tracking-tight whitespace-nowrap [font-family:var(--font-fredoka)] text-[#2E85C8] dark:text-[#D3A021]"
+                            >
                                 {title}
                             </h1>
                         )}
-                        {description && (
-                            <p className="hidden md:block text-muted-foreground text-base leading-relaxed">
-                                {description}
-                            </p>
-                        )}
+                        <div className="flex items-center justify-between w-full px-2">
+                            <CarouselControl
+                                type="previous"
+                                title="Mundo anterior"
+                                handleClick={handlePreviousClick}
+                            />
+                            <CarouselControl
+                                type="next"
+                                title="Mundo siguiente"
+                                handleClick={handleNextClick}
+                            />
+                        </div>
                     </div>
-                    <CarouselControl
-                        type="next"
-                        title="Mundo siguiente"
-                        handleClick={handleNextClick}
-                    />
+                    {/* Desktop */}
+                    <div className="hidden md:flex items-end gap-4">
+                        <CarouselControl
+                            type="previous"
+                            title="Mundo anterior"
+                            handleClick={handlePreviousClick}
+                        />
+                        <div className="flex-1 text-center">
+                            {title && (
+                                <h1
+                                    id={`carousel-heading-${id}`}
+                                    className="text-5xl font-semibold tracking-tight mb-2 [font-family:var(--font-fredoka)] text-[#2E85C8] dark:text-[#D3A021]"
+                                >
+                                    {title}
+                                </h1>
+                            )}
+                            {description && (
+                                <p className="text-muted-foreground text-base leading-relaxed">
+                                    {description}
+                                </p>
+                            )}
+                        </div>
+                        <CarouselControl
+                            type="next"
+                            title="Mundo siguiente"
+                            handleClick={handleNextClick}
+                        />
+                    </div>
                 </div>
             )}
 

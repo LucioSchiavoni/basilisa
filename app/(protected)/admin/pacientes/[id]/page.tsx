@@ -110,16 +110,16 @@ export default async function PatientDetailPage({
   const [{ data: exercises }, { data: gemTransactions }] = await Promise.all([
     exerciseIds.length > 0
       ? supabase
-          .from("exercises")
-          .select("id, title, content")
-          .in("id", exerciseIds)
+        .from("exercises")
+        .select("id, title, content")
+        .in("id", exerciseIds)
       : Promise.resolve({ data: [] as { id: string; title: string; content: unknown }[] }),
     sessionIds.length > 0
       ? supabase
-          .from("gem_transactions")
-          .select("session_id, amount")
-          .eq("user_id", id)
-          .in("session_id", sessionIds)
+        .from("gem_transactions")
+        .select("session_id, amount")
+        .eq("user_id", id)
+        .in("session_id", sessionIds)
       : Promise.resolve({ data: [] as { session_id: string | null; amount: number }[] }),
   ]);
 

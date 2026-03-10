@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import Carousel from "@/components/mundos/carousel";
 import { FloatingParticles } from "@/components/home/floating-particles";
+import { WorldReturnAnimation } from "./world-return-animation";
 import worldsLore from "@/json/historias-mundos.json";
 
 const loreByLevel = Object.fromEntries(
@@ -55,6 +56,7 @@ export default async function EjerciciosPage() {
 
   return (
     <>
+      <WorldReturnAnimation />
       <FloatingParticles />
       <div className="relative overflow-hidden w-full h-full pb-8 md:pb-10 flex flex-col items-center gap-2 md:gap-6">
         {worldsData.length > 0 ? (

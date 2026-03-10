@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, BookOpen, Zap } from "lucide-react";
+import { Clock, BookOpen, Zap, ChevronRight } from "lucide-react";
 import { EXPECTED_READING_SPEEDS } from "@/lib/constants/reading-speeds";
 
 type QuestionResult = {
@@ -59,6 +59,12 @@ function ScoreBadge({ pct }: { pct: number }) {
       {pct}%
     </span>
   );
+}
+
+function scoreAccent(pct: number) {
+  if (pct >= 80) return "border-l-green-400";
+  if (pct >= 60) return "border-l-yellow-400";
+  return "border-l-red-400";
 }
 
 function MetricTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -288,13 +294,22 @@ export function ExerciseHistory({
               <button
                 key={attempt.sessionId}
                 onClick={() => setSelected(attempt)}
-                className="w-full flex items-center gap-3 px-4 sm:px-6 py-3.5 text-left hover:bg-muted/40 transition-colors"
+                className="group relative w-full flex items-center gap-3 px-5 py-4 text-left overflow-hidden transition-colors duration-200 hover:bg-muted/40"
               >
+                {/* "Ver detalles" desliza desde la derecha */}
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-medium text-primary translate-x-6 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out whitespace-nowrap">
+                  Ver detalles
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{attempt.exerciseTitle}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{formatDate(attempt.completedAt)}</p>
+                  <p className="text-sm font-medium truncate group-hover:text-foreground transition-colors duration-200">
+                    {attempt.exerciseTitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatDate(attempt.completedAt)}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+
+                <div className="flex items-center gap-2 shrink-0 transition-opacity duration-200 group-hover:opacity-0">
                   {attempt.readingPpm != null && (
                     <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
                       {attempt.readingPpm} ppm

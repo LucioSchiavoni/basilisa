@@ -209,9 +209,9 @@ export async function completeExercise(input: {
     awardExerciseGems(session.id, patientId),
     isAssigned
       ? admin
-          .from("patient_assignments")
-          .update({ status: "completed", completed_at: new Date().toISOString() })
-          .eq("id", assignmentId)
+        .from("patient_assignments")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", assignmentId)
       : Promise.resolve(null),
   ]);
 
@@ -337,9 +337,9 @@ export async function completeTimedReading(input: {
     awardExerciseGems(session.id, patientId),
     isAssigned
       ? admin
-          .from("patient_assignments")
-          .update({ status: "completed", completed_at: new Date().toISOString() })
-          .eq("id", assignmentId)
+        .from("patient_assignments")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", assignmentId)
       : Promise.resolve(null),
   ]);
 
@@ -553,9 +553,9 @@ export async function completeLetterGap(input: {
     awardExerciseGems(session.id, patientId),
     isAssigned
       ? admin
-          .from("patient_assignments")
-          .update({ status: "completed", completed_at: new Date().toISOString() })
-          .eq("id", assignmentId)
+        .from("patient_assignments")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", assignmentId)
       : Promise.resolve(null),
   ]);
 

@@ -111,8 +111,8 @@ export function AssignExerciseDialog({
     >
       <DialogTrigger asChild>
         <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Asignar ejercicio
+          <Plus className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">Asignar ejercicio</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] flex flex-col">

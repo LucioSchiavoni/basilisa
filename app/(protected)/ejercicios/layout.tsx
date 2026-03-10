@@ -3,5 +3,5 @@ export default function EjerciciosRootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <div className="patient-panel">{children}</div>;
 }

@@ -26,7 +26,14 @@
       "Bash(grep:*)",
       "Bash(tail:*)",
       "WebFetch(domain:pfwzmsebtugnphlclqhu.supabase.co)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(pnpm build 2>&1; echo \"EXIT: $?\")",
+      "Bash(ls \"C:/Users/lucio/Desktop/basilisa/app/\\(protected\\)/admin/pacientes/[id]/\")",
+      "Bash(ls \"C:/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\")",
+      "Bash(ls \"C:/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/[id]/\")",
+      "Bash(find \"C:/Users/lucio/Desktop/basilisa/app/\\(protected\\)/admin/pacientes\" -name \"*.tsx\" 2>/dev/null)",
+      "Bash(/tmp/summary.txt:*)",
+      "Read(//tmp/**)"
     ]
   },
   "enabledMcpjsonServers": [

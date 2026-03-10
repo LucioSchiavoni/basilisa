@@ -145,7 +145,9 @@ export type Database = {
           is_assigned: boolean
           is_completed: boolean
           patient_id: string
+          reading_ppm: number | null
           reading_time_seconds: number | null
+          reading_word_count: number | null
           started_at: string
         }
         Insert: {
@@ -158,7 +160,9 @@ export type Database = {
           is_assigned?: boolean
           is_completed?: boolean
           patient_id: string
+          reading_ppm?: number | null
           reading_time_seconds?: number | null
+          reading_word_count?: number | null
           started_at?: string
         }
         Update: {
@@ -171,7 +175,9 @@ export type Database = {
           is_assigned?: boolean
           is_completed?: boolean
           patient_id?: string
+          reading_ppm?: number | null
           reading_time_seconds?: number | null
+          reading_word_count?: number | null
           started_at?: string
         }
         Relationships: [
