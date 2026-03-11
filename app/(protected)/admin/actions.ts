@@ -183,11 +183,13 @@ export async function createExercise(
   }
 
   const { exercise_type_name, content, ...baseData } = validated.data;
-  const worldId = getWorldByDifficulty(baseData.difficulty_level);
+  const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
 
-  const { data: inserted, error } = await supabase.from("exercises").insert({
+  const adminClient = createAdminClient();
+
+  const { data: inserted, error } = await adminClient.from("exercises").insert({
     ...baseData,
-    world_id: worldId,
+    world_id: worldSlug,
     content: content as unknown as Json,
     created_by: user.id,
     is_active: true,
@@ -196,6 +198,30 @@ export async function createExercise(
   if (error || !inserted) {
     console.error("Supabase insert error:", error);
     return { error: "Error al crear el ejercicio" };
+  }
+
+  if (worldSlug) {
+    const { data: world } = await adminClient
+      .from("worlds")
+      .select("id")
+      .eq("name", worldSlug)
+      .single();
+
+    if (world) {
+      const { data: lastPos } = await adminClient
+        .from("world_exercises")
+        .select("position")
+        .eq("world_id", world.id)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      await adminClient.from("world_exercises").insert({
+        world_id: world.id,
+        exercise_id: inserted.id,
+        position: (lastPos?.position ?? 0) + 1,
+      });
+    }
   }
 
   revalidatePath("/admin/ejercicios");
@@ -234,13 +260,15 @@ export async function updateExercise(
   }
 
   const { exercise_type_name, content, ...baseData } = validated.data;
-  const worldId = getWorldByDifficulty(baseData.difficulty_level);
+  const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
 
-  const { error } = await supabase
+  const adminClient = createAdminClient();
+
+  const { error } = await adminClient
     .from("exercises")
     .update({
       ...baseData,
-      world_id: worldId,
+      world_id: worldSlug,
       content: content as unknown as Json,
     })
     .eq("id", parsed.data);
@@ -248,6 +276,43 @@ export async function updateExercise(
   if (error) {
     console.error("Supabase update error:", error);
     return { error: "Error al actualizar el ejercicio" };
+  }
+
+  if (worldSlug) {
+    const { data: world } = await adminClient
+      .from("worlds")
+      .select("id")
+      .eq("name", worldSlug)
+      .single();
+
+    if (world) {
+      const { data: existing } = await adminClient
+        .from("world_exercises")
+        .select("id, world_id")
+        .eq("exercise_id", parsed.data)
+        .maybeSingle();
+
+      if (!existing) {
+        const { data: lastPos } = await adminClient
+          .from("world_exercises")
+          .select("position")
+          .eq("world_id", world.id)
+          .order("position", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        await adminClient.from("world_exercises").insert({
+          world_id: world.id,
+          exercise_id: parsed.data,
+          position: (lastPos?.position ?? 0) + 1,
+        });
+      } else if (existing.world_id !== world.id) {
+        await adminClient
+          .from("world_exercises")
+          .update({ world_id: world.id })
+          .eq("id", existing.id);
+      }
+    }
   }
 
   revalidatePath("/admin/ejercicios");

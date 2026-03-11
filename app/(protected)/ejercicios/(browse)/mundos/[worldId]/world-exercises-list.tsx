@@ -7,7 +7,6 @@ import { CheckCircle2, PlayCircle } from "lucide-react";
 import { getScheme } from "../world-color-schemes";
 import { WorldCanvas } from "../world-canvas";
 import { getWorldConfig } from "@/lib/worlds";
-import { BookOpenAnimation } from "../book-open-animation";
 
 type ExerciseItem = {
   id: string;
@@ -60,8 +59,7 @@ export function WorldExercisesList({
     const worldConfig = getWorldConfig(worldName);
     return (
       <>
-        <BookOpenAnimation worldName={worldName} displayName={displayName} />
-        <div
+          <div
           className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
           style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
         />
@@ -108,7 +106,6 @@ export function WorldExercisesList({
 
   return (
     <>
-      <BookOpenAnimation worldName={worldName} displayName={displayName} />
       <div
         className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
         style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}

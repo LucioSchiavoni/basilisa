@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { WorldExercisesList } from "./world-exercises-list";
 import { WorldBackButton } from "./world-back-button";
 
@@ -14,16 +15,18 @@ export default async function WorldDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const adminClient = createAdminClient();
+
   const [{ data: world }, { data: worldExercisesData }] = await Promise.all([
-    supabase
+    adminClient
       .from("worlds")
       .select("id, name, display_name, description, icon_url")
       .eq("id", worldId)
       .eq("is_active", true)
       .single(),
-    supabase
+    adminClient
       .from("world_exercises")
-      .select("position, exercises(id, title, instructions, difficulty_level, exercise_types(display_name))")
+      .select("position, exercises(id, title, instructions, difficulty_level, is_active, deleted_at, exercise_types(display_name))")
       .eq("world_id", worldId)
       .order("position"),
   ]);
@@ -44,13 +47,18 @@ export default async function WorldDetailPage({
     : { data: [] };
 
   const exercises = (worldExercisesData ?? [])
-    .filter((we) => we.exercises !== null)
+    .filter((we) => {
+      const ex = we.exercises as { is_active: boolean; deleted_at: string | null } | null;
+      return ex !== null && ex.is_active === true && ex.deleted_at === null;
+    })
     .map((we, index) => {
       const ex = we.exercises as {
         id: string;
         title: string;
         instructions: string | null;
         difficulty_level: number;
+        is_active: boolean;
+        deleted_at: string | null;
         exercise_types: { display_name: string } | { display_name: string }[] | null;
       };
       const typeName =
