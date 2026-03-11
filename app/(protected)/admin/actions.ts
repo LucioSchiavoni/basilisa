@@ -494,8 +494,6 @@ export async function resetPatientPassword(id: string): Promise<{ error?: string
     return { error: "Error al resetear la contraseña" };
   }
 
-  await adminClient.from("profiles").update({ must_change_password: true }).eq("id", parsed.data);
-
   revalidatePath("/admin/usuarios");
   return { success: "Contraseña reseteada. Nueva contraseña: Basilisa2025" };
 }
