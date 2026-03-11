@@ -38,7 +38,7 @@ export function ChangePasswordForm({ isSettingNew }: { isSettingNew: boolean }) 
             </p>
           </div>
           <Button asChild className="w-full h-12 rounded-xl text-base">
-            <Link href="/ejercicios/perfil">Volver al perfil</Link>
+            <Link href="/perfil">Volver al perfil</Link>
           </Button>
         </div>
       </div>
@@ -51,7 +51,7 @@ export function ChangePasswordForm({ isSettingNew }: { isSettingNew: boolean }) 
       <div className="w-full max-w-md bg-white dark:bg-card rounded-3xl shadow-xl overflow-hidden">
         <div className="p-6 pb-0">
           <Link
-            href="/ejercicios/perfil"
+            href="/perfil"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

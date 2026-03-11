@@ -15,24 +15,20 @@ export default async function AdminDashboardPage() {
     { count: patientsCount },
     { data: patients },
     { data: exercises },
-    { data: authUsers },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("exercises").select("*", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "patient"),
-    adminClient.from("profiles").select("id, full_name, role").eq("role", "patient").eq("is_active", true),
+    adminClient.from("profiles").select("id, full_name, role, email").eq("role", "patient").eq("is_active", true),
     supabase.from("exercises").select("id, title, difficulty_level, exercise_types(display_name)").eq("is_active", true).is("deleted_at", null).order("title"),
-    adminClient.auth.admin.listUsers(),
   ]);
 
   const patientsList = (patients ?? []).map((p) => {
-    const authUser = authUsers?.users?.find((u) => u.id === p.id);
-    const email = authUser?.email ?? "";
-    const isPatient = email.endsWith("@basilisa.internal");
+    const isPatient = (p.email ?? "").endsWith("@basilisa.internal");
     return {
       id: p.id,
       full_name: p.full_name,
-      username: isPatient ? email.replace("@basilisa.internal", "") : null,
+      username: isPatient ? (p.email ?? "").replace("@basilisa.internal", "") : null,
       is_patient: isPatient,
     };
   });

@@ -120,9 +120,9 @@ export function TutorialSpotlight({ targetField }: Props) {
     const unlock = (document.querySelector(`[data-spotlight="${targetField}"]`) as any)?._unlockScroll
     if (unlock) unlock()
     if (callout.next) {
-      router.replace(`/ejercicios/editar-perfil?tutorial=${callout.next}`)
+      router.replace(`/editar-perfil?tutorial=${callout.next}`)
     } else {
-      router.replace("/ejercicios/editar-perfil")
+      router.replace("/editar-perfil")
     }
   }
 

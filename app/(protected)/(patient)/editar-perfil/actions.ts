@@ -60,5 +60,5 @@ export async function editProfile(
 
   if (error) return { error: "Error al guardar los cambios" };
 
-  redirect("/ejercicios/perfil");
+  redirect("/perfil");
 }

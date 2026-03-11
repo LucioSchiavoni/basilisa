@@ -66,5 +66,7 @@ export async function changePassword(
     return { error: "Error al actualizar la contraseña. Intentá de nuevo." };
   }
 
+  await supabase.from("profiles").update({ must_change_password: false }).eq("id", user.id);
+
   return { success: true };
 }

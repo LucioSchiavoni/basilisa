@@ -14,24 +14,25 @@ export default async function WorldDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: world } = await supabase
-    .from("worlds")
-    .select("id, name, display_name, description, icon_url")
-    .eq("id", worldId)
-    .eq("is_active", true)
-    .single();
+  const [{ data: world }, { data: worldExercisesData }] = await Promise.all([
+    supabase
+      .from("worlds")
+      .select("id, name, display_name, description, icon_url")
+      .eq("id", worldId)
+      .eq("is_active", true)
+      .single(),
+    supabase
+      .from("world_exercises")
+      .select("position, exercises(id, title, instructions, difficulty_level, exercise_types(display_name))")
+      .eq("world_id", worldId)
+      .order("position"),
+  ]);
 
   if (!world) notFound();
 
-  const { data: exercisesData } = await supabase
-    .from("exercises")
-    .select("id, title, instructions, difficulty_level, exercise_types(display_name)")
-    .eq("world_id", world.name)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("created_at");
-
-  const worldExerciseIds = (exercisesData ?? []).map((e) => e.id);
+  const worldExerciseIds = (worldExercisesData ?? [])
+    .map((we) => (we.exercises as { id: string } | null)?.id)
+    .filter((id): id is string => id !== undefined);
 
   const { data: completedSessionsData } = worldExerciseIds.length > 0
     ? await supabase
@@ -42,21 +43,30 @@ export default async function WorldDetailPage({
         .in("exercise_id", worldExerciseIds)
     : { data: [] };
 
-  const exercises = (exercisesData ?? []).map((ex, index) => {
-    const typeName =
-      ex.exercise_types && !Array.isArray(ex.exercise_types)
-        ? ex.exercise_types.display_name
-        : null;
-    return {
-      id: ex.id,
-      title: ex.title,
-      instructions: ex.instructions,
-      difficultyLevel: ex.difficulty_level,
-      typeName,
-      position: index + 1,
-      isBonus: false,
-    };
-  });
+  const exercises = (worldExercisesData ?? [])
+    .filter((we) => we.exercises !== null)
+    .map((we, index) => {
+      const ex = we.exercises as {
+        id: string;
+        title: string;
+        instructions: string | null;
+        difficulty_level: number;
+        exercise_types: { display_name: string } | { display_name: string }[] | null;
+      };
+      const typeName =
+        ex.exercise_types && !Array.isArray(ex.exercise_types)
+          ? ex.exercise_types.display_name
+          : null;
+      return {
+        id: ex.id,
+        title: ex.title,
+        instructions: ex.instructions,
+        difficultyLevel: ex.difficulty_level,
+        typeName,
+        position: we.position ?? index + 1,
+        isBonus: false,
+      };
+    });
 
   const completedIds = (completedSessionsData ?? []).map((s) => s.exercise_id).filter((id): id is string => id !== null);
 

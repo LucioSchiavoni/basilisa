@@ -211,11 +211,11 @@ export default async function PatientDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 py-3 lg:-mx-8 lg:px-8 border-b flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/admin/pacientes"
-            className="flex h-8 w-8 items-center justify-center rounded-md border hover:bg-accent transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-md border hover:bg-accent transition-colors shrink-0"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -231,7 +231,7 @@ export default async function PatientDetailPage({
               <path d="m15 18-6-6 6-6" />
             </svg>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold">
+          <h1 className="text-lg sm:text-2xl font-bold truncate">
             {profile.full_name || "Paciente"}
           </h1>
         </div>
@@ -242,7 +242,7 @@ export default async function PatientDetailPage({
         exercisesCompleted={sessions?.length ?? 0}
         averageScore={averageScore}
         currentStreak={gems?.current_streak ?? 0}
-        totalGems={gems?.total_gems ?? 0}
+        gradeYear={profile.grade_year ?? null}
       />
 
       <AssignedExercises assignments={assignmentsList} patientId={id} />

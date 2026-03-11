@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { es } from "react-day-picker/locale"
 import { CalendarIcon, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -89,6 +90,7 @@ export function DatePicker({
           startMonth={disablePast ? today : undefined}
           endMonth={maxDate}
           captionLayout="dropdown"
+          locale={es}
           autoFocus
         />
       </PopoverContent>

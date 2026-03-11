@@ -76,7 +76,7 @@ export default async function PerfilPage() {
           )}
         </div>
         <Link
-          href="/ejercicios/editar-perfil"
+          href="/editar-perfil"
           className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" />

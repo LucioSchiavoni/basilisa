@@ -9,14 +9,14 @@ type StatsCardsProps = {
   exercisesCompleted: number;
   averageScore: number;
   currentStreak: number;
-  totalGems: number;
+  gradeYear: number | null;
 };
 
 export function PatientStatsCards({
   exercisesCompleted,
   averageScore,
   currentStreak,
-  totalGems,
+  gradeYear,
 }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -49,8 +49,13 @@ export function PatientStatsCards({
       </Card>
       <Card>
         <CardHeader>
-          <CardDescription>Gemas Totales</CardDescription>
-          <CardTitle className="text-3xl sm:text-4xl">{totalGems}</CardTitle>
+          <CardDescription>Año cursando</CardDescription>
+          <CardTitle className="text-3xl sm:text-4xl">
+            {gradeYear ?? "—"}
+            {gradeYear && (
+              <span className="text-base font-normal text-muted-foreground ml-1">°</span>
+            )}
+          </CardTitle>
         </CardHeader>
       </Card>
     </div>

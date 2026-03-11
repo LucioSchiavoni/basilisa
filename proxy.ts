@@ -2,13 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/patient-login"];
-const PROTECTED_ROUTES = ["/dashboard", "/ejercicios", "/pacientes", "/completar-perfil", "/completar-grado", "/bienvenida", "/admin", "/change-password"];
+const PROTECTED_ROUTES = ["/dashboard", "/ejercicios", "/pacientes", "/completar-perfil", "/completar-grado", "/bienvenida", "/admin", "/change-password", "/perfil", "/editar-perfil", "/ranking"];
 const REDIRECT_BY_ROLE_ROUTES = ["/", "/dashboard"];
 
 const ROLE_RESTRICTED_ROUTES: Record<string, string> = {
   "/admin": "admin",
   "/pacientes": "admin",
   "/ejercicios": "patient",
+  "/perfil": "patient",
+  "/editar-perfil": "patient",
+  "/ranking": "patient",
 };
 
 function getDefaultPathForRole(

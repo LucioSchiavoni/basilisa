@@ -24,14 +24,14 @@ const navItems = [
     icon: ClipboardList,
   },
   {
-    href: "/ejercicios/ranking",
+    href: "/ranking",
     label: "Ranking",
     exact: true,
     accentColor: "#D3A021",
     icon: Trophy,
   },
   {
-    href: "/ejercicios/perfil",
+    href: "/perfil",
     label: "Perfil",
     exact: true,
     accentColor: "#2E85C8",

@@ -143,11 +143,6 @@
   color: oklch(0.98 0 0);
 }
 
-.dark .patient-panel {
-  --foreground: #D3A021;
-  --card-foreground: #D3A021;
-  --popover-foreground: #D3A021;
-}
 
 .theme-fixed-light {
   --background: #F7ECDA;

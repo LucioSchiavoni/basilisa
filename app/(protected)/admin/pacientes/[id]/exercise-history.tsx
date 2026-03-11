@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Clock, BookOpen, Zap, ChevronRight } from "lucide-react";
 import { EXPECTED_READING_SPEEDS } from "@/lib/constants/reading-speeds";
 
@@ -257,6 +258,15 @@ export function ExerciseHistory({
   gradeYear: number;
 }) {
   const [selected, setSelected] = useState<ExerciseAttempt | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const filtered = attempts.filter((a) => {
+    const date = new Date(a.completedAt);
+    if (dateFrom && date < new Date(dateFrom)) return false;
+    if (dateTo && date > new Date(dateTo + "T23:59:59")) return false;
+    return true;
+  });
 
   const previousAttempts = selected
     ? attempts.filter(
@@ -285,44 +295,77 @@ export function ExerciseHistory({
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>Historial de ejercicios</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>Historial de ejercicios</CardTitle>
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors shrink-0"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex-1 min-w-[148px]">
+              <DatePicker
+                value={dateFrom}
+                onChange={setDateFrom}
+                placeholder="Desde"
+                disablePast={false}
+              />
+            </div>
+            <div className="flex-1 min-w-[148px]">
+              <DatePicker
+                value={dateTo}
+                onChange={setDateTo}
+                placeholder="Hasta"
+                disablePast={false}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
-            {attempts.map((attempt) => (
-              <button
-                key={attempt.sessionId}
-                onClick={() => setSelected(attempt)}
-                className="group relative w-full flex items-center gap-3 px-5 py-4 text-left overflow-hidden transition-colors duration-200 hover:bg-muted/40"
-              >
-                {/* "Ver detalles" desliza desde la derecha */}
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-medium text-primary translate-x-6 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out whitespace-nowrap">
-                  Ver detalles
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </span>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate group-hover:text-foreground transition-colors duration-200">
-                    {attempt.exerciseTitle}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatDate(attempt.completedAt)}</p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 transition-opacity duration-200 group-hover:opacity-0">
-                  {attempt.readingPpm != null && (
-                    <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
-                      {attempt.readingPpm} ppm
-                    </span>
-                  )}
-                  <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
-                    {formatDuration(attempt.durationSeconds)}
+          {filtered.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8 text-sm">
+              Sin resultados para el rango seleccionado
+            </p>
+          ) : (
+            <div className="max-h-[480px] overflow-y-auto divide-y">
+              {filtered.map((attempt) => (
+                <button
+                  key={attempt.sessionId}
+                  onClick={() => setSelected(attempt)}
+                  className="group relative w-full flex items-center gap-3 px-5 py-4 text-left overflow-hidden transition-colors duration-200 hover:bg-muted/40"
+                >
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-medium text-primary translate-x-6 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out whitespace-nowrap">
+                    Ver detalles
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </span>
-                  <ScoreBadge pct={attempt.scorePercentage} />
-                </div>
-              </button>
-            ))}
-          </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate group-hover:text-foreground transition-colors duration-200">
+                      {attempt.exerciseTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatDate(attempt.completedAt)}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 transition-opacity duration-200 group-hover:opacity-0">
+                    {attempt.readingPpm != null && (
+                      <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
+                        {attempt.readingPpm} ppm
+                      </span>
+                    )}
+                    <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
+                      {formatDuration(attempt.durationSeconds)}
+                    </span>
+                    <ScoreBadge pct={attempt.scorePercentage} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

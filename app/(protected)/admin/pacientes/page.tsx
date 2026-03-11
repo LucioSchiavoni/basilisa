@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientsList } from "./patients-list";
 
 export type PatientSummary = {
@@ -24,11 +23,7 @@ export default async function PacientesPage() {
     return (
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-6">Seguimiento de Pacientes</h1>
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No hay pacientes registrados</p>
-          </CardContent>
-        </Card>
+        <p className="text-muted-foreground text-center py-12">No hay pacientes registrados</p>
       </div>
     );
   }
@@ -91,16 +86,12 @@ export default async function PacientesPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6">Seguimiento de Pacientes</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>{enrichedPatients.length} Pacientes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PatientsList patients={enrichedPatients} />
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Seguimiento de Pacientes</h1>
+        <p className="text-sm text-muted-foreground mt-1">{enrichedPatients.length} pacientes</p>
+      </div>
+      <PatientsList patients={enrichedPatients} />
     </div>
   );
 }

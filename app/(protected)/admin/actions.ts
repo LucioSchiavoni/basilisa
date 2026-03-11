@@ -431,6 +431,7 @@ export async function createPatient(
       full_name,
       role: "patient",
       is_profile_complete: true,
+      must_change_password: true,
       ...(grade_year != null && { grade_year, grade_year_updated_at: new Date().toISOString() }),
     };
 
@@ -492,6 +493,8 @@ export async function resetPatientPassword(id: string): Promise<{ error?: string
   if (error) {
     return { error: "Error al resetear la contraseña" };
   }
+
+  await adminClient.from("profiles").update({ must_change_password: true }).eq("id", parsed.data);
 
   revalidatePath("/admin/usuarios");
   return { success: "Contraseña reseteada. Nueva contraseña: Basilisa2025" };

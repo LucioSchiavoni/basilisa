@@ -33,7 +33,19 @@
       "Bash(ls \"C:/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/[id]/\")",
       "Bash(find \"C:/Users/lucio/Desktop/basilisa/app/\\(protected\\)/admin/pacientes\" -name \"*.tsx\" 2>/dev/null)",
       "Bash(/tmp/summary.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(ls -la \"C:\\\\Users\\\\lucio\\\\Desktop\\\\basilisa\\\\app\\\\\\(protected\\)\\\\ejercicios\")",
+      "Bash(ls -la \"C:\\\\Users\\\\lucio\\\\Desktop\\\\basilisa\\\\app\\\\\\(protected\\)\" | head -50)",
+      "Bash(find \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/\\(patient\\)\" -type f | sort)",
+      "Bash(find \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)\" -type f | sort)",
+      "Bash(grep -r \"\\\\\"use client\\\\\"\" /c/Users/lucio/Desktop/basilisa/app --include=\"*.tsx\" -l | xargs -I {} grep -l \"adminClient\\\\|import.*admin\\\\|from.*admin\" {} 2>/dev/null | head -20)",
+      "Bash(head -30 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/create-exercise-form.tsx | grep -E \"use client|adminClient|SERVICE_ROLE\")",
+      "Bash(head -30 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/\\\\[id\\\\]/edit-exercise-form.tsx | grep -E \"use client|adminClient|SERVICE_ROLE\")",
+      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/create-exercise-form.tsx)",
+      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/letter-gap-editor.tsx)",
+      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/question-card.tsx)",
+      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/reading-comprehension-editor.tsx)",
+      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/\\\\[id\\\\]/edit-exercise-form.tsx)"
     ]
   },
   "enabledMcpjsonServers": [

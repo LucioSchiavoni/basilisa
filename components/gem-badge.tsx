@@ -43,7 +43,7 @@ export function GemBadge({ totalGems, size, textClass }: { totalGems: number; si
           style={{ backgroundColor: "#C73341" }}
           onClick={() => {
             setOpen(false);
-            router.push("/ejercicios/ranking");
+            router.push("/ranking");
           }}
         >
           Ir al ranking
