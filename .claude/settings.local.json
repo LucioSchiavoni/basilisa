@@ -45,7 +45,8 @@
       "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/letter-gap-editor.tsx)",
       "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/question-card.tsx)",
       "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/reading-comprehension-editor.tsx)",
-      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/\\\\[id\\\\]/edit-exercise-form.tsx)"
+      "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/\\\\[id\\\\]/edit-exercise-form.tsx)",
+      "Bash(pnpm run:*)"
     ]
   },
   "enabledMcpjsonServers": [

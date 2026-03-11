@@ -425,6 +425,7 @@ export type Database = {
           is_active: boolean
           is_profile_complete: boolean
           last_grade_confirmed_at: string | null
+          must_change_password: boolean | null
           needs_grade_review: boolean
           phone: string | null
           promotion_suggested_at: string | null
@@ -443,6 +444,7 @@ export type Database = {
           is_active?: boolean
           is_profile_complete?: boolean
           last_grade_confirmed_at?: string | null
+          must_change_password?: boolean | null
           needs_grade_review?: boolean
           phone?: string | null
           promotion_suggested_at?: string | null
@@ -461,6 +463,7 @@ export type Database = {
           is_active?: boolean
           is_profile_complete?: boolean
           last_grade_confirmed_at?: string | null
+          must_change_password?: boolean | null
           needs_grade_review?: boolean
           phone?: string | null
           promotion_suggested_at?: string | null
