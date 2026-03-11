@@ -24,11 +24,13 @@ export function WorldExercisesList({
   completedExerciseIds,
   worldName,
   displayName,
+  worldId,
 }: {
   exercises: ExerciseItem[];
   completedExerciseIds: string[];
   worldName: string;
   displayName: string;
+  worldId: string;
 }) {
   const scheme = getScheme(worldName);
   const completedSet = new Set(completedExerciseIds);
@@ -266,7 +268,7 @@ export function WorldExercisesList({
                   />
                 </div>
               )}
-              <Link href={`/ejercicios/${exercise.id}`}>{card}</Link>
+              <Link href={`/ejercicios/${exercise.id}?worldId=${worldId}`}>{card}</Link>
             </div>
           );
         })}

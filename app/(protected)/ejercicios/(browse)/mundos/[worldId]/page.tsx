@@ -79,6 +79,7 @@ export default async function WorldDetailPage({
         completedExerciseIds={completedIds}
         worldName={world.name}
         displayName={world.display_name}
+        worldId={worldId}
       />
     </>
   );

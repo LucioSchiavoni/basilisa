@@ -46,7 +46,12 @@
       "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/question-card.tsx)",
       "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/crear/reading-comprehension-editor.tsx)",
       "Bash(head -40 /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/ejercicios/\\\\[id\\\\]/edit-exercise-form.tsx)",
-      "Bash(pnpm run:*)"
+      "Bash(pnpm run:*)",
+      "Bash(find \"/c/Users/lucio/Desktop/basilisa/src/app/\\(protected\\)/ejercicios\" -type f -name \"*.tsx\" -o -name \"*.ts\" | head -20)",
+      "Bash(ls -la \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\" 2>/dev/null)",
+      "Bash(ls -la \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/[id]/\")",
+      "Bash(ls -la \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)/\")",
+      "Bash(find \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)\" -type f -name \"*.tsx\" | head -20)"
     ]
   },
   "enabledMcpjsonServers": [

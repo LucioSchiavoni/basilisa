@@ -27,10 +27,10 @@ export default async function ExercisePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; worldId?: string }>;
 }) {
   const { id } = await params;
-  const { from } = await searchParams;
+  const { from, worldId: worldIdParam } = await searchParams;
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -70,7 +70,17 @@ export default async function ExercisePage({
   let worldId: string | undefined;
   let worldName: string | undefined;
 
-  if (exercise.world_id) {
+  if (worldIdParam) {
+    const { data: worldData } = await supabase
+      .from("worlds")
+      .select("id, name")
+      .eq("id", worldIdParam)
+      .single();
+    if (worldData) {
+      worldId = worldData.id;
+      worldName = worldData.name;
+    }
+  } else if (exercise.world_id) {
     const { data: worldData } = await supabase
       .from("worlds")
       .select("id, name")
