@@ -5,6 +5,7 @@ export type WorldConfig = {
   backgroundColor: string
   characterImage: string
   accentColor: string
+  accentFg: string
 }
 
 export const WORLDS: Record<string, WorldConfig> = {
@@ -15,6 +16,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     backgroundColor: "linear-gradient(to bottom, #1a0a2e, #2d1b4e, #0d0820)",
     characterImage: "/pj/medieval-pj.png",
     accentColor: "#d4af37",
+    accentFg: "#1e293b",
   },
   bosque: {
     id: "bosque",
@@ -23,6 +25,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     backgroundColor: "linear-gradient(to bottom, #071a07, #0d2e12, #051209)",
     characterImage: "/pj/aligator-pj.png",
     accentColor: "#10b981",
+    accentFg: "#1e293b",
   },
   agua: {
     id: "agua",
@@ -31,6 +34,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     backgroundColor: "linear-gradient(to bottom, #020b2a, #041e4a, #051b3a)",
     characterImage: "/pj/octopus-pj.png",
     accentColor: "#06b6d4",
+    accentFg: "#1e293b",
   },
   fuego: {
     id: "fuego",
@@ -39,6 +43,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     backgroundColor: "linear-gradient(to bottom, #1a0500, #3a0c00, #1f0800)",
     characterImage: "/pj/dragon-pj.png",
     accentColor: "#f97316",
+    accentFg: "#1e293b",
   },
   hielo: {
     id: "hielo",
@@ -47,6 +52,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     backgroundColor: "linear-gradient(to bottom, #b8d4e8, #daeaf5, #f0f8ff)",
     characterImage: "/pj/penguin-pj.png",
     accentColor: "#7dd3fc",
+    accentFg: "#1e293b",
   },
   cielo: {
     id: "cielo",
@@ -55,6 +61,7 @@ export const WORLDS: Record<string, WorldConfig> = {
     backgroundColor: "linear-gradient(to bottom, #87ceeb, #9b8ec4, #6a5acd)",
     characterImage: "/pj/phoenix.png",
     accentColor: "#38bdf8",
+    accentFg: "#1e293b",
   },
 }
 

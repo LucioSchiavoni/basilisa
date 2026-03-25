@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 export async function saveGradeYear(gradeYear: number) {
+  if (!Number.isInteger(gradeYear) || gradeYear < 1 || gradeYear > 6) {
+    redirect("/login")
+  }
+
   const supabase = await createClient()
   const {
     data: { user },

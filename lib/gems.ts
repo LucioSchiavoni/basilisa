@@ -51,7 +51,7 @@ async function createTransaction(
   source: GemSource,
   sessionId?: string,
   metadata?: Json
-) {
+): Promise<boolean> {
   const { error } = await supabase.from("gem_transactions").insert({
     user_id: userId,
     amount,
@@ -62,9 +62,11 @@ async function createTransaction(
   });
 
   if (error) {
-    if (error.code === "23505") return;
+    if (error.code === "23505") return true;
     throw new Error(`Failed to create gem transaction: ${error.message}`);
   }
+
+  return false;
 }
 
 async function addGems(
@@ -82,15 +84,6 @@ async function addGems(
 
 export async function awardExerciseGems(sessionId: string, patientId: string) {
   const supabase = createAdminClient();
-
-  const { data: existingTx } = await supabase
-    .from("gem_transactions")
-    .select("id")
-    .eq("session_id", sessionId)
-    .in("source", ["exercise_completion", "free_exercise_completion"])
-    .maybeSingle();
-
-  if (existingTx) return { alreadyAwarded: true, totalAwarded: 0 };
 
   const [
     { data: session, error: sessionError },
@@ -129,6 +122,12 @@ export async function awardExerciseGems(sessionId: string, patientId: string) {
     ? "exercise_completion"
     : "free_exercise_completion";
 
+  const isDuplicate = await createTransaction(
+    supabase, patientId, completionAmount, "earned", completionSource, sessionId
+  );
+
+  if (isDuplicate) return { alreadyAwarded: true, totalAwarded: 0 };
+
   const isPerfect = Number(score.score_percentage) === 100;
   const isFirstAttempt = isAssigned && session.attempt_number === 1;
 
@@ -137,9 +136,7 @@ export async function awardExerciseGems(sessionId: string, patientId: string) {
     : 0;
   const perfectSource: GemSource = isAssigned ? "perfect_score" : "free_perfect_score";
 
-  const pendingTransactions: Promise<void>[] = [
-    createTransaction(supabase, patientId, completionAmount, "earned", completionSource, sessionId),
-  ];
+  const pendingTransactions: Promise<boolean>[] = [];
   if (isPerfect) {
     pendingTransactions.push(
       createTransaction(supabase, patientId, perfectAmount, "bonus", perfectSource, sessionId)

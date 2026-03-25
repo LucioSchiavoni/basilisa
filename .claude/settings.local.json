@@ -52,10 +52,21 @@
       "Bash(ls -la \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/[id]/\")",
       "Bash(ls -la \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)/\")",
       "Bash(find \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)\" -type f -name \"*.tsx\" | head -20)",
-      "Bash(ls -la /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/ejercicios/\\\\\\(browse\\\\\\)/)"
+      "Bash(ls -la /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/ejercicios/\\\\\\(browse\\\\\\)/)",
+      "Bash(find C:/Users/lucio/Desktop/basilisa/app -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(find C:/Users/lucio/Desktop/basilisa/lib -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(find C:/Users/lucio/Desktop/basilisa/hooks -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(grep -n \"user.id\" /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/ejercicios/[id]/actions.ts)",
+      "Bash(find /c/Users/lucio/Desktop/basilisa/app/\\\\\\(protected\\\\\\)/admin/pacientes/[id] -type f -name \"*.tsx\")",
+      "Bash(find \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)\" -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.json\")",
+      "Bash(claude config:*)",
+      "Bash(claude --version)",
+      "Bash(/c/Users/lucio/AppData/Roaming/npm/claude config:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "supabase",
+    "stitch"
   ]
 }

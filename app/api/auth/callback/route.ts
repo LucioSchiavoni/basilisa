@@ -38,9 +38,11 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const next = requestUrl.searchParams.get("next");
+  const nextParam = requestUrl.searchParams.get("next");
+  const safeNext = nextParam && /^\/[a-zA-Z0-9\-_/]*$/.test(nextParam) ? nextParam : null;
   const gradeYearParam = requestUrl.searchParams.get("grade_year");
-  const gradeYear = gradeYearParam ? Number(gradeYearParam) : null;
+  const gradeYearNum = gradeYearParam ? Number(gradeYearParam) : null;
+  const gradeYear = gradeYearNum && Number.isInteger(gradeYearNum) && gradeYearNum >= 1 && gradeYearNum <= 6 ? gradeYearNum : null;
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -54,7 +56,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=no_user", requestUrl.origin));
   }
 
-  if (gradeYear && !isNaN(gradeYear)) {
+  if (gradeYear) {
     await supabase
       .from("profiles")
       .update({
@@ -74,9 +76,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=profile", requestUrl.origin));
   }
 
-  let redirectPath = next ?? "/ejercicios";
+  let redirectPath = safeNext ?? "/ejercicios";
 
-  if (!next) {
+  if (!safeNext) {
     if (profile.role !== "admin" && !profile.grade_year) {
       redirectPath = "/completar-grado";
     } else if (profile.role === "patient" && profile.needs_grade_review) {

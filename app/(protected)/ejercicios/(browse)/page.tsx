@@ -1,13 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Carousel from "@/components/mundos/carousel";
-import { FloatingParticles } from "@/components/home/floating-particles";
-import worldsLore from "@/json/historias-mundos.json";
-
-const loreByLevel = Object.fromEntries(
-  worldsLore.worlds.map((w) => [w.id, w.story])
-);
-
+import { WorldPath } from "@/components/mundos/world-path";
 
 export default async function EjerciciosPage() {
   const supabase = await createClient();
@@ -20,7 +13,7 @@ export default async function EjerciciosPage() {
   const [worldsResult, progressResult] = await Promise.all([
     adminClient
       .from("worlds")
-      .select("id, name, display_name, description, icon_url, difficulty_level, difficulty_label, therapeutic_description")
+      .select("id, name, display_name, difficulty_level")
       .eq("is_active", true)
       .order("sort_order"),
     adminClient.rpc("get_world_progress", { p_patient_id: user!.id }),
@@ -42,33 +35,19 @@ export default async function EjerciciosPage() {
       id: w.id,
       name: w.name,
       displayName: w.display_name,
-      description: w.description ?? "",
-      iconUrl: w.icon_url ?? "",
       difficultyLevel: w.difficulty_level ?? 1,
-      difficultyLabel: w.difficulty_label ?? "",
-      therapeuticDescription: w.therapeutic_description ?? "",
-      lore: loreByLevel[w.difficulty_level ?? 1] ?? "",
       totalExercises: wp?.total ?? 0,
       completedExercises: wp?.completed ?? 0,
     };
   });
 
-  return (
-    <>
-      <FloatingParticles />
-      <div className="relative overflow-hidden w-full h-full pb-8 md:pb-10 flex flex-col items-center gap-2 md:gap-6">
-        {worldsData.length > 0 ? (
-          <Carousel
-            slides={worldsData}
-            title="Exploración de mundos"
-            description="Cada mundo es una aventura distinta con ejercicios diseñados para ayudarte a leer y concentrarte mejor. Elegí el que más te guste y comenzá a explorar."
-          />
-        ) : (
-          <p className="text-muted-foreground text-center py-8">
-            No hay mundos disponibles todavía.
-          </p>
-        )}
-      </div>
-    </>
-  );
+  if (worldsData.length === 0) {
+    return (
+      <p className="text-muted-foreground text-center py-8">
+        No hay mundos disponibles todavía.
+      </p>
+    );
+  }
+
+  return <WorldPath worlds={worldsData} />;
 }

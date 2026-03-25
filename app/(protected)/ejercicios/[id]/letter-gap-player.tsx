@@ -710,7 +710,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
                         borderRight: `12px solid ${bubbleBg}`,
                       }}
                     />
-                    <p className="text-sm sm:text-base font-normal text-gray-900 dark:text-stone-100 leading-relaxed">
+                    <p className="text-sm sm:text-base font-normal text-gray-900 leading-relaxed">
                       {parts[0]}
                       <span
                         className={cn(
@@ -757,16 +757,18 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
 
 
           {activeSentence.hint && !isPending && showHint && (
-            <p className="text-sm text-muted-foreground text-center">
-              Pista: {activeSentence.hint}
-            </p>
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 px-4 py-2.5 text-center">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Pista: {activeSentence.hint}
+              </p>
+            </div>
           )}
 
           {activeSentence.hint && !isPending && !showHint && (
             <button
               type="button"
               onClick={() => setShowHint(true)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto block"
+              className="mx-auto flex w-fit items-center gap-1.5 rounded-full bg-muted hover:bg-muted/80 dark:bg-stone-700 dark:hover:bg-stone-600 px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Ver pista
             </button>

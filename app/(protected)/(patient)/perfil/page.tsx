@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { FloatingParticles } from "@/components/home/floating-particles";
 import { Pencil, Mail, Phone, Calendar, Flame, LogOut, KeyRound } from "lucide-react";
 import { GemIcon } from "@/components/gem-icon";
 import { logout } from "@/app/(auth)/actions";
@@ -65,8 +64,7 @@ export default async function PerfilPage() {
     : null;
 
   return (
-    <div className="relative space-y-6 max-w-xl mx-auto">
-      <FloatingParticles />
+    <div className="space-y-6 max-w-xl mx-auto">
 
       <div className="flex items-center justify-between">
         <div>

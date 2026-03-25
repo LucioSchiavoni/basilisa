@@ -3,6 +3,13 @@
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=pfwzmsebtugnphlclqhu&features=development"
+    },
+    "stitch": {
+      "command": "cmd",
+      "args": ["/c", "npx", "@_davideast/stitch-mcp", "proxy"],
+      "env": {
+        "STITCH_PROJECT_ID": "basilisa-486211"
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { type RefObject } from "react";
+import { type RefObject, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AudioPlayer } from "@/components/ui/audio-player";
@@ -49,6 +49,28 @@ export function PhaseQuestions({
   backHref,
   onOptionClick,
 }: Props) {
+  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
+
+  const questionImageUrls = useMemo(() => {
+    const urls: string[] = [];
+    if (activeQuestion?.question_image_url) urls.push(activeQuestion.question_image_url);
+    activeQuestion?.options.forEach((o) => { if (o.image_url) urls.push(o.image_url); });
+    return urls;
+  }, [activeQuestion]);
+
+  useEffect(() => {
+    if (questionImageUrls.length === 0) return;
+    questionImageUrls.forEach((url) => {
+      if (loadedUrls.has(url)) return;
+      const img = new window.Image();
+      img.onload = () => setLoadedUrls((prev) => new Set(prev).add(url));
+      img.src = url;
+      if (img.complete) setLoadedUrls((prev) => new Set(prev).add(url));
+    });
+  }, [questionImageUrls]);
+
+  const allImagesReady = questionImageUrls.every((url) => loadedUrls.has(url));
+
   return (
     <div className="min-h-screen flex flex-col">
       {worldBg}
@@ -172,54 +194,66 @@ export function PhaseQuestions({
             />
           )}
 
-          <div className="space-y-3">
-            {activeQuestion?.options.map((option, index) => {
-              const isSelected = selectedOptionId === option.id;
-
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => {
-                    if (isPending) return;
-                    onOptionClick(option.id);
-                  }}
+          {!allImagesReady ? (
+            <div className="space-y-3">
+              {activeQuestion?.options.map((_, index) => (
+                <div
+                  key={index}
+                  className="w-full h-[56px] rounded-2xl bg-muted animate-pulse"
                   style={{ animationDelay: `${index * 80}ms` }}
-                  className={cn(
-                    "w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 min-h-[56px] text-sm sm:text-base bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 font-normal",
-                    "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    !isSelected && !isPending && "border-gray-200 dark:border-stone-700 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:border-blue-500 dark:hover:bg-blue-950/30 active:scale-[0.98]",
-                    isSelected && "border-blue-500 bg-blue-50",
-                    isPending && "cursor-default"
-                  )}
-                >
-                  <div className={cn("flex items-center gap-3", option.image_url && "flex-row")}>
-                    <span
-                      className={cn(
-                        "flex shrink-0 items-center justify-center h-8 w-8 rounded-xl border-2 text-xs font-bold transition-colors",
-                        !isSelected && "border-gray-200 dark:border-stone-600 text-gray-400 dark:text-stone-500",
-                        isSelected && "border-blue-500 bg-blue-500 text-white",
-                      )}
-                    >
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    {option.image_url && (
-                      <Image
-                        src={option.image_url}
-                        alt={option.text}
-                        width={200}
-                        height={80}
-                        className="max-h-[80px] w-auto rounded-md object-contain"
-                      />
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeQuestion?.options.map((option, index) => {
+                const isSelected = selectedOptionId === option.id;
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => {
+                      if (isPending) return;
+                      onOptionClick(option.id);
+                    }}
+                    style={{ animationDelay: `${index * 80}ms` }}
+                    className={cn(
+                      "w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 min-h-[56px] text-sm sm:text-base bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 font-normal",
+                      "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      !isSelected && !isPending && "border-gray-200 dark:border-stone-700 hover:border-blue-300 hover:bg-blue-100 dark:hover:border-blue-500 dark:hover:bg-blue-900 active:scale-[0.98]",
+                      isSelected && "border-blue-500 bg-blue-50 dark:bg-blue-900/40",
+                      isPending && "cursor-default"
                     )}
-                    <span className="flex-1">{option.text}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  >
+                    <div className={cn("flex items-center gap-3", option.image_url && "flex-row")}>
+                      <span
+                        className={cn(
+                          "flex shrink-0 items-center justify-center h-8 w-8 rounded-xl border-2 text-xs font-bold transition-colors",
+                          !isSelected && "border-gray-200 dark:border-stone-600 text-gray-400 dark:text-stone-500",
+                          isSelected && "border-blue-500 bg-blue-500 text-white",
+                        )}
+                      >
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      {option.image_url && (
+                        <Image
+                          src={option.image_url}
+                          alt={option.text}
+                          width={200}
+                          height={80}
+                          className="max-h-[80px] w-auto rounded-md object-contain"
+                        />
+                      )}
+                      <span className="flex-1">{option.text}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
 

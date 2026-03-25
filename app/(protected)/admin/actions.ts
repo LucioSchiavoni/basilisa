@@ -11,6 +11,7 @@ import {
 import type { Json } from "@/types/database.types";
 import { getWorldByDifficulty } from "@/lib/worlds";
 
+
 const createUserSchema = z
   .object({
     email: z.string().email("Email inválido"),
@@ -121,9 +122,9 @@ export async function createUser(
       return { error: "Este email ya está registrado" };
     }
     if (authError.message.toLowerCase().includes("password")) {
-      return { error: `La contraseña no cumple los requisitos: ${authError.message}` };
+      return { error: "La contraseña no cumple los requisitos mínimos de seguridad" };
     }
-    return { error: `Error al crear el usuario: ${authError.message}` };
+    return { error: "Error al crear el usuario. Intentá de nuevo." };
   }
 
   if (authData.user) {
@@ -488,7 +489,7 @@ export async function createPatient(
     if (authError.message.includes("already registered")) {
       return { error: "Este nombre de usuario ya está en uso" };
     }
-    return { error: `Error al crear el paciente: ${authError.message}` };
+    return { error: "Error al crear el paciente. Intentá de nuevo." };
   }
 
   if (authData.user) {
@@ -515,7 +516,7 @@ export async function createPatient(
         });
 
       if (insertError) {
-        return { error: `Paciente creado pero hubo un error al configurar el perfil: ${insertError.message}` };
+        return { error: "Paciente creado pero hubo un error al configurar el perfil." };
       }
     }
   }

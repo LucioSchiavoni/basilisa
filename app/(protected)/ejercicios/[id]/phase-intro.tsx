@@ -58,8 +58,7 @@ export function PhaseIntro({
       <header className="p-4">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl"
-          style={{ color: "#0B1926", background: "white" }}
+          className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl bg-white/90 text-stone-800 backdrop-blur-sm border border-white/30"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver
@@ -118,7 +117,12 @@ export function PhaseIntro({
               </span>
             )}
           </div>
-          <Button size="lg" className="w-full max-w-xs text-base h-12" onClick={onStart}>
+          <Button
+            size="lg"
+            className="w-full max-w-xs text-base h-12 font-bold"
+            onClick={onStart}
+            style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: worldConfig.accentFg } : undefined}
+          >
             Comenzar
             <ChevronRight className="h-5 w-5 ml-1" />
           </Button>

@@ -38,32 +38,31 @@ export function PhaseReading({
   onDone,
 }: Props) {
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-stone-900 text-gray-900 dark:text-stone-100">
-      <header className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b p-4">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-10 bg-background border-b border-border p-4">
         <div className="max-w-prose mx-auto flex items-center justify-between">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl"
-            style={{ color: "#0B1926", background: "white" }}
+            className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl bg-muted text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
           </button>
           {isTimedReading ? (
             <div className="flex items-center gap-4">
-              <p className="text-sm font-medium text-gray-700 dark:text-stone-300">Lee a tu ritmo</p>
+              <p className="text-sm font-medium text-muted-foreground">Lee a tu ritmo</p>
               {showTimer && (
-                <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5">
-                  <Clock className="h-4 w-4 text-gray-700" />
-                  <span className="text-lg font-mono font-semibold tabular-nums text-gray-900">
+                <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-lg font-mono font-semibold tabular-nums text-foreground">
                     {formatTimer(timerSeconds)}
                   </span>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-sm font-medium text-gray-900 dark:text-stone-100">Lee el siguiente texto con atención</p>
+            <p className="text-sm font-medium text-foreground">Lee el siguiente texto con atención</p>
           )}
         </div>
       </header>
@@ -74,15 +73,15 @@ export function PhaseReading({
               <AudioPlayer src={readingAudioUrl} />
             </div>
           )}
-          <div className="space-y-5" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+          <div className="space-y-2" style={{ fontFamily: "'Lexend', sans-serif" }}>
             {readingText.split(/\n+/).filter((p) => p.trim()).map((paragraph, idx) => (
               <div key={idx} className="relative">
                 <p
                   onClick={() => onActiveParagraphChange(idx === activeParagraph ? null : idx)}
                   onTouchStart={() => onActiveParagraphChange(idx === activeParagraph ? null : idx)}
                   className={cn(
-                    "text-lg sm:text-xl leading-loose tracking-wide cursor-pointer px-1 py-1 transition-colors duration-200 select-none font-light",
-                    idx === activeParagraph ? "text-gray-900 dark:text-stone-100" : "text-gray-700 dark:text-stone-300"
+                    "text-base leading-relaxed tracking-normal cursor-pointer px-1 py-0.5 transition-colors duration-200 select-none font-light",
+                    idx === activeParagraph ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
                   {paragraph}
@@ -102,7 +101,7 @@ export function PhaseReading({
               size="lg"
               className="w-full text-base h-14"
               onClick={onDone}
-              style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: "#fff" } : undefined}
+              style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: worldConfig.accentFg } : undefined}
             >
               <CheckCircle2 className="h-5 w-5 mr-2" />
               Terminé de leer
@@ -112,7 +111,7 @@ export function PhaseReading({
               size="lg"
               className="w-full text-base h-12"
               onClick={onDone}
-              style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: "#fff" } : undefined}
+              style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: worldConfig.accentFg } : undefined}
             >
               Continuar a las preguntas
               <ChevronRight className="h-5 w-5 ml-1" />

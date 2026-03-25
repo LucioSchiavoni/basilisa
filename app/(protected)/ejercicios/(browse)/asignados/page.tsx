@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Play, CalendarClock, AlertCircle, BookOpen } from "lucide-react";
-import { FloatingParticles } from "@/components/home/floating-particles";
 
 const difficultyLabels: Record<number, string> = {
   1: "Muy fácil",
@@ -65,7 +64,6 @@ export default async function AsignadosPage() {
 
   return (
     <div className="relative space-y-5">
-      <FloatingParticles />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Mis ejercicios</h1>
         <p className="text-sm text-muted-foreground mt-0.5">

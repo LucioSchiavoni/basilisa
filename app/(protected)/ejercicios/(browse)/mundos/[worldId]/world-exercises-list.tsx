@@ -52,14 +52,19 @@ export function WorldExercisesList({
   }, [scheme.background]);
 
   const bgStyle = scheme.background.startsWith("/")
-    ? { backgroundImage: `url(${scheme.background})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
+    ? {
+        backgroundImage: `url(${scheme.background})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }
     : { background: scheme.background };
 
   if (exercises.length === 0) {
     const worldConfig = getWorldConfig(worldName);
     return (
       <>
-          <div
+        <div
           className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
           style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
         />

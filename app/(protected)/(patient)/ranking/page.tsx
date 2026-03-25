@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GemIcon } from "@/components/gem-icon";
-import { FloatingParticles } from "@/components/home/floating-particles";
 
 type RankEntry = {
   user_id: string;
@@ -57,8 +56,7 @@ export default async function RankingPage() {
   }
 
   return (
-    <div className="relative space-y-5">
-      <FloatingParticles />
+    <div className="space-y-5">
 
       <div>
         <h1 className="text-2xl font-bold text-foreground">Ranking</h1>
