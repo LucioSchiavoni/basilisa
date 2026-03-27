@@ -15,7 +15,7 @@ export function WorldBackButton({
   return (
     <button
       onClick={() => router.push("/ejercicios")}
-      className="relative z-50 inline-flex items-center gap-1.5 text-sm font-semibold mb-6 px-3 py-1.5 rounded-xl"
+      className="relative z-50 inline-flex items-center gap-1.5 text-sm font-semibold mb-6 px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-150 hover:brightness-90 active:scale-95"
       style={{ color: "#0B1926", background: "white" }}
     >
       <ArrowLeft className="h-4 w-4" />

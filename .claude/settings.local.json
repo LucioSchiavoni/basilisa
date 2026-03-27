@@ -61,7 +61,8 @@
       "Bash(find \"/c/Users/lucio/Desktop/basilisa/app/\\(protected\\)/ejercicios/\\(browse\\)\" -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.json\")",
       "Bash(claude config:*)",
       "Bash(claude --version)",
-      "Bash(/c/Users/lucio/AppData/Roaming/npm/claude config:*)"
+      "Bash(/c/Users/lucio/AppData/Roaming/npm/claude config:*)",
+      "Bash(find /c/Users/lucio/Desktop/basilisa/public -type f \\\\\\(-name *mundo* -o -name *icono* -o -name *bg* \\\\\\))"
     ]
   },
   "enableAllProjectMcpServers": true,

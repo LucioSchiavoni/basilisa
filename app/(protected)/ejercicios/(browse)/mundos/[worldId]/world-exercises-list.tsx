@@ -115,6 +115,10 @@ export function WorldExercisesList({
         className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
         style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
       />
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: -5, background: "rgba(0,0,0,0.52)" }}
+      />
       <WorldCanvas worldName={worldName} isActive={true} canStart={particlesReady} />
 
       {totalExercises > 0 && (
@@ -177,8 +181,8 @@ export function WorldExercisesList({
                 background: isCompleted ? "rgba(240,253,244,1)" : "rgba(255,250,235,1)",
                 borderColor: isCompleted ? "rgba(16,185,129,0.5)" : `${scheme.particles}88`,
                 boxShadow: isCompleted
-                  ? "0 2px 8px rgba(16,185,129,0.18)"
-                  : `0 4px 20px ${scheme.particles}33, 0 2px 6px rgba(0,0,0,0.12)`,
+                  ? "0 4px 16px rgba(16,185,129,0.30), 0 2px 6px rgba(0,0,0,0.25)"
+                  : `0 6px 24px ${scheme.particles}50, 0 3px 10px rgba(0,0,0,0.30)`,
               }}
             >
               <div className="flex items-center gap-3 px-3 py-3">

@@ -1,8 +1,5 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { AnimatePresence, motion } from "framer-motion"
 import { LevelNode } from "./level-node"
 
 type WorldData = {
@@ -23,79 +20,128 @@ const WORLD_IMAGES: Record<string, string> = {
   cielo:    "/bg/cielo-bg.jpeg",
 }
 
-const ZIG_ZAG = [55, 35, 25, 45, 60, 50]
+const WORLD_ACCENT_COLORS: Record<string, string> = {
+  medieval: "#f5c842",
+  agua:     "#22d3ee",
+  bosque:   "#4ade80",
+  hielo:    "#a5f3fc",
+  fuego:    "#ef4444",
+  cielo:    "#7dd3fc",
+}
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+  1: "Principiante",
+  2: "Fácil",
+  3: "Intermedio",
+  4: "Avanzado",
+  5: "Difícil",
+  6: "Experto",
+}
+
+const ZIG_ZAG_MOBILE = [62, 34, 65, 32, 62, 36]
+const ZIG_ZAG = [74, 16, 78, 12, 74, 18]
+
+function buildRoadPath(pts: [number, number][], curve = 8): string {
+  if (pts.length < 2) return ""
+  let d = `M ${pts[0][0]} ${pts[0][1]}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, y1] = pts[i]
+    const [x2, y2] = pts[i + 1]
+    d += ` C ${x1} ${y1 + curve}, ${x2} ${y2 - curve}, ${x2} ${y2}`
+  }
+  return d
+}
+
+const PATH_LAYERS = (d: string) => (
+  <>
+    <path d={d} fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d={d} fill="none" stroke="#c8a96e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d={d} fill="none" stroke="rgba(255,245,220,0.45)" strokeWidth="0.7" strokeLinecap="round" strokeLinejoin="round" />
+  </>
+)
+
+const MOBILE_SLOT = 168
+const MOBILE_TOP = 52
 
 export function WorldPath({ worlds }: { worlds: WorldData[] }) {
-  const firstActiveIndex = worlds.findIndex(
-    (w) => w.totalExercises > 0 && w.completedExercises < w.totalExercises
-  )
-  const activeIndex = firstActiveIndex >= 0 ? firstActiveIndex : 0
-  const [selectedId, setSelectedId] = useState<string | null>(worlds[0]?.id ?? null)
+  const n = worlds.length
+
+  const mobileContainerH = MOBILE_TOP + n * MOBILE_SLOT
+  const mobilePoints: [number, number][] = worlds.map((_, i) => [
+    ZIG_ZAG_MOBILE[i] ?? 50,
+    ((MOBILE_TOP + i * MOBILE_SLOT + MOBILE_SLOT / 2) / mobileContainerH) * 100,
+  ])
+
+  const desktopPoints: [number, number][] = worlds.map((_, i) => [
+    ZIG_ZAG[i] ?? 50,
+    n === 1 ? 50 : 8 + (i / (n - 1)) * 84,
+  ])
+
+  const mobilePath = buildRoadPath(mobilePoints, 7)
+  const desktopPath = buildRoadPath(desktopPoints, 9)
+
+  const renderNodes = (points: [number, number][], mobile = false) =>
+    worlds.map((world, index) => {
+      const image = WORLD_IMAGES[world.name]
+      const accentColor = WORLD_ACCENT_COLORS[world.name] ?? "#22d3ee"
+      const difficultyLabel = DIFFICULTY_LABELS[world.difficultyLevel] ?? "Nivel " + world.difficultyLevel
+      const [xPos, yPos] = points[index]
+      const nameSide = mobile ? (xPos >= 50 ? "left" : "right") as "left" | "right" : undefined
+      return (
+        <div
+          key={world.id}
+          style={{
+            position: "absolute",
+            left: `${xPos}%`,
+            top: `${yPos}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <LevelNode
+            name={world.displayName}
+            imageUrl={image ?? ""}
+            href={`/ejercicios/mundos/${world.id}`}
+            completedExercises={world.completedExercises}
+            totalExercises={world.totalExercises}
+            accentColor={accentColor}
+            difficultyLabel={difficultyLabel}
+            nameSide={nameSide}
+          />
+        </div>
+      )
+    })
 
   return (
-    <div className="relative flex flex-col items-center w-full max-w-md mx-auto py-8 px-4">
-      <div className="relative w-full flex flex-col gap-6">
-        {worlds.map((world, index) => {
-          const image = WORLD_IMAGES[world.name]
-          const isActive = index === activeIndex
-          const position = ZIG_ZAG[index] ?? 50
-          const isSelected = selectedId === world.id
-
-          return (
-            <div key={world.id} className="relative w-full flex">
-              <div
-                className="relative flex flex-col items-center"
-                style={{ marginLeft: `${position}%`, transform: "translateX(-50%)" }}
-              >
-                <AnimatePresence>
-                  {isSelected && (
-                    <motion.div
-                      key="bubble"
-                      initial={{ opacity: 0, scale: 0.5, y: 16 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.5, y: 16 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 420,
-                        damping: 10,
-                        mass: 0.5,
-                      }}
-                      className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10"
-                      style={{ filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.18))" }}
-                    >
-                      <Link href={`/ejercicios/mundos/${world.id}`}>
-                        <div className="relative bg-card text-cyan-500 border-2 border-cyan-400 font-semibold text-sm px-4 py-2 rounded-2xl whitespace-nowrap cursor-pointer select-none">
-                          Comenzar
-                          <span
-                            className="absolute top-full left-[44%] -translate-x-1/2 w-0 h-0 border-l-[9px] border-l-transparent border-r-[9px] border-r-transparent border-t-[10px] border-t-cyan-400"
-                          />
-                          <span
-                            className="absolute left-[44%] -translate-x-1/2 w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[8px]"
-                            style={{ top: "calc(100% - 2px)", borderTopColor: "hsl(var(--card))" }}
-                          />
-                        </div>
-                      </Link>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <LevelNode
-                  name={world.displayName}
-                  imageUrl={image ?? ""}
-                  href={`/ejercicios/mundos/${world.id}`}
-                  isActive={isActive}
-                  onClick={(e) => {
-                    if (!isSelected) {
-                      e.preventDefault()
-                      setSelectedId(world.id)
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          )
-        })}
+    <>
+      {/* Mobile: vertical scrollable */}
+      <div
+        className="relative w-full lg:hidden"
+        style={{ height: mobileContainerH }}
+      >
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {PATH_LAYERS(mobilePath)}
+        </svg>
+        {renderNodes(mobilePoints, true /* mobile */)}
       </div>
-    </div>
+
+      {/* Desktop: all worlds in viewport */}
+      <div
+        className="relative w-full hidden lg:block"
+        style={{ height: "calc(100dvh - 220px)", minHeight: 520 }}
+      >
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {PATH_LAYERS(desktopPath)}
+        </svg>
+        {renderNodes(desktopPoints, false)}
+      </div>
+    </>
   )
 }
