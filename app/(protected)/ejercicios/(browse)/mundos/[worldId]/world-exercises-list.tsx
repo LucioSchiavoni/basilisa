@@ -90,21 +90,24 @@ export function WorldExercisesList({
     <>
       <div className="px-4">
         <div
-          className="max-w-md mx-auto rounded-2xl p-3 flex items-center gap-3"
+          className="max-w-md mx-auto rounded-2xl p-3 flex items-center relative overflow-visible"
           style={{
+            paddingLeft: worldConfig?.characterImage ? "9rem" : "0.75rem",
             background: `linear-gradient(135deg, color-mix(in srgb, ${scheme.particles} 38%, #000000) 0%, color-mix(in srgb, ${scheme.particles} 18%, #000000) 100%)`,
             border: `1px solid ${scheme.particles}55`,
             boxShadow: `0 4px 20px rgba(0,0,0,0.35), 0 0 20px ${scheme.particles}18`,
           }}
         >
           {worldConfig?.characterImage && (
-            <Image
-              src={worldConfig.characterImage}
-              alt={`Personaje de ${displayName}`}
-              width={160}
-              height={160}
-              className="shrink-0 -my-3 w-28 h-28 sm:w-32 sm:h-32 object-contain drop-shadow-2xl"
-            />
+            <div className="absolute left-0 top-0 bottom-0 flex items-center justify-center" style={{ width: "9rem" }}>
+              <Image
+                src={worldConfig.characterImage}
+                alt={`Personaje de ${displayName}`}
+                width={192}
+                height={192}
+                className="w-48 h-48 sm:w-52 sm:h-52 object-contain drop-shadow-2xl"
+              />
+            </div>
           )}
 
           <div className="flex-1 min-w-0">
