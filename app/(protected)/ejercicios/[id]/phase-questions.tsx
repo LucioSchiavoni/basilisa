@@ -17,7 +17,6 @@ import type { WorldConfig } from "@/lib/worlds";
 import type { Question } from "./exercise-player";
 
 type Props = {
-  worldBg: React.ReactNode;
   worldConfig: WorldConfig | null;
   audioContainerRef: RefObject<HTMLDivElement | null>;
   activeQuestion: Question | null;
@@ -34,7 +33,6 @@ type Props = {
 };
 
 export function PhaseQuestions({
-  worldBg,
   worldConfig,
   audioContainerRef,
   activeQuestion,
@@ -72,8 +70,7 @@ export function PhaseQuestions({
   const allImagesReady = questionImageUrls.every((url) => loadedUrls.has(url));
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {worldBg}
+    <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
         <div className="max-w-lg mx-auto p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -97,15 +94,25 @@ export function PhaseQuestions({
                       Ver texto
                     </button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
-                    <SheetHeader>
-                      <SheetTitle>Texto de lectura</SheetTitle>
+                  <SheetContent
+                    side="right"
+                    className="w-full sm:max-w-md flex flex-col p-0"
+                    style={{ background: "#ffffff", color: "#1a1a1a" }}
+                  >
+                    <SheetHeader className="flex-shrink-0 px-6 py-4 border-b border-neutral-100">
+                      <SheetTitle style={{ color: "#1a1a1a" }}>Texto de lectura</SheetTitle>
                     </SheetHeader>
-                    <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-4">
-                      <div className="bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 rounded-2xl p-6 shadow-lg">
-                        <p className="text-lg leading-loose tracking-wide font-light whitespace-pre-wrap">
-                          {readingText}
-                        </p>
+                    <div className="flex-1 overflow-y-auto min-h-0 px-6 py-6 sm:px-10 sm:py-8">
+                      <div className="max-w-[540px] mx-auto space-y-4">
+                        {readingText.split(/\n+/).filter((p) => p.trim()).map((paragraph, idx) => (
+                          <p
+                            key={idx}
+                            className="text-[19px] sm:text-[22px] leading-[1.85] tracking-[0.01em]"
+                            style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300, color: "#374151" }}
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
                       </div>
                     </div>
                   </SheetContent>
@@ -135,29 +142,25 @@ export function PhaseQuestions({
         </div>
       </header>
 
-      <main className="flex-1 p-4 sm:p-6">
+      <main className="flex-1 p-2 sm:p-4">
         <div ref={audioContainerRef} className="max-w-lg mx-auto space-y-5">
           {worldConfig ? (
-            <div className="flex items-start gap-3">
-              <div
+            <div className="flex items-center gap-2">
+              <Image
                 key={`char-${activeIndex}`}
-                className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 animate-in slide-in-from-left-6 fade-in duration-500"
-              >
-                <Image
-                  src={worldConfig.characterImage}
-                  alt="personaje"
-                  fill
-                  className="object-contain drop-shadow-xl"
-                  sizes="(min-width: 640px) 96px, 80px"
-                />
-              </div>
+                src={worldConfig.characterImage}
+                alt="personaje"
+                width={208}
+                height={208}
+                className="shrink-0 w-44 h-44 sm:w-52 sm:h-52 object-contain drop-shadow-xl animate-in slide-in-from-left-6 fade-in duration-500"
+              />
               <div
                 key={activeIndex}
                 className="relative flex-1 rounded-2xl rounded-bl-sm p-4 sm:p-5 animate-in fade-in slide-in-from-left-4 duration-500 bg-white dark:bg-stone-800"
                 style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.18)" }}
               >
                 <div
-                  className="absolute -left-2 bottom-4 w-0 h-0 border-t-[8px] border-b-[8px] border-r-[10px] border-t-transparent border-b-transparent border-r-white dark:border-r-stone-800"
+                  className="absolute -left-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[8px] border-b-[8px] border-r-[10px] border-t-transparent border-b-transparent border-r-white dark:border-r-stone-800"
                 />
                 <p className="text-sm sm:text-base font-normal text-gray-900 dark:text-stone-100 leading-snug">
                   {activeQuestion?.text}

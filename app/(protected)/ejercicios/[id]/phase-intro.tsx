@@ -31,7 +31,6 @@ type Props = {
     difficultyLevel: number;
     content: Record<string, unknown>;
   };
-  worldBg: React.ReactNode;
   worldConfig: WorldConfig | null;
   isReadingComprehension: boolean;
   isTimedReading: boolean;
@@ -43,7 +42,6 @@ type Props = {
 
 export function PhaseIntro({
   exercise,
-  worldBg,
   worldConfig,
   isReadingComprehension,
   isTimedReading,
@@ -53,41 +51,37 @@ export function PhaseIntro({
   onStart,
 }: Props) {
   return (
-    <div className="min-h-screen flex flex-col">
-      {worldBg}
+    <div className="min-h-screen flex flex-col bg-background">
       <header className="p-4">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl bg-white/90 text-stone-800 backdrop-blur-sm border border-white/30"
+          className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver
         </Link>
       </header>
       <main className="flex-1 flex items-center justify-center px-6 pb-6 pt-0">
-        <div className="w-full max-w-lg text-center space-y-4">
+        <div className="w-full max-w-lg text-center space-y-1">
           {worldConfig && (
-            <div className="flex justify-center -mt-8 -mb-1">
+            <div className="flex justify-center">
               <Image
                 src={worldConfig.characterImage}
                 alt=""
-                width={240}
-                height={240}
-                className="w-[190px] h-[190px] sm:w-[230px] sm:h-[230px] object-contain animate-fade-in-up drop-shadow-2xl"
+                width={320}
+                height={320}
+                className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] object-contain animate-fade-in-up drop-shadow-2xl"
               />
             </div>
           )}
           <div className="space-y-3">
-            <span
-              className="inline-block text-xs font-medium px-2.5 py-1 rounded-full border"
-              style={{ color: "rgba(255,255,255,0.85)", borderColor: "rgba(255,255,255,0.30)" }}
-            >
+            <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full border border-border text-muted-foreground">
               {exercise.typeDisplayName}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: "white" }}>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
               {exercise.title}
             </h1>
-            <p className="font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
+            <p className="font-semibold text-foreground/80">
               {exercise.instructions}
             </p>
             {exercise.instructionsAudioUrl && (
@@ -96,7 +90,7 @@ export function PhaseIntro({
               </div>
             )}
           </div>
-          <div className="flex flex-wrap justify-center gap-4 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+          <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <BarChart3 className="h-4 w-4" />
               {difficultyLabels[exercise.difficultyLevel]}
@@ -119,7 +113,7 @@ export function PhaseIntro({
           </div>
           <Button
             size="lg"
-            className="w-full max-w-xs text-base h-12 font-bold"
+            className="w-full max-w-xs text-base h-12 font-bold cursor-pointer"
             onClick={onStart}
             style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: worldConfig.accentFg } : undefined}
           >

@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WorldPath } from "@/components/mundos/world-path";
-import { PatientProfileCard } from "@/components/mundos/patient-profile-card";
-
 export default async function EjerciciosPage() {
   const supabase = await createClient();
   const {
@@ -11,14 +9,13 @@ export default async function EjerciciosPage() {
 
   const adminClient = createAdminClient();
 
-  const [worldsResult, progressResult, profileResult] = await Promise.all([
+  const [worldsResult, progressResult] = await Promise.all([
     adminClient
       .from("worlds")
       .select("id, name, display_name, difficulty_level")
       .eq("is_active", true)
       .order("sort_order"),
     adminClient.rpc("get_world_progress", { p_patient_id: user!.id }),
-    supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
   ]);
 
   const worlds = worldsResult.data ?? [];
@@ -51,22 +48,5 @@ export default async function EjerciciosPage() {
     );
   }
 
-  const totalCompleted = worldsData.reduce((sum, w) => sum + w.completedExercises, 0);
-  const totalExercises = worldsData.reduce((sum, w) => sum + w.totalExercises, 0);
-
-  return (
-    <div className="flex items-start gap-8">
-      <div className="flex-1 min-w-0">
-        <WorldPath worlds={worldsData} />
-      </div>
-      <aside className="hidden lg:block w-56 shrink-0" style={{ paddingTop: 180 }}>
-        <PatientProfileCard
-          fullName={profileResult.data?.full_name ?? null}
-          email={user!.email!}
-          totalCompleted={totalCompleted}
-          totalExercises={totalExercises}
-        />
-      </aside>
-    </div>
-  );
+  return <WorldPath worlds={worldsData} />;
 }

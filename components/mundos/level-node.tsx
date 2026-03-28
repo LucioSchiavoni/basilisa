@@ -22,6 +22,8 @@ interface LevelNodeProps {
   difficultyLabel?: string
   nameAbove?: boolean
   nameSide?: "left" | "right"
+  hideName?: boolean
+  bgColor?: string
 }
 
 export function LevelNode({
@@ -34,6 +36,8 @@ export function LevelNode({
   difficultyLabel,
   nameAbove = false,
   nameSide,
+  hideName = false,
+  bgColor = "transparent",
 }: LevelNodeProps) {
   const progress = totalExercises > 0 ? completedExercises / totalExercises : 0
   const dashOffset = CIRC * (1 - progress)
@@ -43,7 +47,7 @@ export function LevelNode({
       href={href}
       className={`group relative transition-transform duration-200 ease-out hover:scale-110 active:scale-95 ${nameSide ? "flex flex-row items-center gap-3" : "flex flex-col items-center"}`}
     >
-      {nameAbove && !nameSide && (
+      {!hideName && nameAbove && !nameSide && (
         <p
           className="mb-2 font-bold text-center leading-tight text-foreground"
           style={{ fontSize: 18, width: 160, fontFamily: "var(--font-lexend)" }}
@@ -51,7 +55,7 @@ export function LevelNode({
           {name}
         </p>
       )}
-      {nameSide === "left" && (
+      {!hideName && nameSide === "left" && (
         <p
           className="font-bold leading-tight text-foreground text-right"
           style={{ fontSize: 15, width: 100, fontFamily: "var(--font-lexend)" }}
@@ -114,6 +118,7 @@ export function LevelNode({
               height: IMG,
               borderRadius: "50%",
               overflow: "hidden",
+              background: bgColor,
             }}
           >
             <Image src={imageUrl} alt={name} fill className="object-cover" />
@@ -143,7 +148,7 @@ export function LevelNode({
         )}
       </div>
 
-      {nameSide === "right" && (
+      {!hideName && nameSide === "right" && (
         <p
           className="font-bold leading-tight text-foreground text-left"
           style={{ fontSize: 15, width: 100, fontFamily: "var(--font-lexend)" }}
@@ -151,7 +156,7 @@ export function LevelNode({
           {name}
         </p>
       )}
-      {!nameAbove && !nameSide && (
+      {!hideName && !nameAbove && !nameSide && (
         <p
           className="mt-3 font-bold text-center leading-tight text-foreground"
           style={{ fontSize: 18, width: 160, fontFamily: "var(--font-lexend)" }}

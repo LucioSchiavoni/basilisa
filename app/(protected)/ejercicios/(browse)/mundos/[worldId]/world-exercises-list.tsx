@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { CheckCircle2, PlayCircle } from "lucide-react";
 import { getScheme } from "../world-color-schemes";
-import { WorldCanvas } from "../world-canvas";
 import { getWorldConfig } from "@/lib/worlds";
 
 type ExerciseItem = {
@@ -33,45 +31,14 @@ export function WorldExercisesList({
 }) {
   const scheme = getScheme(worldName);
   const completedSet = new Set(completedExerciseIds);
-  const [bgReady, setBgReady] = useState(false);
-  const [particlesReady, setParticlesReady] = useState(false);
-
-  useEffect(() => {
-    const onBgLoaded = () => {
-      setBgReady(true);
-      setTimeout(() => setParticlesReady(true), 350);
-    };
-    if (!scheme.background.startsWith("/")) {
-      onBgLoaded();
-      return;
-    }
-    const img = new window.Image();
-    img.onload = onBgLoaded;
-    img.onerror = onBgLoaded;
-    img.src = scheme.background;
-  }, [scheme.background]);
-
-  const bgStyle = scheme.background.startsWith("/")
-    ? {
-        backgroundImage: `url(${scheme.background})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }
-    : { background: scheme.background };
+  const worldConfig = getWorldConfig(worldName);
 
   if (exercises.length === 0) {
-    const worldConfig = getWorldConfig(worldName);
     return (
       <>
-        <div
-          className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
-          style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
-        />
-        <WorldCanvas worldName={worldName} isActive={true} canStart={particlesReady} />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-6">
           {worldConfig?.characterImage && (
-            <div className="relative w-40 h-40">
+            <div className="relative w-80 h-80">
               <Image
                 src={worldConfig.characterImage}
                 alt="Personaje del mundo"
@@ -111,61 +78,52 @@ export function WorldExercisesList({
 
   return (
     <>
-      <div
-        className="fixed inset-0 -z-10 pointer-events-none transition-opacity duration-700"
-        style={{ ...bgStyle, opacity: bgReady ? 1 : 0 }}
-      />
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{ zIndex: -5, background: "rgba(0,0,0,0.52)" }}
-      />
-      <WorldCanvas worldName={worldName} isActive={true} canStart={particlesReady} />
-
       {totalExercises > 0 && (
-        <div
-          className="mb-4 rounded-xl px-3 py-2 flex flex-col gap-1.5"
-          style={{
-            background: "rgba(0,0,0,0.25)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <span
-              className="text-xs font-semibold text-white/80"
-              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
-            >
-              Progreso
-            </span>
-            <span
-              className="text-xs font-bold tabular-nums"
-              style={{ color: scheme.particles, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}
-            >
-              {completedExercises} / {totalExercises}
-            </span>
-          </div>
-          <div
-            className="relative w-full rounded-full overflow-hidden"
-            style={{ height: "7px", background: "rgba(255,255,255,0.10)" }}
-          >
-            <div
-              className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-              style={{
-                width: `${progressPct}%`,
-                background: `linear-gradient(90deg, ${scheme.particles}cc, ${scheme.particles})`,
-                boxShadow: `0 0 8px ${scheme.particles}80`,
-              }}
+        <div className="mb-4 flex items-center gap-2">
+          {worldConfig?.characterImage && (
+            <Image
+              src={worldConfig.characterImage}
+              alt="Personaje del mundo"
+              width={192}
+              height={192}
+              className="shrink-0 w-48 h-48 object-contain drop-shadow-xl"
             />
-          </div>
-          {completedExercises === totalExercises && totalExercises > 0 && (
-            <p
-              className="text-xs font-bold text-center"
-              style={{ color: scheme.particles, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
-            >
-              ¡Mundo completado!
-            </p>
           )}
+          <div
+            className="rounded-xl px-3 py-1.5 flex flex-col gap-1"
+            style={{
+              width: "220px",
+              background: "rgba(0,0,0,0.25)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-white/60">Progreso</span>
+              <span className="text-[10px] font-bold tabular-nums" style={{ color: scheme.particles }}>
+                {completedExercises}/{totalExercises}
+              </span>
+            </div>
+            <div
+              className="relative w-full rounded-full overflow-hidden"
+              style={{ height: "5px", background: "rgba(255,255,255,0.10)" }}
+            >
+              <div
+                className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${progressPct}%`,
+                  background: `linear-gradient(90deg, ${scheme.particles}cc, ${scheme.particles})`,
+                  boxShadow: `0 0 6px ${scheme.particles}80`,
+                }}
+              />
+            </div>
+            {completedExercises === totalExercises && (
+              <p className="text-[10px] font-bold text-center" style={{ color: scheme.particles }}>
+                ¡Completado!
+              </p>
+            )}
+          </div>
         </div>
       )}
 

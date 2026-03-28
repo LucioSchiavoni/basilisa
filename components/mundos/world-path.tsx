@@ -12,12 +12,21 @@ type WorldData = {
 }
 
 const WORLD_IMAGES: Record<string, string> = {
-  medieval: "/icons/Mundo-medieval-Icono.png",
-  agua:     "/icons/oceano-icono.png",
-  bosque:   "/icons/bosque-encantado-icono.png",
-  hielo:    "/bg/hielo-bg.jpeg",
-  fuego:    "/bg/fuego-bg.jpeg",
-  cielo:    "/bg/cielo-bg.jpeg",
+  medieval: "/mundos/medieval.png",
+  agua:     "/mundos/oceano.png",
+  bosque:   "/mundos/bosque.png",
+  hielo:    "/mundos/hielo.png",
+  fuego:    "/mundos/fuego.png",
+  cielo:    "/mundos/cielo.png",
+}
+
+const WORLD_BG_COLORS: Record<string, string> = {
+  medieval: "#b85c00",
+  agua:     "#0b3566",
+  bosque:   "#103d1a",
+  hielo:    "#b8ddf0",
+  fuego:    "#7a1e00",
+  cielo:    "#4a3a8c",
 }
 
 const WORLD_ACCENT_COLORS: Record<string, string> = {
@@ -84,9 +93,9 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
     worlds.map((world, index) => {
       const image = WORLD_IMAGES[world.name]
       const accentColor = WORLD_ACCENT_COLORS[world.name] ?? "#22d3ee"
+      const bgColor = WORLD_BG_COLORS[world.name] ?? "transparent"
       const difficultyLabel = DIFFICULTY_LABELS[world.difficultyLevel] ?? "Nivel " + world.difficultyLevel
       const [xPos, yPos] = points[index]
-      const nameSide = mobile ? (xPos >= 50 ? "left" : "right") as "left" | "right" : undefined
       return (
         <div
           key={world.id}
@@ -105,7 +114,8 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
             totalExercises={world.totalExercises}
             accentColor={accentColor}
             difficultyLabel={difficultyLabel}
-            nameSide={nameSide}
+            bgColor={bgColor}
+            hideName
           />
         </div>
       )

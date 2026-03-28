@@ -30,7 +30,7 @@ export function GemBadge({ totalGems, size, textClass }: { totalGems: number; si
         sideOffset={8}
       >
         <div className="flex items-center gap-2 mb-3">
-          <GemIcon size={36} />
+          <GemIcon size={72} />
           <div>
             <p className="text-xs text-muted-foreground">Tienes</p>
             <p className="text-lg font-semibold leading-tight font-[family-name:var(--font-fredoka)]">

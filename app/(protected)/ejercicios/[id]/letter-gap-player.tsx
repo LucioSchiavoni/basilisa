@@ -24,6 +24,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { completeLetterGap } from "./actions"
+import { PhaseReading } from "./phase-reading"
 import type { LetterGapAnswerResult } from "./actions"
 import { AnswersChart, type AnswersChartItem } from "./answers-chart"
 import { ScorePie } from "./score-pie"
@@ -445,71 +446,22 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
 
   if (phase === "reading") {
     return (
-      <div className="min-h-screen flex flex-col bg-white dark:bg-stone-900 text-gray-900 dark:text-stone-100">
-        <header className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b p-4">
-          <div className="max-w-prose mx-auto flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setPhase("intro")}
-              className="inline-flex items-center gap-1 text-sm font-medium transition-colors"
-              style={{ color: "#0B1926" }}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver
-            </button>
-            <p className="text-sm font-medium text-gray-900 dark:text-stone-100">
-              Lee el siguiente texto con atención
-            </p>
-          </div>
-        </header>
-
-        <main className="flex-1 p-4 sm:p-6">
-          <div className="max-w-prose mx-auto space-y-4">
-            {readingAudioUrl && (
-              <AudioPlayer src={readingAudioUrl} />
-            )}
-            <div
-              className="space-y-5"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-            >
-              {(readingText ?? "").split(/\n+/).filter(Boolean).map((paragraph, idx) => (
-                <div key={idx} className="relative">
-                  <p
-                    onClick={() => setActiveParagraph(idx === activeParagraph ? null : idx)}
-                    onTouchStart={() => setActiveParagraph(idx === activeParagraph ? null : idx)}
-                    className={cn(
-                      "text-lg sm:text-xl leading-loose tracking-wide cursor-pointer px-1 py-1 transition-colors duration-200 select-none font-light",
-                      idx === activeParagraph ? "text-gray-900 dark:text-stone-100" : "text-gray-700 dark:text-stone-300"
-                    )}
-                  >
-                    {paragraph}
-                  </p>
-                  {idx === activeParagraph && (
-                    <div className="h-[3px] rounded-full bg-amber-400 animate-underline-slide" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-
-        <footer className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4">
-          <div className="max-w-lg mx-auto">
-            <Button
-              size="lg"
-              className="w-full text-base h-12"
-              onClick={() => {
-                readingTimeRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
-                questionStartRef.current = Date.now();
-                setPhase("playing");
-              }}
-            >
-              Continuar a las frases
-              <ChevronRight className="h-5 w-5 ml-1" />
-            </Button>
-          </div>
-        </footer>
-      </div>
+      <PhaseReading
+        readingText={readingText ?? ""}
+        readingAudioUrl={readingAudioUrl}
+        isTimedReading={false}
+        showTimer={false}
+        timerSeconds={0}
+        worldConfig={worldConfig}
+        activeParagraph={activeParagraph}
+        onActiveParagraphChange={setActiveParagraph}
+        onBack={() => setPhase("intro")}
+        onDone={() => {
+          readingTimeRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
+          questionStartRef.current = Date.now();
+          setPhase("playing");
+        }}
+      />
     )
   }
 

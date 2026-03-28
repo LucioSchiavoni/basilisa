@@ -5,7 +5,6 @@ import { completeExercise, completeTimedReading, getPreviousAttempts } from "./a
 import { calculateMaxReadingTime, getExerciseWordCount, EXPECTED_READING_SPEEDS } from "@/lib/constants/reading-speeds";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
-import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes";
 import { getWorldConfig } from "@/lib/worlds";
 import { PhaseIntro } from "./phase-intro";
 import { PhaseReading } from "./phase-reading";
@@ -125,26 +124,11 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
   const expectedPPM = EXPECTED_READING_SPEEDS[grade][exerciseReadingType === "text" ? "textPPM" : "wordListPPM"];
   const readingWordCount = exerciseWordCount ?? wordCount ?? 0;
 
-  const worldScheme = worldName ? getScheme(worldName) : null;
   const worldConfig = worldName ? getWorldConfig(worldName) : null;
 
   const currentQuestion = questions[currentIndex];
   const isLastQuestion = currentIndex === questions.length - 1;
   const progress = questions.length > 0 ? (currentIndex / questions.length) * 100 : 0;
-
-  const worldBg = worldScheme ? (
-    <>
-      <div
-        className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          background: worldScheme.background.startsWith("/")
-            ? `url(${worldScheme.background}) center/cover no-repeat`
-            : worldScheme.background,
-        }}
-      />
-      <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
-    </>
-  ) : null;
 
   const handleStart = useCallback(() => {
     startedAtRef.current = Date.now();
@@ -266,7 +250,6 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     return (
       <PhaseIntro
         exercise={exercise}
-        worldBg={worldBg}
         worldConfig={worldConfig}
         isReadingComprehension={isReadingComprehension}
         isTimedReading={isTimedReading}
@@ -328,7 +311,6 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
 
   return (
     <PhaseQuestions
-      worldBg={worldBg}
       worldConfig={worldConfig}
       audioContainerRef={audioContainerRef}
       activeQuestion={currentQuestion}

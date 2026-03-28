@@ -87,7 +87,7 @@ export default async function RankingPage() {
             </p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <GemIcon size={22} />
+            <GemIcon size={36} />
             <span className="font-bold text-base text-[#579F93]">
               {myEntry.total_gems.toLocaleString("es-AR")}
             </span>
@@ -157,7 +157,7 @@ export default async function RankingPage() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                  <GemIcon size={22} />
+                  <GemIcon size={36} />
                   <span
                     className="font-bold text-base"
                     style={{ color: medalColor ?? (isMe ? "#579F93" : undefined) }}

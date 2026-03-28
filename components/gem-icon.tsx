@@ -1,12 +1,9 @@
-"use client";
+import Image from "next/image";
 
-import Lottie from "lottie-react";
-import animationData from "@/public/lottie/Red Diamond.json";
-
-export function GemIcon({ size = 24, className }: { size?: number; className?: string }) {
+export function GemIcon({ size = 56, className }: { size?: number; className?: string }) {
   return (
-    <span className={className} style={{ display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
-      <Lottie animationData={animationData} loop autoplay style={{ width: size, height: size }} />
+    <span className={className} style={{ display: "inline-flex", width: size, height: size, flexShrink: 0, overflow: "hidden" }}>
+      <Image src="/gems/gema.png" alt="gema" width={size * 3} height={size * 3} style={{ objectFit: "contain", transform: "scale(2.5)", transformOrigin: "center" }} />
     </span>
   );
 }
