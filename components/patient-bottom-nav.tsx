@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { Map, ClipboardList, Trophy, User, LogOut } from "lucide-react";
+import { Map, ClipboardList, Trophy, User, LogOut, ScanText } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 
 const navItems = [
@@ -37,6 +37,13 @@ const navItems = [
     accentColor: "#2E85C8",
     icon: User,
   },
+  {
+    href: "/analizador",
+    label: "Analizador",
+    exact: true,
+    accentColor: "#7C5CBF",
+    icon: ScanText,
+  },
 ];
 
 export function PatientBottomNav() {
@@ -46,9 +53,9 @@ export function PatientBottomNav() {
     <>
       {/* Mobile: bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-        <div className="mx-3 mb-4">
+        <div className="mx-2 mb-3">
           <div
-            className="flex items-center h-[68px] rounded-2xl bg-card/85 border border-border/60 backdrop-blur-xl dark:bg-black/75 dark:border-white/10"
+            className="flex items-center h-[58px] rounded-2xl bg-card/85 border border-border/60 backdrop-blur-xl dark:bg-black/75 dark:border-white/10"
             style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 1.5px 0 rgba(255,255,255,0.08) inset" }}
           >
             {navItems.map((item, i) => {
@@ -70,18 +77,18 @@ export function PatientBottomNav() {
                   )}
                   <div
                     className={cn(
-                      "flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-200",
+                      "flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all duration-200",
                       isActive ? "shadow-md scale-105" : "opacity-50 hover:opacity-80"
                     )}
                     style={isActive ? { background: item.accentColor } : undefined}
                   >
                     <Icon
-                      className="w-5 h-5 transition-all duration-200"
+                      className="w-4 h-4 transition-all duration-200"
                       style={{ color: isActive ? "white" : item.accentColor }}
                       strokeWidth={isActive ? 2.5 : 2.2}
                     />
                     <span
-                      className="text-[10px] font-extrabold tracking-wider uppercase leading-none"
+                      className="text-[9px] font-extrabold tracking-wide uppercase leading-none"
                       style={{ color: isActive ? "white" : item.accentColor }}
                     >
                       {item.label}

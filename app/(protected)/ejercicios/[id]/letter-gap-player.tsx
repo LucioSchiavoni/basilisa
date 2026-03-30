@@ -157,6 +157,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
 
   const answersRef = useRef<LetterGapAnswerResult[]>([])
   const startedAtRef = useRef(0)
+  const readingStartRef = useRef<number>(0)
   const readingTimeRef = useRef<number | undefined>(undefined)
   const questionStartRef = useRef<number>(Date.now())
   const dropZoneRef = useRef<HTMLDivElement>(null)
@@ -180,6 +181,11 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
     const t0 = setTimeout(() => { cleanup = fireWinConfetti() }, 50);
     return () => { clearTimeout(t0); cleanup?.() };
   }, [phase, correctCount, sentences.length])
+
+  useEffect(() => {
+    if (phase !== "reading") return;
+    readingStartRef.current = Date.now();
+  }, [phase])
 
   const activeSentenceIndex = currentIndex
   const activeSentence = sentences[activeSentenceIndex]
@@ -457,7 +463,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
         onActiveParagraphChange={setActiveParagraph}
         onBack={() => setPhase("intro")}
         onDone={() => {
-          readingTimeRef.current = Math.round((Date.now() - startedAtRef.current) / 1000);
+          readingTimeRef.current = Math.round((Date.now() - readingStartRef.current) / 1000);
           questionStartRef.current = Date.now();
           setPhase("playing");
         }}
