@@ -63,7 +63,7 @@ export function ScrollReveal({
                 ease: [0.25, 0.1, 0.25, 1],
             }}
             className={className}
-            style={{ background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)" }}
+            style={{ background: "#ffffff" }}
         >
             {children}
         </motion.div>

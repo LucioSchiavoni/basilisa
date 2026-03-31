@@ -22,7 +22,7 @@ export default function LoginPage() {
     <div
       className="theme-fixed-light min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
-        background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)"
+        background: "#ffffff"
       }}
     >
       <div
@@ -51,7 +51,7 @@ export default function LoginPage() {
               <LisaIllustrationAnimated className="w-72 h-auto" />
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-[#579F93]/20 shadow-xl shadow-[#579F93]/5 p-6 sm:p-8 space-y-6 transition-all">
+            <div className="space-y-6">
               <div className="text-center space-y-2">
                 <h1 className="text-2xl  text-black">
                   Bienvenido de vuelta
@@ -72,7 +72,7 @@ export default function LoginPage() {
                   <span className="w-full border-t border-[#579F93]/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-[#faf3ea] px-3 text-black/60 font-medium">
+                  <span className="bg-white px-3 text-black/60 font-medium">
                     o con tu email o usuario
                   </span>
                 </div>

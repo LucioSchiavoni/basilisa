@@ -200,8 +200,8 @@ export function WorldExercisesList({
                       className="absolute inset-0 rounded-full"
                       style={{
                         background: isCompleted
-                          ? "#0d9668"
-                          : `color-mix(in srgb, ${scheme.particles} 80%, #000000)`,
+                          ? "rgba(16,185,129,0.2)"
+                          : `${scheme.particles}20`,
                         transform: "translateY(4px)",
                       }}
                     />
@@ -212,20 +212,17 @@ export function WorldExercisesList({
                         isSelected ? "" : "group-active:translate-y-[3px]"
                       )}
                       style={{
-                        background: isCompleted
-                          ? "linear-gradient(180deg, #34d399 0%, #10b981 100%)"
-                          : `linear-gradient(180deg, ${scheme.particles}, color-mix(in srgb, ${scheme.particles} 85%, #000000))`,
+                        background: "#FFFFFF",
+                        border: `3px solid ${isCompleted ? "#10b981" : scheme.particles}`,
                         boxShadow: isSelected
-                          ? `0 0 0 4px rgba(255,255,255,0.3), 0 0 20px ${isCompleted ? "rgba(16,185,129,0.4)" : `${scheme.particles}40`}`
-                          : isCompleted
-                            ? "inset 0 -2px 4px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.25)"
-                            : "inset 0 -2px 4px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.2)",
+                          ? `0 0 0 4px ${isCompleted ? "rgba(16,185,129,0.3)" : `${scheme.particles}40`}, 0 0 20px ${isCompleted ? "rgba(16,185,129,0.4)" : `${scheme.particles}40`}`
+                          : "inset 0 -2px 4px rgba(0,0,0,0.05)",
                       }}
                     >
                       {isCompleted ? (
-                        <Check className="h-7 w-7 sm:h-8 sm:w-8 text-white" strokeWidth={3} />
+                        <Check className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={3} style={{ color: "#10b981" }} />
                       ) : (
-                        <span className="text-lg sm:text-xl font-bold text-white drop-shadow-sm">
+                        <span className="text-lg sm:text-xl font-bold drop-shadow-sm" style={{ color: scheme.particles }}>
                           {exercise.position}
                         </span>
                       )}

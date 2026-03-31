@@ -196,7 +196,7 @@ export function LandingPage() {
         className="relative h-screen overflow-hidden"
         style={{
           background:
-            "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+            "#ffffff",
         }}
       >
         <div
@@ -218,11 +218,11 @@ export function LandingPage() {
             style={{ opacity: 0, willChange: "transform, opacity" }}
             className="flex flex-col items-center gap-y-1 text-center md:flex-row md:flex-wrap md:justify-center md:items-baseline md:gap-y-0 md:gap-x-[0.3em]"
           >
-            <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
-              Lectura <span style={{ color: "#C73341" }}>accesible</span>
+            <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-light text-black tracking-tight leading-tight whitespace-nowrap">
+              Lectura accesible
             </h1>
-            <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
-              basada en <span style={{ color: "#2E85C8" }}>evidencia</span>.
+            <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-light text-black tracking-tight leading-tight whitespace-nowrap">
+              basada en evidencia
             </span>
           </div>
         </div>

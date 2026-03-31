@@ -20,7 +20,7 @@ export default function CompletarGradoPage() {
       className="theme-fixed-light min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+          "#ffffff",
       }}
     >
       <div

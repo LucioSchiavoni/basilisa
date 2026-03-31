@@ -21,12 +21,12 @@ const WORLD_IMAGES: Record<string, string> = {
 }
 
 const WORLD_BG_COLORS: Record<string, string> = {
-  medieval: "#b85c00",
-  agua:     "#0b3566",
-  bosque:   "#103d1a",
-  hielo:    "#b8ddf0",
-  fuego:    "#7a1e00",
-  cielo:    "#4a3a8c",
+  medieval: "#FFFFFF",
+  agua:     "#FFFFFF",
+  bosque:   "#FFFFFF",
+  hielo:    "#FFFFFF",
+  fuego:    "#FFFFFF",
+  cielo:    "#FFFFFF",
 }
 
 const WORLD_ACCENT_COLORS: Record<string, string> = {
@@ -47,8 +47,8 @@ const DIFFICULTY_LABELS: Record<number, string> = {
   6: "Experto",
 }
 
-const ZIG_ZAG_MOBILE = [62, 34, 65, 32, 62, 36]
-const ZIG_ZAG = [74, 16, 78, 12, 74, 18]
+const ZIG_ZAG_MOBILE = [76, 18, 80, 14, 76, 18]
+const ZIG_ZAG = [80, 12, 84, 8, 80, 12]
 
 function buildRoadPath(pts: [number, number][], curve = 8): string {
   if (pts.length < 2) return ""
@@ -69,8 +69,8 @@ const PATH_LAYERS = (d: string) => (
   </>
 )
 
-const MOBILE_SLOT = 168
-const MOBILE_TOP = 52
+const MOBILE_SLOT = 220
+const MOBILE_TOP = 20
 
 export function WorldPath({ worlds }: { worlds: WorldData[] }) {
   const n = worlds.length
@@ -83,11 +83,11 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
 
   const desktopPoints: [number, number][] = worlds.map((_, i) => [
     ZIG_ZAG[i] ?? 50,
-    n === 1 ? 50 : 8 + (i / (n - 1)) * 84,
+    n === 1 ? 50 : 18 + (i / (n - 1)) * 72,
   ])
 
-  const mobilePath = buildRoadPath(mobilePoints, 7)
-  const desktopPath = buildRoadPath(desktopPoints, 9)
+  const mobilePath = buildRoadPath(mobilePoints, 18)
+  const desktopPath = buildRoadPath(desktopPoints, 18)
 
   const renderNodes = (points: [number, number][], mobile = false) =>
     worlds.map((world, index) => {

@@ -20,7 +20,7 @@ export default function PatientLoginPage() {
     <div
       className="theme-fixed-light relative min-h-screen flex items-center justify-center p-4 overflow-hidden"
       style={{
-        background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)"
+        background: "#ffffff"
       }}
     >
       <div

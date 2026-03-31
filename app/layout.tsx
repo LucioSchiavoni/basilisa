@@ -65,7 +65,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning style={{ backgroundColor: "#fdf9f4" }}>
+    <html lang="es" suppressHydrationWarning style={{ backgroundColor: "#ffffff" }}>
       <body className={`${lexend.variable} ${caveat.variable} ${fredoka.variable} antialiased`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

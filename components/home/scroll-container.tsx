@@ -327,7 +327,7 @@ export function ScrollContainer() {
           ref={panel1Ref}
           className="absolute inset-0 flex flex-col items-center justify-center px-4"
           style={{
-            background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+            background: "#ffffff",
           }}
         >
           <div
@@ -347,11 +347,11 @@ export function ScrollContainer() {
               style={{ opacity: 0, willChange: "transform, opacity" }}
               className="flex flex-col items-center gap-y-1 text-center md:flex-row md:flex-wrap md:justify-center md:items-baseline md:gap-y-0 md:gap-x-[0.3em]"
             >
-              <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
-                Lectura <span style={{ color: "#C73341" }}>accesible</span>
+              <h1 className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-light text-black tracking-tight leading-tight whitespace-nowrap">
+                Lectura accesible
               </h1>
-              <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-semibold text-neutral-700 tracking-tight leading-tight whitespace-nowrap">
-                basada en <span style={{ color: "#2E85C8" }}>evidencia</span>.
+              <span className="text-xl sm:text-2xl md:text-[1.9rem] lg:text-3xl font-light text-black tracking-tight leading-tight whitespace-nowrap">
+                basada en evidencia
               </span>
             </div>
             <div
@@ -367,7 +367,7 @@ export function ScrollContainer() {
               </Link>
               <Link
                 href="/login"
-                className="rounded-full px-8 py-2.5 text-sm font-medium text-neutral-700 bg-white/80 hover:bg-white hover:scale-105 active:scale-95 border border-neutral-200 transition-all duration-200"
+                className="rounded-full px-8 py-2.5 text-sm font-medium text-white bg-[#579F93] hover:bg-[#4a8f84] hover:scale-105 active:scale-95 transition-all duration-200"
               >
                 Ya tengo cuenta
               </Link>
@@ -398,7 +398,7 @@ export function ScrollContainer() {
           ref={panel3Ref}
           className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24 pointer-events-none"
           style={{
-            background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+            background: "#ffffff",
             opacity: 0,
           }}
         >
@@ -455,7 +455,7 @@ export function ScrollContainer() {
           ref={panel5Ref}
           className="absolute inset-0 flex items-center justify-center px-8 sm:px-16 md:px-24 pointer-events-none"
           style={{
-            background: "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+            background: "#ffffff",
             opacity: 0,
           }}
         >

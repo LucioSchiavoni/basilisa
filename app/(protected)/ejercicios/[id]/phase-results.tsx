@@ -89,7 +89,7 @@ function TimeCard({
 
   return (
     <div
-      className="rounded-2xl bg-[#faf7f2] dark:bg-stone-800 py-3 divide-x divide-stone-200 dark:divide-stone-700"
+      className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 py-3 divide-x divide-stone-200 dark:divide-stone-700"
       style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
     >
       {cols.map((col) => (
@@ -104,7 +104,7 @@ function TimeCard({
 
 function ScoreCountCard({ correct, total }: { correct: number; total: number }) {
   return (
-    <div className="flex-1 rounded-2xl bg-[#faf7f2] dark:bg-stone-800 px-4 py-3 flex flex-col items-center justify-center gap-0.5">
+    <div className="flex-1 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 px-4 py-3 flex flex-col items-center justify-center gap-0.5">
       <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">Correctas</span>
       <span className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-none">
         {correct}<span className="text-base font-semibold text-stone-400 dark:text-stone-500">/{total}</span>
@@ -124,7 +124,7 @@ function SpeedMeter({ actualPPM, expectedPPM }: { actualPPM: number; expectedPPM
           "Sigue practicando la fluidez";
 
   return (
-    <div className="rounded-2xl bg-[#faf7f2] dark:bg-stone-800 p-5 space-y-3">
+    <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-3">
       <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
         Velocidad de lectura
       </span>
@@ -156,7 +156,7 @@ function MiniEvolutionChart({ attempts }: { attempts: { score: number; date: str
 
   if (attempts.length === 1) {
     return (
-      <div className="rounded-2xl bg-[#faf7f2] dark:bg-stone-800 p-5 space-y-2">
+      <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-2">
         <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Tu evolución</span>
         <p className="text-sm text-stone-400 dark:text-stone-500 text-center py-3">
           ¡Primera vez! Volvé a intentarlo para ver tu progreso
@@ -183,7 +183,7 @@ function MiniEvolutionChart({ attempts }: { attempts: { score: number; date: str
   const delta = attempts[attempts.length - 1].score - attempts[attempts.length - 2].score;
 
   return (
-    <div className="rounded-2xl bg-[#faf7f2] dark:bg-stone-800 p-5 space-y-3">
+    <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-3">
       <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Tu evolución</span>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
         <defs>
@@ -272,7 +272,7 @@ function QuestionTimeline({
   const slowestIdx = merged.reduce((mi, m, i, arr) => m.timeSeconds > arr[mi].timeSeconds ? i : mi, 0);
 
   return (
-    <div className="rounded-2xl bg-[#faf7f2] dark:bg-stone-800 p-5 space-y-4">
+    <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Detalle por pregunta</span>
         <span className="text-sm font-bold text-stone-900 dark:text-stone-100 tabular-nums">{correctCount}/{merged.length}</span>
@@ -438,7 +438,7 @@ export function PhaseResults({
             <div className="contents md:flex md:flex-col md:gap-4">
               <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className="flex flex-col gap-3">
                 <div className="flex gap-3">
-                  <div className="shrink-0 rounded-2xl bg-[#faf7f2] dark:bg-stone-800 py-4 px-3 flex flex-col items-center gap-2">
+                  <div className="shrink-0 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 py-4 px-3 flex flex-col items-center gap-2">
                     <DonutChart percentage={percentage} />
                     <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Aciertos</span>
                   </div>

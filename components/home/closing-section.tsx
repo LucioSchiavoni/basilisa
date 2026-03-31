@@ -147,7 +147,7 @@ export function ClosingSection() {
       className="relative flex flex-col items-center justify-center min-h-screen px-8 sm:px-16 md:px-24"
       style={{
         background:
-          "radial-gradient(ellipse 130% 90% at 50% 45%, #fdf9f4 0%, #faf3ea 50%, #f6ece0 100%)",
+          "#ffffff",
       }}
     >
       {/* <WatercolorBackground /> */}
