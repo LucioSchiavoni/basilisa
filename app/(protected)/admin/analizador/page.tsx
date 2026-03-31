@@ -67,19 +67,16 @@ function ResultsSkeleton() {
   )
 }
 
-const LEVEL_DATA: Record<number, { label: string; description: string; color: string }> = {
-  1: { label: "Muy fácil",   description: "Vocabulario simple y oraciones cortas",             color: "#579F93" },
-  2: { label: "Fácil",       description: "Lectura accesible para lectores en desarrollo",      color: "#6BAD72" },
-  3: { label: "Moderado",    description: "Requiere vocabulario y comprensión media",           color: "#D3A021" },
-  4: { label: "Difícil",     description: "Estructuras complejas y vocabulario variado",        color: "#E07B3A" },
-  5: { label: "Muy difícil", description: "Alto nivel de complejidad léxica y sintáctica",     color: "#D4623A" },
-  6: { label: "Avanzado",    description: "Texto especializado para lectores expertos",         color: "#C73341" },
+function scoreLabel(score: number): { label: string; color: string } {
+  if (score < 25) return { label: "Muy fácil", color: "#22c55e" }
+  if (score < 50) return { label: "Fácil", color: "#84cc16" }
+  if (score < 75) return { label: "Difícil", color: "#f97316" }
+  return { label: "Muy difícil", color: "#ef4444" }
 }
 
 function DifficultyScore({ score }: { score: number }) {
-  const level = Math.min(6, Math.max(1, Math.round(score)))
-  const pct = Math.round((level / 6) * 100)
-  const { label, description, color } = LEVEL_DATA[level]
+  const pct = Math.min(100, Math.max(0, score))
+  const { label, color } = scoreLabel(score)
 
   return (
     <Card className="mb-6" style={{ borderLeft: `4px solid ${color}` }}>
@@ -92,36 +89,23 @@ function DifficultyScore({ score }: { score: number }) {
             className="flex-shrink-0 w-16 h-16 rounded-2xl flex flex-col items-center justify-center text-white shadow-sm"
             style={{ backgroundColor: color }}
           >
-            <span className="text-2xl font-black leading-none">{level}</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider leading-none mt-0.5">de 6</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider leading-none">IDL</span>
+            <span className="text-2xl font-black leading-none mt-0.5">{fmt1(score)}</span>
           </div>
           <div className="flex flex-col justify-center pt-1 gap-0.5">
             <span className="text-xl font-bold leading-tight">{label}</span>
-            <span className="text-sm text-muted-foreground">{description}</span>
           </div>
         </div>
         <div className="space-y-1.5">
           <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${pct}%`, backgroundColor: color }}
+              className="absolute inset-0 rounded-full"
+              style={{ background: "linear-gradient(to right, #22c55e, #eab308, #f97316, #ef4444)" }}
             />
-          </div>
-          <div className="flex justify-between px-0.5">
-            {Object.entries(LEVEL_DATA).map(([lvl, d]) => (
-              <div key={lvl} className="flex flex-col items-center gap-0.5">
-                <div
-                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${Number(lvl) > level ? "bg-muted-foreground/25" : ""}`}
-                  style={{ backgroundColor: Number(lvl) <= level ? d.color : undefined }}
-                />
-                <span
-                  className="text-[9px] font-semibold transition-colors"
-                  style={{ color: Number(lvl) === level ? color : undefined, opacity: Number(lvl) === level ? 1 : 0.4 }}
-                >
-                  {lvl}
-                </span>
-              </div>
-            ))}
+            <div
+              className="absolute right-0 top-0 h-full bg-muted transition-all duration-700 ease-out"
+              style={{ width: `${100 - pct}%` }}
+            />
           </div>
         </div>
       </CardContent>
@@ -171,6 +155,16 @@ function AnalysisResults({ result }: { result: IDLAnalysisResult }) {
             <MetricRow
               label="Diversidad léxica"
               value={fmtPct(s.type_token_ratio)}
+            />
+            <MetricRow
+              label="Palabras medianas (7-8 letras)"
+              value={fmtPct(s.medium_word_ratio)}
+              color={s.medium_word_ratio > 0.3 ? "red" : s.medium_word_ratio < 0.1 ? "green" : "neutral"}
+            />
+            <MetricRow
+              label="Palabras raras (≥9 letras)"
+              value={fmtPct(s.rare_word_ratio)}
+              color={s.rare_word_ratio > 0.2 ? "red" : s.rare_word_ratio < 0.05 ? "green" : "neutral"}
             />
           </CardContent>
         </Card>

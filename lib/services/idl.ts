@@ -9,6 +9,8 @@ export interface StructuralMetrics {
   long_word_ratio: number
   avg_syllables_per_word: number
   type_token_ratio: number
+  medium_word_ratio: number
+  rare_word_ratio: number
 }
 
 export interface LexicalMetrics {
