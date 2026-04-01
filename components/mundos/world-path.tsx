@@ -33,7 +33,7 @@ const WORLD_ACCENT_COLORS: Record<string, string> = {
   medieval: "#f5c842",
   agua:     "#22d3ee",
   bosque:   "#4ade80",
-  hielo:    "#a5f3fc",
+  hielo:    "#41B0C4",
   fuego:    "#ef4444",
   cielo:    "#7dd3fc",
 }
@@ -89,7 +89,7 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
   const mobilePath = buildRoadPath(mobilePoints, 18)
   const desktopPath = buildRoadPath(desktopPoints, 18)
 
-  const renderNodes = (points: [number, number][], mobile = false) =>
+  const renderNodes = (points: [number, number][]) =>
     worlds.map((world, index) => {
       const image = WORLD_IMAGES[world.name]
       const accentColor = WORLD_ACCENT_COLORS[world.name] ?? "#22d3ee"
@@ -135,7 +135,7 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
         >
           {PATH_LAYERS(mobilePath)}
         </svg>
-        {renderNodes(mobilePoints, true /* mobile */)}
+        {renderNodes(mobilePoints)}
       </div>
 
       {/* Desktop: all worlds in viewport */}
@@ -150,7 +150,7 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
         >
           {PATH_LAYERS(desktopPath)}
         </svg>
-        {renderNodes(desktopPoints, false)}
+        {renderNodes(desktopPoints)}
       </div>
     </>
   )

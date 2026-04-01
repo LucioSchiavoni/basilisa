@@ -18,7 +18,7 @@ const WORLD_COLOR: Record<string, string> = {
   medieval: "#B8832A",
   agua:     "#1478A0",
   bosque:   "#2D7A4E",
-  hielo:    "#3E87B8",
+  hielo:    "#41B0C4",
   fuego:    "#C04A28",
   cielo:    "#6044B0",
 }
@@ -34,7 +34,7 @@ type WorldData = {
 }
 
 export function WorldGrid({ worlds, userName }: { worlds: WorldData[]; userName?: string }) {
-  const [view, setView] = useState<"grid" | "path">("grid")
+  const [view, setView] = useState<"grid" | "path">("path")
 
   return (
     <div className="flex flex-col gap-5">
@@ -55,6 +55,14 @@ export function WorldGrid({ worlds, userName }: { worlds: WorldData[]; userName?
           >
             {userName ? userName : "¿A qué mundo vas hoy?"}
           </p>
+          {userName && (
+            <p
+              className="text-xs uppercase tracking-widest"
+              style={{ fontFamily: "var(--font-lexend)", fontWeight: 500, color: "var(--muted-foreground, #aaa)" }}
+            >
+              Elegí un mundo para comenzar a practicar
+            </p>
+          )}
         </div>
 
         <div

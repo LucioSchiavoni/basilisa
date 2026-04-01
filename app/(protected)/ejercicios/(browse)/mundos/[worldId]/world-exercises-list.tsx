@@ -81,7 +81,6 @@ export function WorldExercisesList({
   const nonBonusExercises = exercises.filter((e) => !e.isBonus);
   const totalExercises = nonBonusExercises.length;
   const completedExercises = nonBonusExercises.filter((e) => completedSet.has(e.id)).length;
-  const progressPct = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
   const isWorldComplete = completedExercises === totalExercises && totalExercises > 0;
 
   const selectedIsCompleted = selectedExercise ? completedSet.has(selectedExercise.id) : false;
@@ -126,22 +125,6 @@ export function WorldExercisesList({
                 {completedExercises}/{totalExercises}
               </span>
               <span className="text-xs text-white/60">completados</span>
-            </div>
-
-            <div className="mt-1.5">
-              <div
-                className="relative w-full rounded-full overflow-hidden"
-                style={{ height: "6px", background: "rgba(0,0,0,0.35)" }}
-              >
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-                  style={{
-                    width: `${progressPct}%`,
-                    background: `linear-gradient(90deg, ${scheme.particles}cc, ${scheme.particles})`,
-                    boxShadow: `0 0 6px ${scheme.particles}70`,
-                  }}
-                />
-              </div>
             </div>
 
             {isWorldComplete && (
@@ -219,14 +202,28 @@ export function WorldExercisesList({
                           : "inset 0 -2px 4px rgba(0,0,0,0.05)",
                       }}
                     >
-                      {isCompleted ? (
-                        <Check className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={3} style={{ color: "#10b981" }} />
-                      ) : (
-                        <span className="text-lg sm:text-xl font-bold drop-shadow-sm" style={{ color: scheme.particles }}>
-                          {exercise.position}
-                        </span>
-                      )}
+                      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 7 C13 5.5 8 5.5 5 7 L5 27 C8 25.5 13 25.5 17 27 C21 25.5 26 25.5 29 27 L29 7 C26 5.5 21 5.5 17 7Z" fill={`${isCompleted ? "#10b981" : scheme.particles}18`} stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1.4" strokeLinejoin="round"/>
+                        <line x1="17" y1="7" x2="17" y2="27" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1.4" strokeLinecap="round"/>
+                        <line x1="9" y1="11" x2="14" y2="10.2" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+                        <line x1="9" y1="14.5" x2="14" y2="13.7" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+                        <line x1="9" y1="18" x2="14" y2="17.2" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+                        <line x1="9" y1="21.5" x2="14" y2="20.7" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+                        <line x1="20" y1="10.2" x2="25" y2="11" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+                        <line x1="20" y1="13.7" x2="25" y2="14.5" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+                        <line x1="20" y1="17.2" x2="25" y2="18" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+                        <line x1="20" y1="20.7" x2="25" y2="21.5" stroke={isCompleted ? "#10b981" : scheme.particles} strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+                      </svg>
                     </div>
+
+                    {isCompleted && (
+                      <div
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center z-10"
+                        style={{ background: "#10b981", border: "2px solid #ffffff", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }}
+                      >
+                        <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
+                      </div>
+                    )}
                   </div>
                 </button>
 
@@ -240,7 +237,7 @@ export function WorldExercisesList({
                     }}
                   >
                     <div
-                      className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 sm:hidden"
+                      className="absolute -top-1.75 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 sm:hidden"
                       style={{
                         background: `color-mix(in srgb, ${scheme.particles} 90%, #000000)`,
                         borderTop: `1px solid ${scheme.particles}50`,
@@ -248,7 +245,7 @@ export function WorldExercisesList({
                       }}
                     />
                     <div
-                      className="absolute top-1/2 -left-[7px] -translate-y-1/2 w-3 h-3 rotate-45 hidden sm:block"
+                      className="absolute top-1/2 -left-1.75 -translate-y-1/2 w-3 h-3 rotate-45 hidden sm:block"
                       style={{
                         background: `color-mix(in srgb, ${scheme.particles} 90%, #000000)`,
                         borderLeft: `1px solid ${scheme.particles}50`,
