@@ -65,8 +65,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning style={{ backgroundColor: "#ffffff" }}>
-      <body className={`${lexend.variable} ${caveat.variable} ${fredoka.variable} antialiased`}>
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme'),s=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t!=='light'&&s)){document.documentElement.classList.add('dark');document.documentElement.style.backgroundColor='#1F1F1F';}else{document.documentElement.style.backgroundColor='#ffffff';}}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className={`${lexend.variable} ${caveat.variable} ${fredoka.variable} antialiased bg-background`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

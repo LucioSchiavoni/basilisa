@@ -5,8 +5,9 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { Map, ClipboardList, Trophy, User, LogOut, ScanText } from "lucide-react";
+import { Map, ClipboardList, Trophy, User, LogOut, ScanText, ALargeSmall, X, Menu } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
+import { useState, useEffect } from "react";
 
 const navItems = [
   {
@@ -44,64 +45,126 @@ const navItems = [
     accentColor: "#7C5CBF",
     icon: ScanText,
   },
+  {
+    href: "/simplificador",
+    label: "Simplificador",
+    exact: true,
+    accentColor: "#2E85C8",
+    icon: ALargeSmall,
+  },
 ];
 
 export function PatientBottomNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   return (
     <>
-      {/* Mobile: bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-        <div className="mx-2 mb-3">
-          <div
-            className="flex items-center h-[58px] rounded-2xl bg-card/85 border border-border/60 backdrop-blur-xl dark:bg-black/75 dark:border-white/10"
-            style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 1.5px 0 rgba(255,255,255,0.08) inset" }}
-          >
-            {navItems.map((item, i) => {
-              const otherExactMatch = navItems.some(
-                (it) => it.href !== item.href && it.exact && pathname === it.href
-              );
-              const isActive = item.exact
-                ? pathname === item.href
-                : pathname.startsWith(item.href) && !otherExactMatch;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="relative flex flex-col items-center justify-center flex-1 h-full gap-0.5"
-                >
-                  {i > 0 && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-px bg-border/40 dark:bg-white/10" />
-                  )}
-                  <div
-                    className={cn(
-                      "flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all duration-200",
-                      isActive ? "shadow-md scale-105" : "opacity-50 hover:opacity-80"
-                    )}
-                    style={isActive ? { background: item.accentColor } : undefined}
-                  >
-                    <Icon
-                      className="w-4 h-4 transition-all duration-200"
-                      style={{ color: isActive ? "white" : item.accentColor }}
-                      strokeWidth={isActive ? 2.5 : 2.2}
-                    />
-                    <span
-                      className="text-[9px] font-extrabold tracking-wide uppercase leading-none"
-                      style={{ color: isActive ? "white" : item.accentColor }}
-                    >
-                      {item.label}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+      {/* ── Mobile hamburger button ── */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
+        aria-label="Abrir menú"
+      >
+        <Menu strokeWidth={1.8} className="w-5 h-5" />
+      </button>
 
-      {/* Desktop: left sidebar */}
+      {/* ── Mobile drawer overlay ── */}
+      <div
+        className={cn(
+          "fixed inset-0 z-70 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300",
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setOpen(false)}
+      />
+
+      {/* ── Mobile drawer panel ── */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 h-full w-72 z-80 flex flex-col bg-card border-r border-border/60 lg:hidden transition-transform duration-300 ease-out",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+        style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.18)" }}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <Image
+            src="/logos/Logotipo Lisa color simple.png"
+            alt="LISA"
+            width={60}
+            height={30}
+            className="object-contain"
+          />
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+            aria-label="Cerrar menú"
+          >
+            <X className="w-4 h-4" strokeWidth={2} />
+          </button>
+        </div>
+
+        <nav className="flex flex-col flex-1 px-3 py-4 gap-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const otherExactMatch = navItems.some(
+              (it) => it.href !== item.href && it.exact && pathname === it.href
+            );
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href) && !otherExactMatch;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200",
+                  isActive ? "text-white shadow-sm" : "hover:bg-muted"
+                )}
+                style={isActive ? { background: item.accentColor } : undefined}
+              >
+                <Icon
+                  className="w-5 h-5 shrink-0"
+                  style={{ color: isActive ? "white" : item.accentColor }}
+                  strokeWidth={isActive ? 2.5 : 1.8}
+                />
+                <span style={{ color: isActive ? "white" : item.accentColor }}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <Separator />
+        <div className="px-3 py-3">
+          <form action={logout}>
+            <button
+              type="submit"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+            >
+              <LogOut className="w-5 h-5" strokeWidth={1.8} />
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      {/* ── Desktop left sidebar (unchanged) ── */}
       <nav className="hidden lg:flex fixed left-0 top-0 bottom-0 z-50 w-56 flex-col bg-card border-r border-border shadow-sm">
         <div className="flex items-center justify-center px-5 py-5">
           <Image
@@ -128,9 +191,7 @@ export function PatientBottomNav() {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200",
-                  isActive
-                    ? "text-white shadow-sm"
-                    : "hover:bg-muted"
+                  isActive ? "text-white shadow-sm" : "hover:bg-muted"
                 )}
                 style={isActive ? { background: item.accentColor } : undefined}
               >

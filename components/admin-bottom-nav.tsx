@@ -123,6 +123,28 @@ const navItems = [
     ),
     exact: false,
   },
+  {
+    href: "/admin/simplificador",
+    label: "Simplificar",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 7h16" />
+        <path d="M4 12h10" />
+        <path d="M4 17h6" />
+      </svg>
+    ),
+    exact: false,
+  },
 ];
 
 export function AdminBottomNav() {
