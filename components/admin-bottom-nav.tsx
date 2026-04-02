@@ -1,9 +1,14 @@
 "use client";
 
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/(auth)/actions";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { Menu, X } from "lucide-react";
+import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
   {
@@ -149,55 +154,116 @@ const navItems = [
 
 export function AdminBottomNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background lg:hidden">
-      <div className="flex h-16 items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => {
-          const isActive = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
+    <>
+      {/* ── Mobile hamburger button ── */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
+        aria-label="Abrir menú"
+      >
+        <Menu strokeWidth={1.8} className="w-5 h-5" />
+      </button>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 transition-colors",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground active:text-foreground"
-              )}
-            >
-              {item.icon}
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-        <form action={logout}>
+      {/* ── Mobile drawer overlay ── */}
+      <div
+        className={cn(
+          "fixed inset-0 z-70 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300",
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setOpen(false)}
+      />
+
+      {/* ── Mobile drawer panel ── */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 h-full w-72 z-80 flex flex-col bg-card border-r border-border/60 lg:hidden transition-transform duration-300 ease-out",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+        style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.18)" }}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <Image
+            src="/logos/Logotipo Lisa color simple.png"
+            alt="LISA"
+            width={60}
+            height={30}
+            className="object-contain"
+          />
           <button
-            type="submit"
-            className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-muted-foreground transition-colors active:text-foreground"
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+            aria-label="Cerrar menú"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" x2="9" y1="12" y2="12" />
-            </svg>
-            <span className="text-[10px] font-medium">Salir</span>
+            <X className="w-4 h-4" strokeWidth={2} />
           </button>
-        </form>
-      </div>
-    </nav>
+        </div>
+        <nav className="flex flex-col flex-1 px-3 py-4 gap-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200",
+                  isActive ? "text-white shadow-sm bg-primary dark:bg-neutral-700" : "hover:bg-muted dark:hover:bg-muted/40"
+                )}
+              >
+                <span className="w-5 h-5 shrink-0 flex items-center justify-center">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="px-3 py-3 flex justify-between items-center">
+          <form action={logout}>
+            <button
+              type="submit"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg>
+              Cerrar sesión
+            </button>
+          </form>
+          <ThemeToggle />
+        </div>
+      </aside>
+
+      {/* nav fijo mobile eliminado, solo menú hamburguesa/aside */}
+    </>
   );
 }

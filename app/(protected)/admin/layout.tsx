@@ -32,8 +32,7 @@ export default async function AdminLayout({
     <div className="admin-layout min-h-screen lg:flex bg-background">
       <aside className="hidden lg:flex lg:flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen lg:w-64 bg-card border-r">
         <div className="p-6">
-          <h2 className="text-xl font-bold">Panel Admin</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-base font-semibold text-foreground">
             {profile?.full_name || user.email}
           </p>
         </div>
@@ -186,20 +185,20 @@ export default async function AdminLayout({
         </div>
       </aside>
       <div className="flex-1 flex flex-col lg:hidden">
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div>
-            <h2 className="text-lg font-bold">Panel Admin</h2>
-            <p className="text-xs text-muted-foreground">
-              {profile?.full_name || user.email}
-            </p>
+        <div className="relative flex items-center justify-center p-4 border-b bg-card min-h-14">
+          {/* Botón hamburguesa y menú aside */}
+          <div className="absolute left-0 top-0 h-full flex items-center">
+            <AdminBottomNav />
           </div>
-          <ThemeToggle />
+          <span className="text-base font-semibold text-foreground truncate max-w-[70%] mx-auto">
+            {profile?.full_name || user.email}
+          </span>
         </div>
       </div>
-      <main className="flex-1 p-4 pb-20 lg:ml-64 lg:p-8 lg:pb-8">
+      <main className="flex-1 p-4 lg:ml-64 lg:p-8 lg:pb-8">
         {children}
       </main>
-      <AdminBottomNav />
+      {/* <AdminBottomNav /> */}
     </div>
   );
 }
