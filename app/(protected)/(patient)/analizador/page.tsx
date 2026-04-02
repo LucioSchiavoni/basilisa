@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
 import { analyzeTextAction } from "@/app/(protected)/admin/analizador/actions"
 import type { IDLAnalysisResult } from "@/lib/services/idl"
+
+const MAX_CHARS = 10000
 
 function fmt1(n: number) {
   return n.toFixed(1)
@@ -224,6 +226,9 @@ export default function AnalizadorPage() {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const charCount = text.length
+  const overLimit = charCount > MAX_CHARS
+
   function handleAnalyze() {
     setError(null)
     startTransition(async () => {
@@ -238,32 +243,47 @@ export default function AnalizadorPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Analizador de Textos</h1>
-        <p className="text-muted-foreground mt-1">
-          Analiza la dificultad lectora de cualquier texto
-        </p>
+    <div className="flex flex-col items-center px-0 py-2 sm:py-10 sm:min-h-[calc(100vh-8rem)] sm:justify-center">
+      <div className="w-full max-w-2xl space-y-4">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <h1 className="text-xl sm:text-2xl font-light tracking-widest uppercase">Analizador de textos</h1>
+        </div>
+
+        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Pega o escribí un texto aquí para analizar su dificultad lectora..."
+            className="min-h-48 sm:min-h-56 resize-none border-0 bg-transparent rounded-none px-4 py-4 text-sm sm:text-base focus-visible:ring-0 focus-visible:ring-offset-0"
+            maxLength={MAX_CHARS}
+            disabled={isPending}
+          />
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-border/40 bg-muted/20">
+            <span
+              className={cn(
+                "text-[11px] tabular-nums",
+                overLimit ? "text-destructive font-medium" : "text-muted-foreground/60"
+              )}
+            >
+              {charCount} / {MAX_CHARS}
+            </span>
+            <button
+              type="button"
+              onClick={handleAnalyze}
+              disabled={isPending || !text.trim() || overLimit}
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold transition-all bg-foreground text-background hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isPending ? "Analizando..." : "Analizar"}
+            </button>
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+
+        {isPending && <ResultsSkeleton />}
+
+        {!isPending && result && <AnalysisResults result={result} />}
       </div>
-
-      <div className="space-y-3">
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Pega o escribe un texto aquí para analizar su dificultad lectora..."
-          rows={6}
-          className="resize-y"
-        />
-        <Button onClick={handleAnalyze} disabled={isPending || !text.trim()}>
-          {isPending ? "Analizando..." : "Analizar"}
-        </Button>
-      </div>
-
-      {error && <p className="text-sm text-red-500">{error}</p>}
-
-      {isPending && <ResultsSkeleton />}
-
-      {!isPending && result && <AnalysisResults result={result} />}
     </div>
   )
 }

@@ -58,6 +58,7 @@ const navItems = [
 export function PatientBottomNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const isWorldDetailPage = pathname.startsWith("/ejercicios/mundos/");
 
   useEffect(() => {
     setOpen(false);
@@ -75,14 +76,16 @@ export function PatientBottomNav() {
   return (
     <>
       {/* ── Mobile hamburger button ── */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="absolute top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
-        aria-label="Abrir menú"
-      >
-        <Menu strokeWidth={1.8} className="w-5 h-5" />
-      </button>
+      {!isWorldDetailPage && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="absolute top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu strokeWidth={1.8} className="w-5 h-5" />
+        </button>
+      )}
 
       {/* ── Mobile drawer overlay ── */}
       <div

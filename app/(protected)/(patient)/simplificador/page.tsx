@@ -2,25 +2,46 @@
 
 import { useState, useTransition, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { simplifyText, getSimplificationUsage } from "@/lib/actions/simplify-text"
+import { simplifyText, getSimplificationUsage, analyzeTextForFilter } from "@/lib/actions/simplify-text"
+import type { SimplifyResult } from "@/lib/actions/simplify-text"
+import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 import { TypewriterLoading } from "@/components/typewriter-loading"
+
+type ResultData = {
+  simplified_text: string
+  idl_score: number
+  achievable: boolean
+  attempts: number
+  metrics: { structural: StructuralMetrics; lexical: LexicalMetrics }
+}
 
 type Level = "muy_facil" | "facil" | "medio" | "dificil"
 
-const LEVELS: { value: Level; label: string; idl: string }[] = [
-  { value: "muy_facil", label: "Muy fácil", idl: "IDL 0–20" },
-  { value: "facil",     label: "Fácil",     idl: "IDL 20–40" },
-  { value: "medio",     label: "Medio",     idl: "IDL 40–60" },
-  { value: "dificil",   label: "Difícil",   idl: "IDL 60–80" },
+const LEVELS: { value: Level; label: string; idl: string; max: number }[] = [
+  { value: "muy_facil", label: "Muy fácil", idl: "IDL 0–20", max: 20 },
+  { value: "facil",     label: "Fácil",     idl: "IDL 20–40", max: 40 },
+  { value: "medio",     label: "Medio",     idl: "IDL 40–60", max: 60 },
+  { value: "dificil",   label: "Difícil",   idl: "IDL 60–80", max: 80 },
 ]
 
 const MAX_CHARS = 5000
 
-
-function LevelDropdown({ value, onChange }: { value: Level; onChange: (v: Level) => void }) {
+function LevelDropdown({
+  value,
+  onChange,
+  originalIdl,
+}: {
+  value: Level
+  onChange: (v: Level) => void
+  originalIdl: number | null
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const selected = LEVELS.find((l) => l.value === value)!
+
+  const availableLevels = LEVELS.filter(
+    (l) => originalIdl === null || l.max < originalIdl
+  )
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -30,12 +51,23 @@ function LevelDropdown({ value, onChange }: { value: Level; onChange: (v: Level)
     return () => document.removeEventListener("mousedown", onClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (originalIdl !== null && !availableLevels.find((l) => l.value === value)) {
+      if (availableLevels.length > 0) {
+        onChange(availableLevels[availableLevels.length - 1].value)
+      }
+    }
+  }, [originalIdl])
+
+  const displayLevels = originalIdl !== null ? availableLevels : LEVELS
+
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 px-3 py-1.5 text-[11px] font-medium text-foreground hover:bg-accent transition-colors focus:outline-none whitespace-nowrap cursor-pointer w-36 sm:w-44"
+        disabled={displayLevels.length === 0}
+        className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 px-3 py-1.5 text-[11px] font-medium text-foreground hover:bg-accent transition-colors focus:outline-none whitespace-nowrap cursor-pointer w-36 sm:w-44 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span className="flex items-center gap-1.5">
           <span>{selected.label}</span>
@@ -46,9 +78,9 @@ function LevelDropdown({ value, onChange }: { value: Level; onChange: (v: Level)
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute bottom-full mb-1.5 right-0 z-50 min-w-[11rem] rounded-xl border border-border bg-popover shadow-xl overflow-hidden">
-          {LEVELS.map((l) => (
+      {open && displayLevels.length > 0 && (
+        <div className="absolute bottom-full mb-1.5 right-0 z-50 min-w-44 rounded-xl border border-border bg-popover shadow-xl overflow-hidden">
+          {displayLevels.map((l) => (
             <button
               key={l.value}
               type="button"
@@ -82,14 +114,24 @@ function UsageDots({ used, total }: { used: number; total: number }) {
   )
 }
 
+function MetricRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-0.5">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-[11px] font-medium tabular-nums">{value}</span>
+    </div>
+  )
+}
+
 export default function SimplificadorPagePatient() {
   const [text, setText] = useState("")
   const [level, setLevel] = useState<Level>("facil")
-  const [result, setResult] = useState<string | null>(null)
+  const [resultData, setResultData] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [usageToday, setUsageToday] = useState<number | null>(null)
   const [dailyLimit, setDailyLimit] = useState(5)
+  const [originalIdl, setOriginalIdl] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -99,17 +141,41 @@ export default function SimplificadorPagePatient() {
     })
   }, [])
 
+  useEffect(() => {
+    if (text.trim().length < 50) {
+      setOriginalIdl(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      analyzeTextForFilter(text).then((res) => {
+        setOriginalIdl(res?.score ?? null)
+      })
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [text])
+
   const charCount = text.length
   const overLimit = charCount > MAX_CHARS
   const limitReached = usageToday !== null && usageToday >= dailyLimit
 
+  const availableLevels = LEVELS.filter(
+    (l) => originalIdl === null || l.max < originalIdl
+  )
+  const noLevelsAvailable = originalIdl !== null && availableLevels.length === 0
+
   function handleSimplify() {
     setError(null)
-    setResult(null)
+    setResultData(null)
     startTransition(async () => {
-      const res = await simplifyText(text, level)
-      if (res.success && res.simplified_text) {
-        setResult(res.simplified_text)
+      const res: SimplifyResult = await simplifyText(text, level)
+      if (res.success) {
+        setResultData({
+          simplified_text: res.simplified_text,
+          idl_score: res.idl_score,
+          achievable: res.achievable,
+          attempts: res.attempts,
+          metrics: res.metrics,
+        })
         if (res.usage_today !== undefined) setUsageToday(res.usage_today)
       } else {
         setError(res.error ?? "Error desconocido.")
@@ -119,8 +185,8 @@ export default function SimplificadorPagePatient() {
   }
 
   function handleCopy() {
-    if (!result) return
-    navigator.clipboard.writeText(result).then(() => {
+    if (!resultData) return
+    navigator.clipboard.writeText(resultData.simplified_text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
@@ -144,6 +210,14 @@ export default function SimplificadorPagePatient() {
           </div>
         )}
 
+        {noLevelsAvailable && !limitReached && (
+          <div className="rounded-xl border border-border/60 bg-card px-4 py-3 text-center">
+            <p className="text-sm text-muted-foreground font-light">
+              Este texto ya es muy fácil (IDL {originalIdl?.toFixed(1)}).
+            </p>
+          </div>
+        )}
+
         <div
           className="rounded-xl border border-border/60 bg-card flex flex-col"
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 20px rgba(0,0,0,0.09), 0 20px 48px -8px rgba(0,0,0,0.14)" }}
@@ -163,14 +237,14 @@ export default function SimplificadorPagePatient() {
               {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
             </span>
             <div className="flex items-center gap-2">
-              <LevelDropdown value={level} onChange={setLevel} />
+              <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} />
               <button
                 type="button"
                 onClick={handleSimplify}
-                disabled={isPending || overLimit || limitReached || !text.trim()}
+                disabled={isPending || overLimit || limitReached || !text.trim() || noLevelsAvailable}
                 className={cn(
                   "flex items-center justify-center w-8 h-8 rounded-lg transition-all cursor-pointer text-white hover:opacity-90 active:scale-95",
-                  !text.trim() || overLimit || limitReached ? "opacity-40" : "opacity-100"
+                  !text.trim() || overLimit || limitReached || noLevelsAvailable ? "opacity-40" : "opacity-100"
                 )}
                 style={{ backgroundColor: "#2E85C8" }}
               >
@@ -189,14 +263,26 @@ export default function SimplificadorPagePatient() {
           </div>
         </div>
 
-        {(isPending || result || error) && (
+        {(isPending || resultData || error) && (
           <div
             className="rounded-xl border border-border/60 bg-card overflow-hidden"
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 6px 16px rgba(0,0,0,0.08)" }}
           >
             <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
-              <p className="text-xs font-light tracking-wide text-muted-foreground">Texto simplificado</p>
-              {result && (
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-light tracking-wide text-muted-foreground">Texto simplificado</p>
+                {resultData && (
+                  <span className="inline-flex items-center rounded-md bg-[#2E85C8]/10 px-2 py-0.5 text-[11px] font-medium text-[#2E85C8]">
+                    IDL {resultData.idl_score.toFixed(1)}
+                  </span>
+                )}
+                {resultData && resultData.attempts > 1 && (
+                  <span className="text-[10px] text-muted-foreground/60">
+                    {resultData.attempts} iteraciones
+                  </span>
+                )}
+              </div>
+              {resultData && (
                 <button
                   type="button"
                   onClick={handleCopy}
@@ -222,12 +308,37 @@ export default function SimplificadorPagePatient() {
               )}
             </div>
             {isPending ? (
-              <TypewriterLoading />
+              <div className="px-5 py-4">
+                <p className="text-xs text-muted-foreground mb-3">Simplificando y verificando con análisis clínico...</p>
+                <TypewriterLoading />
+              </div>
             ) : error ? (
               <p className="p-5 text-sm font-light text-red-500">{error}</p>
-            ) : (
-              <p className="p-5 text-sm font-light leading-relaxed whitespace-pre-wrap tracking-wide">{result}</p>
-            )}
+            ) : resultData ? (
+              <div className="p-5">
+                {!resultData.achievable && (
+                  <div className="mb-4 rounded-lg border border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/20 dark:border-amber-700/40 px-3 py-2.5">
+                    <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                      No fue posible alcanzar el nivel objetivo. IDL alcanzado: {resultData.idl_score.toFixed(1)}.
+                      Esto puede ocurrir cuando el contenido requiere palabras técnicas que no pueden simplificarse más sin perder el sentido.
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm font-light leading-relaxed whitespace-pre-wrap tracking-wide">{resultData.simplified_text}</p>
+                <div className="mt-4 rounded-lg border border-border/40 bg-muted/30 px-4 py-3">
+                  <p className="text-[11px] font-medium text-muted-foreground mb-2 tracking-wide uppercase">Métricas</p>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                    <MetricRow label="Palabras por oración" value={resultData.metrics.structural.avg_words_per_sentence.toFixed(1)} />
+                    <MetricRow label="Oraciones largas" value={`${(resultData.metrics.structural.long_sentence_ratio * 100).toFixed(1)}%`} />
+                    <MetricRow label="Letras por palabra" value={resultData.metrics.structural.avg_letters_per_word.toFixed(2)} />
+                    <MetricRow label="Palabras medianas" value={`${(resultData.metrics.structural.medium_word_ratio * 100).toFixed(1)}%`} />
+                    <MetricRow label="Palabras largas (9+)" value={`${(resultData.metrics.structural.rare_word_ratio * 100).toFixed(1)}%`} />
+                    <MetricRow label="Frecuencia léxica" value={resultData.metrics.lexical.avg_frequency.toFixed(2)} />
+                    <MetricRow label="Imaginabilidad" value={resultData.metrics.lexical.avg_imageability.toFixed(2)} />
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
