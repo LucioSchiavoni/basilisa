@@ -16,11 +16,12 @@ const difficultyLabels: Record<number, string> = {
   5: "Muy difícil",
 };
 
-const textDifficultyLabels: Record<string, string> = {
-  simple: "Texto: Simple",
-  moderado: "Texto: Moderado",
-  complejo: "Texto: Complejo",
-};
+function getIdlLabel(score: number): string {
+  if (score < 20) return "Nivel inicial";
+  if (score < 40) return "Nivel medio";
+  if (score < 60) return "Nivel avanzado";
+  return "Nivel experto";
+}
 
 type Props = {
   exercise: {
@@ -37,6 +38,7 @@ type Props = {
   questions: Question[];
   wordCount: number;
   backHref: string;
+  idlScore: number | null;
   onStart: () => void;
 };
 
@@ -48,6 +50,7 @@ export function PhaseIntro({
   questions,
   wordCount,
   backHref,
+  idlScore,
   onStart,
 }: Props) {
   return (
@@ -92,14 +95,15 @@ export function PhaseIntro({
               )}
             </div>
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-base text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <BarChart3 className="h-4 w-4" />
-                {difficultyLabels[exercise.difficultyLevel]}
-              </span>
-              {isReadingComprehension && !!exercise.content.text_difficulty && (
+              {idlScore !== null && (isReadingComprehension || isTimedReading) ? (
                 <span className="flex items-center gap-1.5">
                   <BookOpen className="h-4 w-4" />
-                  {textDifficultyLabels[exercise.content.text_difficulty as string] ?? String(exercise.content.text_difficulty)}
+                  {getIdlLabel(idlScore)}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <BarChart3 className="h-4 w-4" />
+                  {difficultyLabels[exercise.difficultyLevel]}
                 </span>
               )}
               {isTimedReading ? (

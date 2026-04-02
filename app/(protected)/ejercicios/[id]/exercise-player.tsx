@@ -38,6 +38,7 @@ export type ExerciseProps = {
     typeName: string;
     typeDisplayName: string;
     worldId?: string | null;
+    idlScore?: number | null;
   };
   answerKey: Record<string, string>;
   initialGems: number;
@@ -256,6 +257,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
         questions={questions}
         wordCount={wordCount}
         backHref={backHref}
+        idlScore={exercise.idlScore ?? null}
         onStart={handleStart}
       />
     );

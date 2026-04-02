@@ -10,6 +10,7 @@ import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 import { ArrowLeft, AtSign, Lock, Eye, EyeOff } from "lucide-react";
 import { FloatingParticles } from "@/components/home/floating-particles";
 import { LisaIllustrationAnimated } from "@/components/svg/lisa-illustration-animated";
+import Image from "next/image";
 
 const initialState: AuthState = {};
 
@@ -47,6 +48,15 @@ export default function LoginPage() {
 
 <div className="w-full flex justify-center">
           <div className="w-full max-w-md">
+            <div className="flex lg:hidden justify-center mb-6">
+              <Image
+                src="/logos/Logotipo Lisa color simple.png"
+                alt="LISA"
+                width={160}
+                height={80}
+                className="object-contain"
+              />
+            </div>
             <div className="hidden lg:flex justify-center mb-6">
               <LisaIllustrationAnimated className="w-72 h-auto" />
             </div>

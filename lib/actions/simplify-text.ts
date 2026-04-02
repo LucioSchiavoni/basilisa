@@ -2,6 +2,7 @@
 
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { analyzeText } from "@/lib/services/idl"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 

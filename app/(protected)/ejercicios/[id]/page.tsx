@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { ExercisePlayer } from "./exercise-player";
+import { analyzeText } from "@/lib/services/idl";
 
 function stripAnswers(content: Record<string, unknown>): Record<string, unknown> {
   const questions =
@@ -47,7 +48,7 @@ export default async function ExercisePage({
     supabase
       .from("exercises")
       .select(
-        "id, title, instructions, instructions_audio_url, difficulty_level, content, world_id, exercise_types(name, display_name)"
+        "id, title, instructions, instructions_audio_url, difficulty_level, content, world_id, idl_score, exercise_types(name, display_name)"
       )
       .eq("id", id)
       .eq("is_active", true)
@@ -111,6 +112,25 @@ export default async function ExercisePage({
 
   const rawContent = exercise.content as Record<string, unknown>;
 
+  let idlScore = (exercise as { idl_score?: number | null }).idl_score ?? null;
+
+  if (idlScore === null && (typeName === "reading_comprehension" || typeName === "timed_reading")) {
+    const readingText = typeof rawContent.reading_text === "string" && rawContent.reading_text.trim()
+      ? rawContent.reading_text
+      : null;
+    if (readingText) {
+      try {
+        const result = await analyzeText(readingText);
+        idlScore = result.score;
+        if (idlScore !== null) {
+          await admin.from("exercises").update({ idl_score: idlScore }).eq("id", exercise.id);
+        }
+      } catch {
+        // IDL service unavailable, continue without score
+      }
+    }
+  }
+
   return (
     <ExercisePlayer
       initialGems={initialGems}
@@ -126,6 +146,7 @@ export default async function ExercisePage({
         typeName,
         typeDisplayName,
         worldId: exercise.world_id ?? null,
+        idlScore,
       }}
       worldId={worldId}
       worldName={worldName}

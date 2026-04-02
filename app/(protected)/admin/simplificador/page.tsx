@@ -42,57 +42,6 @@ function MetricRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ResultHeader({
-  resultData,
-  onCopy,
-  copied,
-}: {
-  resultData: ResultData | null
-  onCopy: () => void
-  copied: boolean
-}) {
-  return (
-    <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
-      <div className="flex items-center gap-2">
-        <p className="text-xs font-medium text-muted-foreground">Texto simplificado</p>
-        {resultData && (
-          <span className="inline-flex items-center rounded-md bg-[#2E85C8]/10 px-2 py-0.5 text-[11px] font-medium text-[#2E85C8]">
-            IDL {resultData.idl_score.toFixed(1)}
-          </span>
-        )}
-        {resultData && resultData.attempts > 1 && (
-          <span className="text-[10px] text-muted-foreground/60">
-            verificado en {resultData.attempts} {resultData.attempts === 1 ? "iteración" : "iteraciones"}
-          </span>
-        )}
-      </div>
-      {resultData && (
-        <button
-          type="button"
-          onClick={onCopy}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          {copied ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Copiado
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-              </svg>
-              Copiar
-            </>
-          )}
-        </button>
-      )}
-    </div>
-  )
-}
 
 function ResultAside({
   resultData,
@@ -100,15 +49,18 @@ function ResultAside({
   isPending,
   open,
   onClose,
+  onOpen,
 }: {
   resultData: ResultData | null
   error: string | null
   isPending: boolean
   open: boolean
   onClose: () => void
+  onOpen: () => void
 }) {
   const [copied, setCopied] = useState(false)
-  const [minimized, setMinimized] = useState(false)
+  const [metricsOpen, setMetricsOpen] = useState(false)
+  const [warningOpen, setWarningOpen] = useState(false)
   const visible = open && (isPending || !!resultData || !!error)
 
   function handleCopy() {
@@ -121,24 +73,37 @@ function ResultAside({
 
   return (
     <>
-      {visible && !minimized && (
-        <div className="fixed inset-0 bg-black/20 z-40 sm:hidden" onClick={onClose} />
-      )}
-
       <div
         className={cn(
-          "fixed top-0 right-0 h-full w-full max-w-sm z-50 flex flex-col bg-card border-l border-border/60 transition-transform duration-300 ease-out sm:hidden",
-          visible && !minimized ? "translate-x-0" : "translate-x-full"
+          "fixed top-0 right-0 h-full w-full max-w-sm z-65 flex flex-col bg-card border-l border-border/60 transition-transform duration-300 ease-out",
+          visible ? "translate-x-0" : "translate-x-full"
         )}
         style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 shrink-0">
           <div className="flex items-center gap-2">
-            <p className="text-xs font-light tracking-wide text-muted-foreground">Texto simplificado</p>
+            {resultData && !resultData.achievable && (
+              <button
+                type="button"
+                onClick={() => setWarningOpen(true)}
+                className="flex items-center justify-center w-6 h-6 rounded-md text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
+                aria-label="Ver advertencia"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" x2="12" y1="9" y2="13" />
+                  <line x1="12" x2="12.01" y1="17" y2="17" />
+                </svg>
+              </button>
+            )}
             {resultData && (
-              <span className="inline-flex items-center rounded-md bg-[#2E85C8]/10 px-2 py-0.5 text-[11px] font-medium text-[#2E85C8]">
+              <button
+                type="button"
+                onClick={() => setMetricsOpen(true)}
+                className="inline-flex items-center rounded-md bg-[#2E85C8]/10 px-3 py-1 text-xs font-medium text-[#2E85C8] cursor-pointer hover:bg-[#2E85C8]/20 transition-colors"
+              >
                 IDL {resultData.idl_score.toFixed(1)}
-              </span>
+              </button>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -168,12 +133,12 @@ function ResultAside({
             )}
             <button
               type="button"
-              onClick={() => setMinimized(true)}
+              onClick={onClose}
               className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
-              aria-label="Minimizar"
+              aria-label="Cerrar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m9 18 6-6-6-6" />
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
               </svg>
             </button>
           </div>
@@ -185,34 +150,72 @@ function ResultAside({
           ) : error ? (
             <p className="text-sm font-light text-red-500 leading-relaxed">{error}</p>
           ) : resultData ? (
-            <>
-              {!resultData.achievable && (
-                <div className="mb-4 rounded-lg border border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/20 dark:border-amber-700/40 px-3 py-2.5">
-                  <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                    No fue posible alcanzar el nivel objetivo. IDL alcanzado: {resultData.idl_score.toFixed(1)}.
-                    Esto puede ocurrir cuando el contenido requiere palabras técnicas que no pueden simplificarse más sin perder el sentido.
-                  </p>
-                </div>
-              )}
-              <p className="text-sm font-light leading-relaxed whitespace-pre-wrap tracking-wide">{resultData.simplified_text}</p>
-              <MetricsCard metrics={resultData.metrics} />
-            </>
+            <p className="text-sm font-light leading-relaxed whitespace-pre-wrap tracking-wide">{resultData.simplified_text}</p>
           ) : null}
         </div>
       </div>
 
-      {visible && minimized && (
+      {metricsOpen && resultData && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-70" onClick={() => setMetricsOpen(false)} />
+          <div className="fixed inset-x-2 sm:inset-x-auto sm:right-96 sm:w-96 top-1/2 -translate-y-1/2 z-75 bg-card rounded-xl border border-border/60 p-5 shadow-xl">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">Métricas</p>
+              <button
+                type="button"
+                onClick={() => setMetricsOpen(false)}
+                className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+            <MetricsCard metrics={resultData.metrics} />
+          </div>
+        </>
+      )}
+
+      {!open && resultData && (
         <button
           type="button"
-          onClick={() => setMinimized(false)}
-          className="fixed bottom-24 right-0 z-50 sm:hidden flex items-center gap-2 bg-card border border-border/60 border-r-0 rounded-l-xl px-3 py-2.5 text-xs font-light text-foreground shadow-lg transition-colors hover:bg-accent cursor-pointer"
-          style={{ boxShadow: "-2px 2px 12px rgba(0,0,0,0.12)" }}
+          onClick={onOpen}
+          className="fixed bottom-6 right-0 z-65 flex items-center gap-2 bg-card border border-border/60 border-r-0 rounded-l-xl px-3 py-3 text-xs font-medium text-foreground transition-colors hover:bg-accent cursor-pointer"
+          style={{ boxShadow: "-3px 2px 16px rgba(0,0,0,0.18)" }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m15 18-6-6 6-6" />
           </svg>
           Resultado
         </button>
+      )}
+
+      {warningOpen && resultData && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-70" onClick={() => setWarningOpen(false)} />
+          <div className="fixed inset-x-4 sm:inset-x-auto sm:right-96 sm:w-80 top-1/2 -translate-y-1/2 z-75 bg-card rounded-xl border border-amber-300/60 p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500 shrink-0 mt-0.5">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" x2="12" y1="9" y2="13" />
+                <line x1="12" x2="12.01" y1="17" y2="17" />
+              </svg>
+              <button
+                type="button"
+                onClick={() => setWarningOpen(false)}
+                className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+              No fue posible alcanzar el nivel objetivo. IDL alcanzado: {resultData.idl_score.toFixed(1)}.
+              Esto puede ocurrir cuando el contenido requiere palabras técnicas que no pueden simplificarse más sin perder el sentido.
+            </p>
+          </div>
+        </>
       )}
     </>
   )
@@ -316,17 +319,31 @@ function LevelDropdown({
   )
 }
 
+const LS_KEY = "simplificador_last_result"
+
 export default function SimplificadorPage() {
   const [text, setText] = useState("")
   const [level, setLevel] = useState<Level>("facil")
   const [resultData, setResultData] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   const [asideOpen, setAsideOpen] = useState(false)
   const [usageToday, setUsageToday] = useState<number | null>(null)
   const [dailyLimit, setDailyLimit] = useState(5)
   const [originalIdl, setOriginalIdl] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LS_KEY)
+      if (saved) setResultData(JSON.parse(saved))
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (resultData) {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(resultData)) } catch {}
+    }
+  }, [resultData])
 
   useEffect(() => {
     getSimplificationUsage().then(({ usage_today, daily_limit }) => {
@@ -379,14 +396,6 @@ export default function SimplificadorPage() {
     })
   }
 
-  function handleCopy() {
-    if (!resultData) return
-    navigator.clipboard.writeText(resultData.simplified_text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
   return (
     <div className="flex flex-col items-center px-4 py-6 sm:py-12 sm:min-h-[calc(100vh-8rem)] sm:justify-center">
       <ResultAside
@@ -395,6 +404,7 @@ export default function SimplificadorPage() {
         isPending={isPending}
         open={asideOpen}
         onClose={() => setAsideOpen(false)}
+        onOpen={() => setAsideOpen(true)}
       />
 
       <div className="w-full max-w-3xl space-y-4">
@@ -465,35 +475,6 @@ export default function SimplificadorPage() {
           </span>
         </div>
 
-        {(isPending || resultData || error) && (
-          <div
-            className="hidden sm:block rounded-lg border border-border/60 bg-card overflow-hidden"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 6px 16px rgba(0,0,0,0.08)" }}
-          >
-            <ResultHeader resultData={resultData} onCopy={handleCopy} copied={copied} />
-            {isPending ? (
-              <div className="px-5 py-4">
-                <p className="text-xs text-muted-foreground mb-3">Simplificando y verificando con análisis clínico...</p>
-                <TypewriterLoading />
-              </div>
-            ) : error ? (
-              <p className="p-5 text-sm text-red-500">{error}</p>
-            ) : resultData ? (
-              <div className="p-5">
-                {!resultData.achievable && (
-                  <div className="mb-4 rounded-lg border border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/20 dark:border-amber-700/40 px-3 py-2.5">
-                    <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                      No fue posible alcanzar el nivel objetivo. IDL alcanzado: {resultData.idl_score.toFixed(1)}.
-                      Esto puede ocurrir cuando el contenido requiere palabras técnicas que no pueden simplificarse más sin perder el sentido.
-                    </p>
-                  </div>
-                )}
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{resultData.simplified_text}</p>
-                <MetricsCard metrics={resultData.metrics} />
-              </div>
-            ) : null}
-          </div>
-        )}
       </div>
     </div>
   )

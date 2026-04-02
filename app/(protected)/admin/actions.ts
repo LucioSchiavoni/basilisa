@@ -9,7 +9,21 @@ import {
   type CreateExerciseInput,
 } from "@/lib/schemas/exercise";
 import type { Json } from "@/types/database.types";
-import { getWorldByDifficulty } from "@/lib/worlds";
+import { getWorldByDifficulty } from "@/lib/worlds"
+import { analyzeText } from "@/lib/services/idl"
+
+async function computeIdlScore(content: CreateExerciseInput["content"]): Promise<number | null> {
+  const text = "reading_text" in content && typeof content.reading_text === "string" && content.reading_text.trim()
+    ? content.reading_text
+    : null
+  if (!text) return null
+  try {
+    const result = await analyzeText(text)
+    return result.score
+  } catch {
+    return null
+  }
+};
 
 
 const createUserSchema = z
@@ -185,6 +199,7 @@ export async function createExercise(
 
   const { exercise_type_name, content, ...baseData } = validated.data;
   const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
+  const idlScore = await computeIdlScore(content);
 
   const adminClient = createAdminClient();
 
@@ -192,6 +207,7 @@ export async function createExercise(
     ...baseData,
     world_id: worldSlug,
     content: content as unknown as Json,
+    idl_score: idlScore,
     created_by: user.id,
     is_active: true,
   }).select("id").single();
@@ -262,6 +278,7 @@ export async function updateExercise(
 
   const { exercise_type_name, content, ...baseData } = validated.data;
   const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
+  const idlScore = await computeIdlScore(content);
 
   const adminClient = createAdminClient();
 
@@ -271,6 +288,7 @@ export async function updateExercise(
       ...baseData,
       world_id: worldSlug,
       content: content as unknown as Json,
+      idl_score: idlScore,
     })
     .eq("id", parsed.data);
 
