@@ -12,13 +12,11 @@ export function HeaderControls({ totalGems }: { totalGems: number }) {
 
   return (
     <>
-      <div className="flex lg:hidden">
+      <div className="lg:hidden fixed right-4 top-1">
         <GemBadge totalGems={totalGems} size={56} textClass="text-lg" />
       </div>
-      <div className="flex items-center gap-3 lg:gap-6">
-        <div className="hidden lg:flex">
-          <GemBadge totalGems={totalGems} size={56} textClass="text-xl" />
-        </div>
+      <div className="hidden lg:flex items-center gap-3 lg:gap-6">
+        <GemBadge totalGems={totalGems} size={56} textClass="text-xl" />
         <ThemeToggle />
       </div>
     </>

@@ -37,7 +37,7 @@ export function WorldGrid({ worlds, userName }: { worlds: WorldData[]; userName?
   const [view, setView] = useState<"grid" | "path">("path")
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 mt-10" >
 
       <div className="flex items-end justify-between gap-4">
         <div className="flex flex-col gap-0.5">

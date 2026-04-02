@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Map, ClipboardList, Trophy, User, LogOut, ScanText, ALargeSmall, X, Menu } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
   {
@@ -77,7 +78,7 @@ export function PatientBottomNav() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
+        className="absolute top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
         aria-label="Abrir menú"
       >
         <Menu strokeWidth={1.8} className="w-5 h-5" />
@@ -151,7 +152,7 @@ export function PatientBottomNav() {
         </nav>
 
         <Separator />
-        <div className="px-3 py-3">
+        <div className="px-3 py-3 flex justify-between items-center">
           <form action={logout}>
             <button
               type="submit"
@@ -161,6 +162,7 @@ export function PatientBottomNav() {
               Cerrar sesión
             </button>
           </form>
+          <ThemeToggle/>
         </div>
       </aside>
 
