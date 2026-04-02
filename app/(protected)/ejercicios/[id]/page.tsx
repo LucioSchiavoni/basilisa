@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { ExercisePlayer } from "./exercise-player";
 import { analyzeText } from "@/lib/services/idl";
+import type { Database } from "@/types/database.types";
 
 function stripAnswers(content: Record<string, unknown>): Record<string, unknown> {
   const questions =
@@ -61,7 +62,13 @@ export default async function ExercisePage({
       .maybeSingle(),
   ]);
 
-  if (!exercise) {
+  // Si exercise es null, undefined o un error de Supabase, mostrar notFound
+  type ExerciseRow = Database["public"]["Tables"]["exercises"]["Row"] & {
+    idl_score?: number | null;
+    exercise_types?: { name: string; display_name: string } | null;
+  };
+  const validExercise = exercise as ExerciseRow | null;
+  if (!validExercise || typeof validExercise !== "object" || "code" in validExercise) {
     notFound();
   }
 
@@ -81,11 +88,11 @@ export default async function ExercisePage({
       worldId = worldData.id;
       worldName = worldData.name;
     }
-  } else if (exercise.world_id) {
+  } else if (validExercise.world_id) {
     const { data: worldData } = await supabase
       .from("worlds")
       .select("id, name")
-      .eq("name", exercise.world_id)
+      .eq("name", validExercise.world_id)
       .single();
     if (worldData) {
       worldId = worldData.id;
@@ -101,18 +108,18 @@ export default async function ExercisePage({
       : "/ejercicios";
 
   const typeName =
-    exercise.exercise_types && !Array.isArray(exercise.exercise_types)
-      ? exercise.exercise_types.name
+    validExercise.exercise_types && !Array.isArray(validExercise.exercise_types)
+      ? validExercise.exercise_types.name
       : "multiple_choice";
 
   const typeDisplayName =
-    exercise.exercise_types && !Array.isArray(exercise.exercise_types)
-      ? exercise.exercise_types.display_name
+    validExercise.exercise_types && !Array.isArray(validExercise.exercise_types)
+      ? validExercise.exercise_types.display_name
       : "";
 
-  const rawContent = exercise.content as Record<string, unknown>;
+  const rawContent = validExercise.content as Record<string, unknown>;
 
-  let idlScore = (exercise as { idl_score?: number | null }).idl_score ?? null;
+  let idlScore = validExercise.idl_score ?? null;
 
   if (idlScore === null && (typeName === "reading_comprehension" || typeName === "timed_reading")) {
     const readingText = typeof rawContent.reading_text === "string" && rawContent.reading_text.trim()
@@ -123,7 +130,7 @@ export default async function ExercisePage({
         const result = await analyzeText(readingText);
         idlScore = result.score;
         if (idlScore !== null) {
-          await admin.from("exercises").update({ idl_score: idlScore }).eq("id", exercise.id);
+          await admin.from("exercises").update({ idl_score: idlScore } as any).eq("id", validExercise.id);
         }
       } catch {
         // IDL service unavailable, continue without score
@@ -137,15 +144,15 @@ export default async function ExercisePage({
       gradeYear={gradeYear}
       answerKey={buildAnswerKey(rawContent)}
       exercise={{
-        id: exercise.id,
-        title: exercise.title,
-        instructions: exercise.instructions ?? "",
-        instructionsAudioUrl: exercise.instructions_audio_url,
-        difficultyLevel: exercise.difficulty_level,
+        id: validExercise.id,
+        title: validExercise.title,
+        instructions: validExercise.instructions ?? "",
+        instructionsAudioUrl: validExercise.instructions_audio_url,
+        difficultyLevel: validExercise.difficulty_level,
         content: stripAnswers(rawContent),
         typeName,
         typeDisplayName,
-        worldId: exercise.world_id ?? null,
+        worldId: validExercise.world_id ?? null,
         idlScore,
       }}
       worldId={worldId}
