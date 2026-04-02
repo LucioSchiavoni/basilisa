@@ -126,7 +126,9 @@ PL7-8 (peso 1.0): porcentaje de palabras con 7-8 letras. Reemplazar cuando exist
 Criterios clínicos adicionales para dislexia:
 
 Preferir sílabas directas (consonante-vocal como LU-NA, CA-SA) sobre sílabas complejas (consonante-consonante-vocal como TRANS, BLAN).
+Debe mantenerse estricto para ajustar el texto al nivel de IDL objetivo. 
 Usar palabras de alta frecuencia en español.
+No devolver los resultados que hizo la IA, sino el texto final simplificado.
 Preferir sustantivos concretos e imaginables (nieve, río, casa, perro) sobre abstractos.
 NO inventar información ni agregar contenido nuevo.
 NO cambiar el tipo de texto: si es narrativo mantener narrativo, si es informativo mantener informativo.
