@@ -69,6 +69,13 @@ export type CreateExerciseState = {
   exerciseId?: string;
 };
 
+const reorderWorldExercisesSchema = z.object({
+  worldId: z.string().uuid("ID de mundo inválido"),
+  orderedWorldExerciseIds: z
+    .array(z.string().uuid("ID de relación inválido"))
+    .min(1, "Debes enviar al menos un ejercicio"),
+});
+
 const createPatientSchema = z.object({
   username: z
     .string()
@@ -197,7 +204,7 @@ export async function createExercise(
     return { error: validated.error.issues[0].message };
   }
 
-  const { exercise_type_name, content, ...baseData } = validated.data;
+  const { content, ...baseData } = validated.data;
   const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
   const idlScore = await computeIdlScore(content);
 
@@ -242,6 +249,7 @@ export async function createExercise(
   }
 
   revalidatePath("/admin/ejercicios");
+  revalidatePath("/admin/ejercicios/todos");
   return { success: "Ejercicio creado exitosamente", exerciseId: inserted.id };
 }
 
@@ -276,7 +284,7 @@ export async function updateExercise(
     return { error: validated.error.issues[0].message };
   }
 
-  const { exercise_type_name, content, ...baseData } = validated.data;
+  const { content, ...baseData } = validated.data;
   const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
   const idlScore = await computeIdlScore(content);
 
@@ -335,7 +343,50 @@ export async function updateExercise(
   }
 
   revalidatePath("/admin/ejercicios");
+  revalidatePath("/admin/ejercicios/todos");
   return { success: "Ejercicio actualizado exitosamente" };
+}
+
+export async function reorderWorldExercises(input: {
+  worldId: string;
+  orderedWorldExerciseIds: string[];
+}): Promise<{ error?: string; success?: string }> {
+  const validated = reorderWorldExercisesSchema.safeParse(input);
+  if (!validated.success) {
+    return { error: validated.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "admin") {
+    return { error: "No tienes permisos para ordenar ejercicios" };
+  }
+
+  const { error } = await supabase.rpc("reorder_world_exercises", {
+    p_world_id: validated.data.worldId,
+    p_world_exercise_ids: validated.data.orderedWorldExerciseIds,
+  });
+
+  if (error) {
+    console.error("Reorder world exercises error:", error);
+    return { error: "No se pudo guardar el nuevo orden" };
+  }
+
+  revalidatePath("/admin/ejercicios");
+  revalidatePath("/admin/ejercicios/todos");
+  revalidatePath(`/admin/ejercicios/mundos/${validated.data.worldId}`);
+  return { success: "Orden actualizado" };
 }
 
 export async function deleteExercise(id: string): Promise<{ error?: string; success?: string }> {
@@ -375,6 +426,7 @@ export async function deleteExercise(id: string): Promise<{ error?: string; succ
   }
 
   revalidatePath("/admin/ejercicios");
+  revalidatePath("/admin/ejercicios/todos");
   return { success: "Ejercicio eliminado exitosamente" };
 }
 
@@ -415,6 +467,7 @@ export async function restoreExercise(id: string): Promise<{ error?: string; suc
   }
 
   revalidatePath("/admin/ejercicios");
+  revalidatePath("/admin/ejercicios/todos");
   return { success: "Ejercicio restaurado exitosamente" };
 }
 
@@ -629,6 +682,69 @@ export async function updateUserRole(
 
   revalidatePath("/admin/usuarios");
   return { success: `Rol actualizado a ${roleValidation.data === "admin" ? "Administrador" : "Paciente"}` };
+}
+
+export async function updateUserPlan(
+  userId: string,
+  planId: string
+): Promise<{ error?: string; success?: string }> {
+  const userValidation = z.string().uuid("ID de usuario inválido").safeParse(userId);
+  if (!userValidation.success) {
+    return { error: userValidation.error.issues[0].message };
+  }
+
+  const planValidation = z.string().uuid("ID de plan inválido").safeParse(planId);
+  if (!planValidation.success) {
+    return { error: planValidation.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "No autorizado" };
+  }
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (adminProfile?.role !== "admin") {
+    return { error: "No tienes permisos para cambiar planes" };
+  }
+
+  const adminClient = createAdminClient();
+
+  const { data: selectedPlan, error: planError } = await adminClient
+    .from("subscription_plans")
+    .select("id, name")
+    .eq("id", planValidation.data)
+    .eq("is_active", true)
+    .single();
+
+  if (planError || !selectedPlan) {
+    return { error: "El plan seleccionado no es válido" };
+  }
+
+  const { error } = await adminClient
+    .from("user_subscriptions")
+    .upsert(
+      {
+        user_id: userValidation.data,
+        plan_id: planValidation.data,
+        status: "active",
+        started_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (error) {
+    return { error: "Error al actualizar el plan" };
+  }
+
+  revalidatePath("/admin/usuarios");
+  return { success: `Plan actualizado a ${selectedPlan.name}` };
 }
 
 export async function createAccount(

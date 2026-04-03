@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useTransition, useEffect } from "react"
 import { fireWinConfetti } from "@/lib/confetti"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { AudioPlayer } from "@/components/ui/audio-player"
 import { cn } from "@/lib/utils"
@@ -126,6 +127,7 @@ function buildOptions(
 }
 
 export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, backHref }: LetterGapPlayerProps) {
+  const router = useRouter()
   const content = exercise.content as unknown as LetterGapContent
   const sentences = content.sentences || []
   const worldScheme = worldName ? getScheme(worldName) : null
@@ -376,7 +378,6 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
             : worldScheme.background,
         }}
       />
-      <div className="fixed inset-0 -z-10 pointer-events-none bg-black/40" />
     </>
   ) : null
 
@@ -384,41 +385,41 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
     return (
       <div className="min-h-screen flex flex-col">
         {worldBg}
-        <header className="p-4">
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-1 text-sm font-semibold transition-colors px-3 py-1.5 rounded-xl"
+        <header className="relative z-20 p-4">
+          <button
+            type="button"
+            onClick={() => router.push(backHref)}
+            className="relative z-20 inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
             style={{ color: "#0B1926", background: "white" }}
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
-          </Link>
+          </button>
         </header>
 
-        <main className="flex-1 flex items-center justify-center px-6 pb-6 pt-0">
-          <div className="w-full max-w-lg text-center space-y-4">
+        <main className="relative z-0 flex flex-1 items-center justify-center px-4 pb-6 pt-0 sm:px-6">
+          <div className="w-full max-w-lg text-center space-y-3 sm:space-y-4">
             {worldConfig && (
-              <div className="flex justify-center -mt-8 -mb-1">
+              <div className="pointer-events-none flex justify-center -mt-10 -mb-3 sm:-mt-12 sm:-mb-4">
                 <Image
                   src={worldConfig.characterImage}
                   alt=""
-                  width={240}
-                  height={240}
-                  className="w-[190px] h-[190px] sm:w-[230px] sm:h-[230px] object-contain animate-fade-in-up drop-shadow-2xl"
+                  width={500}
+                  height={500}
+                  className="h-[360px] w-[360px] scale-[1.3] object-contain object-bottom animate-fade-in-up sm:h-[430px] sm:w-[430px] sm:scale-[1.35]"
                 />
               </div>
             )}
             <div className="space-y-3">
               <span
-                className="inline-block text-xs font-medium px-2.5 py-1 rounded-full border"
-                style={{ color: "rgba(255,255,255,0.85)", borderColor: "rgba(255,255,255,0.30)" }}
+                className="inline-block rounded-full border border-slate-900/20 bg-black/10 px-2.5 py-1 text-xs font-medium text-slate-900 dark:border-white/25 dark:bg-white/10 dark:text-white"
               >
                 {exercise.typeDisplayName}
               </span>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: "white" }}>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
                 {exercise.title}
               </h1>
-              <p className="font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>{exercise.instructions}</p>
+              <p className="font-semibold text-slate-800/90 dark:text-white/90">{exercise.instructions}</p>
               {exercise.instructionsAudioUrl && (
                 <div className="mt-4">
                   <AudioPlayer src={exercise.instructionsAudioUrl} />
@@ -426,7 +427,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
               )}
             </div>
 
-            <div className="flex justify-center gap-6 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+            <div className="flex justify-center gap-6 text-sm text-slate-600/80 dark:text-white/80">
               <span className="flex items-center gap-1.5">
                 <BarChart3 className="h-4 w-4" />
                 {difficultyLabels[exercise.difficultyLevel]}

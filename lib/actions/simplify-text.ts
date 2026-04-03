@@ -26,7 +26,10 @@ export type SimplifyResult =
       daily_limit?: number
     }
 
-const DAILY_LIMIT = 5
+const DEFAULT_DAILY_LIMIT = 5
+const ADMIN_DAILY_LIMIT = 100
+const SIMPLIFIER_FEATURE_KEY = "text_simplifier"
+const DAILY_PERIOD = "daily"
 
 const TARGET_RANGES = {
   muy_facil: { min: 0, max: 20, label: "Muy fácil" },
@@ -189,20 +192,41 @@ Responde solo con JSON: {"simplified_text": "texto corregido aquí"}`
 
 export async function getSimplificationUsage(): Promise<{ usage_today: number; daily_limit: number }> {
   const supabase = await createClient()
+  const adminClient = createAdminClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return { usage_today: 0, daily_limit: DAILY_LIMIT }
+  if (!user) return { usage_today: 0, daily_limit: DEFAULT_DAILY_LIMIT }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  const dailyLimit = profile?.role === "admin"
+    ? ADMIN_DAILY_LIMIT
+    : await (async () => {
+        const { data: resolvedLimit } = await supabase.rpc("get_user_feature_limit", {
+          p_user_id: user.id,
+          p_feature_key: SIMPLIFIER_FEATURE_KEY,
+          p_period: DAILY_PERIOD,
+        })
+
+        return typeof resolvedLimit === "number" && Number.isFinite(resolvedLimit) && resolvedLimit >= 0
+          ? resolvedLimit
+          : DEFAULT_DAILY_LIMIT
+      })()
 
   const today = new Date().toISOString().slice(0, 10)
-  const { count } = await supabase
+  const { count } = await adminClient
     .from("text_simplification_logs")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id)
     .gte("created_at", `${today}T00:00:00.000Z`)
     .lt("created_at", `${today}T23:59:59.999Z`)
 
-  return { usage_today: count ?? 0, daily_limit: DAILY_LIMIT }
+  return { usage_today: count ?? 0, daily_limit: dailyLimit }
 }
 
 export async function analyzeTextForFilter(text: string): Promise<{ score: number } | null> {
@@ -224,6 +248,7 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
   }
 
   const supabase = await createClient()
+  const adminClient = createAdminClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -232,8 +257,26 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
     return { success: false, error: "Debes estar autenticado para usar esta función." }
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
   const today = new Date().toISOString().slice(0, 10)
-  const { count: usageToday } = await supabase
+  const { data: resolvedLimit } = await supabase.rpc("get_user_feature_limit", {
+    p_user_id: user.id,
+    p_feature_key: SIMPLIFIER_FEATURE_KEY,
+    p_period: DAILY_PERIOD,
+  })
+
+  const dailyLimit = profile?.role === "admin"
+    ? ADMIN_DAILY_LIMIT
+    : typeof resolvedLimit === "number" && Number.isFinite(resolvedLimit) && resolvedLimit >= 0
+      ? resolvedLimit
+      : DEFAULT_DAILY_LIMIT
+
+  const { count: usageToday } = await adminClient
     .from("text_simplification_logs")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id)
@@ -242,12 +285,12 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
 
   const currentUsage = usageToday ?? 0
 
-  if (currentUsage >= DAILY_LIMIT) {
+  if (currentUsage >= dailyLimit) {
     return {
       success: false,
-      error: `Alcanzaste el límite de ${DAILY_LIMIT} simplificaciones por hoy. Volvé mañana.`,
+      error: `Alcanzaste el límite de ${dailyLimit} simplificaciones por hoy. Volvé mañana.`,
       usage_today: currentUsage,
-      daily_limit: DAILY_LIMIT,
+      daily_limit: dailyLimit,
     }
   }
 
@@ -324,7 +367,22 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
     }
 
     if (distance === 0) {
-      await supabase.from("text_simplification_logs").insert({ user_id: user.id })
+      const { error: insertLogError } = await adminClient
+        .from("text_simplification_logs")
+        .insert({ user_id: user.id })
+
+      if (insertLogError) {
+        console.error("Simplification log insert error:", insertLogError)
+        return { success: false, error: "No se pudo registrar el uso del simplificador." }
+      }
+
+      const { count: updatedUsage } = await adminClient
+        .from("text_simplification_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", `${today}T00:00:00.000Z`)
+        .lt("created_at", `${today}T23:59:59.999Z`)
+
       return {
         success: true,
         simplified_text: claudeText,
@@ -332,8 +390,8 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
         achievable: true,
         attempts: attempt,
         metrics: { structural: idlResult.structural, lexical: idlResult.lexical },
-        usage_today: currentUsage + 1,
-        daily_limit: DAILY_LIMIT,
+        usage_today: updatedUsage ?? currentUsage + 1,
+        daily_limit: dailyLimit,
       }
     }
 
@@ -343,7 +401,21 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
     }
   }
 
-  await supabase.from("text_simplification_logs").insert({ user_id: user.id })
+  const { error: insertLogError } = await adminClient
+    .from("text_simplification_logs")
+    .insert({ user_id: user.id })
+
+  if (insertLogError) {
+    console.error("Simplification log insert error:", insertLogError)
+    return { success: false, error: "No se pudo registrar el uso del simplificador." }
+  }
+
+  const { count: updatedUsage } = await adminClient
+    .from("text_simplification_logs")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", `${today}T00:00:00.000Z`)
+    .lt("created_at", `${today}T23:59:59.999Z`)
 
   return {
     success: true,
@@ -352,7 +424,8 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
     achievable: false,
     attempts: 3,
     metrics: bestAttempt!.metrics,
-    usage_today: currentUsage + 1,
-    daily_limit: DAILY_LIMIT,
+    usage_today: updatedUsage ?? currentUsage + 1,
+    daily_limit: dailyLimit,
   }
 }
+

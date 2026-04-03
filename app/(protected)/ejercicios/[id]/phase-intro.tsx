@@ -7,6 +7,7 @@ import { AudioPlayer } from "@/components/ui/audio-player";
 import { ArrowLeft, BarChart3, BookOpen, ChevronRight } from "lucide-react";
 import type { WorldConfig } from "@/lib/worlds";
 import type { Question } from "./exercise-player";
+import { motion } from "framer-motion";
 
 const difficultyLabels: Record<number, string> = {
   1: "Muy fácil",
@@ -64,25 +65,38 @@ export function PhaseIntro({
           Volver
         </Link>
       </header>
-      <main className="flex-1 flex items-center justify-center px-6 pb-4 overflow-hidden">
-        <div className="w-full max-w-4xl flex flex-col lg:flex-row items-center gap-4 lg:gap-12 text-center lg:text-left">
+      <main className="flex-1 flex items-center justify-center overflow-hidden px-4 pb-4 sm:px-6">
+        <div className="flex w-full max-w-5xl flex-col items-center gap-4 text-center lg:flex-row lg:items-center lg:gap-12 lg:text-left">
           {worldConfig && (
-            <div className="flex justify-center lg:flex-1">
+            <motion.div
+              className="flex justify-center self-stretch lg:w-[48%] lg:items-center shrink-0"
+              initial={{ x: -40, opacity: 0, scale: 0.92 }}
+              animate={{ x: 0, opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+            >
               <Image
                 src={worldConfig.characterImage}
                 alt=""
-                width={420}
-                height={420}
-                className="w-44 h-44 sm:w-56 sm:h-56 lg:w-80 lg:h-80 object-contain animate-fade-in-up drop-shadow-2xl"
+                width={720}
+                height={720}
+                className="h-[340px] w-[340px] scale-[1.18] object-contain object-bottom drop-shadow-2xl sm:h-[420px] sm:w-[420px] sm:scale-[1.24] lg:h-[560px] lg:w-[560px] lg:scale-[1.18]"
               />
-            </div>
+            </motion.div>
           )}
-          <div className="lg:flex-1 space-y-3 lg:space-y-5">
+          <motion.div
+            className={worldConfig ? "lg:w-[52%] space-y-4 lg:space-y-5" : "mx-auto max-w-lg space-y-4 lg:space-y-5"}
+            initial={{ x: 40, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.45, ease: "easeOut", delay: 0.2 }}
+          >
             <div className="space-y-3">
               <span className="inline-block text-sm font-medium px-2.5 py-1 rounded-full border border-border text-muted-foreground">
                 {exercise.typeDisplayName}
               </span>
-              <h1 className="text-3xl sm:text-4xl font-semibold text-foreground" style={{ fontFamily: "var(--font-lexend)" }}>
+              <h1
+                className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground"
+                style={{ fontFamily: "var(--font-lexend)" }}
+              >
                 {exercise.title}
               </h1>
               <p className="font-normal text-base sm:text-lg text-muted-foreground">
@@ -116,16 +130,18 @@ export function PhaseIntro({
                 </span>
               )}
             </div>
-            <Button
-              size="lg"
-              className="w-full max-w-xs text-base h-12 font-bold cursor-pointer"
-              onClick={onStart}
-              style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: worldConfig.accentFg } : undefined}
-            >
-              Comenzar
-              <ChevronRight className="h-5 w-5 ml-1" />
-            </Button>
-          </div>
+            <div className="flex justify-center lg:justify-start">
+              <Button
+                size="lg"
+                className="w-full max-w-sm lg:max-w-xs text-base h-12 font-bold cursor-pointer"
+                onClick={onStart}
+                style={worldConfig ? { backgroundColor: worldConfig.accentColor, color: worldConfig.accentFg } : undefined}
+              >
+                Comenzar
+                <ChevronRight className="h-5 w-5 ml-1" />
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </main>
     </div>

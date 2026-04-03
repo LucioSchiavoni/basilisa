@@ -34,8 +34,46 @@ export default async function AdminUsersPage({
 
   const { data: profiles, count } = await query;
 
+  const { data: plans } = await adminClient
+    .from("subscription_plans")
+    .select("id, code, name")
+    .eq("is_active", true)
+    .order("created_at", { ascending: true });
+
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
   const paginationBase = q?.trim() ? `/admin/usuarios?q=${encodeURIComponent(q.trim())}` : "/admin/usuarios";
+
+  const profileIds = (profiles ?? []).map((profile) => profile.id);
+
+  const { data: subscriptions } = profileIds.length > 0
+    ? await adminClient
+        .from("user_subscriptions")
+        .select("user_id, plan_id, subscription_plans(id, code, name)")
+        .in("user_id", profileIds)
+    : { data: [] as {
+        user_id: string;
+        plan_id: string;
+        subscription_plans: { id: string; code: string; name: string } | { id: string; code: string; name: string }[] | null;
+      }[] };
+
+  const planByUserId = new Map(
+    (subscriptions ?? []).map((subscription) => {
+      const plan = subscription.subscription_plans && !Array.isArray(subscription.subscription_plans)
+        ? subscription.subscription_plans
+        : null;
+
+      return [
+        subscription.user_id,
+        plan
+          ? {
+              id: plan.id,
+              code: plan.code,
+              name: plan.name,
+            }
+          : null,
+      ] as const;
+    })
+  );
 
   const usersWithDetails = (profiles ?? []).map((profile) => {
     const isPatient = (profile.email ?? "").endsWith("@basilisa.internal");
@@ -45,6 +83,7 @@ export default async function AdminUsersPage({
       is_patient: isPatient,
       username: isPatient ? (profile.email ?? "").replace("@basilisa.internal", "") : null,
       must_change_password: profile.must_change_password ?? false,
+      plan: planByUserId.get(profile.id) ?? null,
     };
   });
 
@@ -62,7 +101,15 @@ export default async function AdminUsersPage({
           </div>
         </div>
         <UsersSearch />
-        <UsersList users={usersWithDetails} currentUserId={user!.id} />
+        <UsersList
+          users={usersWithDetails}
+          currentUserId={user!.id}
+          plans={(plans ?? []).map((plan) => ({
+            id: plan.id,
+            code: plan.code,
+            name: plan.name,
+          }))}
+        />
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 pt-2">
             {page > 1 ? (

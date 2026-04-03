@@ -171,17 +171,17 @@ export function AdminBottomNav() {
 
   return (
     <>
-      {/* ── Mobile hamburger button ── */}
+      {/* â”€â”€ Mobile hamburger button â”€â”€ */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed top-0 left-0 z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
-        aria-label="Abrir menú"
+        className="z-60 lg:hidden flex items-center justify-center w-12 h-14 text-foreground/70 hover:text-foreground transition-colors"
+        aria-label="Abrir menÃº"
       >
         <Menu strokeWidth={1.8} className="w-5 h-5" />
       </button>
 
-      {/* ── Mobile drawer overlay ── */}
+      {/* â”€â”€ Mobile drawer overlay â”€â”€ */}
       <div
         className={cn(
           "fixed inset-0 z-70 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300",
@@ -190,7 +190,7 @@ export function AdminBottomNav() {
         onClick={() => setOpen(false)}
       />
 
-      {/* ── Mobile drawer panel ── */}
+      {/* â”€â”€ Mobile drawer panel â”€â”€ */}
       <aside
         className={cn(
           "fixed top-0 left-0 h-full w-72 z-80 flex flex-col bg-card border-r border-border/60 lg:hidden transition-transform duration-300 ease-out",
@@ -210,7 +210,7 @@ export function AdminBottomNav() {
             type="button"
             onClick={() => setOpen(false)}
             className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
-            aria-label="Cerrar menú"
+            aria-label="Cerrar menÃº"
           >
             <X className="w-4 h-4" strokeWidth={2} />
           </button>
@@ -235,11 +235,11 @@ export function AdminBottomNav() {
             );
           })}
         </nav>
-        <div className="px-3 py-3 flex justify-between items-center">
-          <form action={logout}>
+        <div className="px-3 py-3 flex items-center gap-3">
+          <form action={logout} className="flex-1">
             <button
               type="submit"
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+              className="flex items-center gap-3 w-full rounded-xl border border-border/70 px-4 py-3 text-sm font-semibold text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -263,7 +263,7 @@ export function AdminBottomNav() {
         </div>
       </aside>
 
-      {/* nav fijo mobile eliminado, solo menú hamburguesa/aside */}
+      {/* nav fijo mobile eliminado, solo menÃº hamburguesa/aside */}
     </>
   );
 }

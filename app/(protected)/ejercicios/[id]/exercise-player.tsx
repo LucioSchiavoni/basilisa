@@ -10,6 +10,16 @@ import { PhaseIntro } from "./phase-intro";
 import { PhaseReading } from "./phase-reading";
 import { PhaseResults } from "./phase-results";
 import { PhaseQuestions } from "./phase-questions";
+import { AnimatePresence, motion } from "framer-motion";
+import type { Variants } from "framer-motion";
+
+const pageEase: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
+
+const pageVariants: Variants = {
+  initial: { x: 60, opacity: 0 },
+  animate: { x: 0, opacity: 1, transition: { duration: 0.38, ease: pageEase } },
+  exit: { x: -60, opacity: 0, transition: { duration: 0.28, ease: "easeIn" } },
+};
 
 export type Option = {
   id: string;
@@ -67,10 +77,19 @@ function getWordCount(content: Record<string, unknown>): number {
 }
 
 export function ExercisePlayer({ exercise, answerKey, initialGems, gradeYear, worldId, worldName, backHref }: ExerciseProps) {
-  if (exercise.typeName === "letter_gap") {
-    return <LetterGapPlayer exercise={exercise} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />;
-  }
-  return <BaseExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} gradeYear={gradeYear} worldId={worldId} worldName={worldName} backHref={backHref} />;
+  return (
+    <motion.div
+      initial={{ x: 60, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      {exercise.typeName === "letter_gap" ? (
+        <LetterGapPlayer exercise={exercise} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />
+      ) : (
+        <BaseExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} gradeYear={gradeYear} worldId={worldId} worldName={worldName} backHref={backHref} />
+      )}
+    </motion.div>
+  );
 }
 
 function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, worldId, worldName, backHref }: ExerciseProps) {
@@ -247,88 +266,92 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     });
   }, [currentQuestion, answerKey, isLastQuestion, finishExercise, maxReadingTime]);
 
-  if (phase === "intro") {
-    return (
-      <PhaseIntro
-        exercise={exercise}
-        worldConfig={worldConfig}
-        isReadingComprehension={isReadingComprehension}
-        isTimedReading={isTimedReading}
-        questions={questions}
-        wordCount={wordCount}
-        backHref={backHref}
-        idlScore={exercise.idlScore ?? null}
-        onStart={handleStart}
-      />
-    );
-  }
-
-  if (phase === "reading") {
-    return (
-      <PhaseReading
-        readingText={readingText}
-        readingAudioUrl={readingAudioUrl}
-        isTimedReading={isTimedReading}
-        showTimer={showTimer}
-        timerSeconds={timerSeconds}
-        worldConfig={worldConfig}
-        activeParagraph={activeParagraph}
-        onActiveParagraphChange={setActiveParagraph}
-        onBack={() => setPhase("intro")}
-        onDone={isTimedReading ? handleFinishReading : () => {
-          readingTimeRef.current = Math.round((Date.now() - readingStartRef.current) / 1000);
-          setPhase("questions");
-        }}
-      />
-    );
-  }
-
-  if (phase === "results") {
-    return (
-      <PhaseResults
-        isTimedReading={isTimedReading}
-        exerciseTitle={exercise.title}
-        backHref={backHref}
-        isCompleting={isCompleting}
-        gemsAwarded={gemsAwarded}
-        finalTimeSeconds={finalTimeSeconds}
-        wordsPerMinute={wordsPerMinute}
-        wordCount={wordCount}
-        correctCount={correctCount}
-        totalQuestions={questions.length}
-        earnedPoints={earnedPoints}
-        totalPoints={totalPoints}
-        totalTimeSeconds={totalTimeSeconds}
-        answers={answersRef.current}
-        questions={questions}
-        initialGems={initialGems}
-        previousAttempts={previousAttempts}
-        readingTimeSeconds={readingTimeSeconds}
-        maxReadingTime={maxReadingTime}
-        expectedPPM={expectedPPM}
-        readingWordCount={readingWordCount}
-      />
-    );
-  }
-
   return (
-    <PhaseQuestions
-      worldConfig={worldConfig}
-      audioContainerRef={audioContainerRef}
-      activeQuestion={currentQuestion}
-      activeIndex={currentIndex}
-      activeTotal={questions.length}
-      activeProgress={progress}
-      selectedOptionId={selectedOptionId}
-      isPending={isPending}
-      isReadingComprehension={isReadingComprehension}
-      hideTextDuringQuestions={hideTextDuringQuestions}
-      readingText={readingText}
-      backHref={backHref}
-      onOptionClick={(optionId) => {
-        setSelectedOptionId(optionId);
-        handleCheck(optionId);
-      }}
-    />
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={phase}
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="min-h-screen"
+      >
+        {phase === "intro" && (
+          <PhaseIntro
+            exercise={exercise}
+            worldConfig={worldConfig}
+            isReadingComprehension={isReadingComprehension}
+            isTimedReading={isTimedReading}
+            questions={questions}
+            wordCount={wordCount}
+            backHref={backHref}
+            idlScore={exercise.idlScore ?? null}
+            onStart={handleStart}
+          />
+        )}
+        {phase === "reading" && (
+          <PhaseReading
+            readingText={readingText}
+            readingAudioUrl={readingAudioUrl}
+            isTimedReading={isTimedReading}
+            showTimer={showTimer}
+            timerSeconds={timerSeconds}
+            worldConfig={worldConfig}
+            activeParagraph={activeParagraph}
+            onActiveParagraphChange={setActiveParagraph}
+            onBack={() => setPhase("intro")}
+            onDone={isTimedReading ? handleFinishReading : () => {
+              readingTimeRef.current = Math.round((Date.now() - readingStartRef.current) / 1000);
+              setPhase("questions");
+            }}
+          />
+        )}
+        {phase === "results" && (
+          <PhaseResults
+            isTimedReading={isTimedReading}
+            exerciseTitle={exercise.title}
+            backHref={backHref}
+            isCompleting={isCompleting}
+            gemsAwarded={gemsAwarded}
+            finalTimeSeconds={finalTimeSeconds}
+            wordsPerMinute={wordsPerMinute}
+            wordCount={wordCount}
+            correctCount={correctCount}
+            totalQuestions={questions.length}
+            earnedPoints={earnedPoints}
+            totalPoints={totalPoints}
+            totalTimeSeconds={totalTimeSeconds}
+            answers={answersRef.current}
+            questions={questions}
+            initialGems={initialGems}
+            previousAttempts={previousAttempts}
+            readingTimeSeconds={readingTimeSeconds}
+            maxReadingTime={maxReadingTime}
+            expectedPPM={expectedPPM}
+            readingWordCount={readingWordCount}
+          />
+        )}
+        {phase === "questions" && (
+          <PhaseQuestions
+            worldConfig={worldConfig}
+            audioContainerRef={audioContainerRef}
+            activeQuestion={currentQuestion}
+            activeIndex={currentIndex}
+            activeTotal={questions.length}
+            activeProgress={progress}
+            selectedOptionId={selectedOptionId}
+            isPending={isPending}
+            isReadingComprehension={isReadingComprehension}
+            hideTextDuringQuestions={hideTextDuringQuestions}
+            readingText={readingText}
+            backHref={backHref}
+            onOptionClick={(optionId) => {
+              setSelectedOptionId(optionId);
+              handleCheck(optionId);
+            }}
+          />
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }

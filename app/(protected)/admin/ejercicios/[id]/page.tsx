@@ -55,7 +55,7 @@ export default async function EditExercisePage({
           </AlertDescription>
         </Alert>
         <Button variant="outline" className="mt-4" asChild>
-          <Link href="/admin/ejercicios?show=deleted">Ver ejercicios eliminados</Link>
+          <Link href="/admin/ejercicios/todos?show=deleted">Ver ejercicios eliminados</Link>
         </Button>
       </div>
     )

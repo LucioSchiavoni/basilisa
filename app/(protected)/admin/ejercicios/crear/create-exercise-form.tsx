@@ -141,7 +141,7 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
       window.scrollTo({ top: 0, behavior: "smooth" })
     } else {
       setStatus({ success: result.success })
-      router.push("/admin/ejercicios")
+      router.push("/admin/ejercicios/todos")
     }
   }
 

@@ -586,6 +586,78 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          id: string
+          code: string
+          name: string
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          name: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          name?: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          plan_id: string
+          status: string
+          started_at: string
+          ends_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plan_id: string
+          status: string
+          started_at?: string
+          ends_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          plan_id?: string
+          status?: string
+          started_at?: string
+          ends_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       world_exercises: {
         Row: {
           created_at: string | null
@@ -687,16 +759,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_role: { Args: never; Returns: string }
-      get_world_progress: {
-        Args: { p_patient_id: string }
-        Returns: { world_name: string; total_exercises: number; completed_exercises: number }[]
+        get_user_feature_limit: {
+          Args: { p_feature_key: string; p_period: string; p_user_id: string }
+          Returns: number
+        }
+        get_user_role: { Args: never; Returns: string }
+        get_world_progress: {
+          Args: { p_patient_id: string }
+          Returns: { world_name: string; total_exercises: number; completed_exercises: number }[]
+        }
+        increment_user_gems: {
+          Args: { p_amount: number; p_user_id: string }
+          Returns: undefined
+        }
+        reorder_world_exercises: {
+          Args: { p_world_exercise_ids: string[]; p_world_id: string }
+          Returns: undefined
+        }
       }
-      increment_user_gems: {
-        Args: { p_amount: number; p_user_id: string }
-        Returns: undefined
-      }
-    }
     Enums: {
       [_ in never]: never
     }
