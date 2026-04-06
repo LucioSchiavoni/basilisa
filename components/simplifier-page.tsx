@@ -5,19 +5,20 @@ import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { simplifyText, analyzeTextForFilter } from "@/lib/actions/simplify-text"
-import type { SimplifyResult } from "@/lib/actions/simplify-text"
+import type { SimplifyResult, GlossaryEntry } from "@/lib/actions/simplify-text"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 import { TypewriterLoading } from "@/components/typewriter-loading"
 
 type ResultData = {
   simplified_text: string
+  glossary: GlossaryEntry[]
   idl_score: number
   achievable: boolean
   attempts: number
   metrics: { structural: StructuralMetrics; lexical: LexicalMetrics }
 }
 
-type Level = "muy_facil" | "facil" | "medio" | "dificil"
+type Level = "inicial" | "intermedio" | "avanzado"
 
 type SimplifierPageProps = {
   mode: "admin" | "patient"
@@ -26,10 +27,9 @@ type SimplifierPageProps = {
 }
 
 const LEVELS: { value: Level; label: string; idl: string; max: number }[] = [
-  { value: "muy_facil", label: "Muy fácil", idl: "IDL 0-20", max: 20 },
-  { value: "facil", label: "Fácil", idl: "IDL 20-40", max: 40 },
-  { value: "medio", label: "Medio", idl: "IDL 40-60", max: 60 },
-  { value: "dificil", label: "Difícil", idl: "IDL 60-80", max: 80 },
+  { value: "inicial", label: "Inicial", idl: "IDL 0-30", max: 30 },
+  { value: "intermedio", label: "Intermedio", idl: "IDL 30-55", max: 55 },
+  { value: "avanzado", label: "Avanzado", idl: "IDL 55-80", max: 80 },
 ]
 
 const MAX_CHARS = 5000
@@ -180,6 +180,75 @@ function LevelDropdown({
   )
 }
 
+function AnnotatedText({ text, glossary }: { text: string; glossary: GlossaryEntry[] }) {
+  const [activeTerm, setActiveTerm] = useState<string | null>(null)
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!activeTerm) return
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setActiveTerm(null)
+        setPopupPos(null)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [activeTerm])
+
+  const tokens = text.split(/(\s+)/)
+  const normalize = (w: string) => w.toLowerCase().replace(/[^a-záéíóúüñ]/gi, "")
+  const glossaryMap = new Map(glossary.map((e) => [normalize(e.term), e]))
+
+  function handleTokenClick(e: React.MouseEvent<HTMLSpanElement>, term: string) {
+    if (activeTerm === term) {
+      setActiveTerm(null)
+      setPopupPos(null)
+      return
+    }
+    const rect = (e.target as HTMLSpanElement).getBoundingClientRect()
+    setActiveTerm(term)
+    setPopupPos({ top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX })
+  }
+
+  const activeEntry = activeTerm ? glossaryMap.get(activeTerm) : null
+
+  return (
+    <div ref={containerRef}>
+      <p className="whitespace-pre-wrap text-sm font-light leading-relaxed tracking-wide">
+        {tokens.map((token, i) => {
+          const key = normalize(token)
+          const entry = glossaryMap.get(key)
+          if (entry) {
+            return (
+              <span
+                key={i}
+                onClick={(e) => handleTokenClick(e, key)}
+                className="text-[#2E85C8] cursor-pointer"
+                style={{ borderBottom: "1.5px dotted #2E85C8" }}
+              >
+                {token}
+              </span>
+            )
+          }
+          return <span key={i}>{token}</span>
+        })}
+      </p>
+      {activeEntry && popupPos && createPortal(
+        <div
+          className="fixed z-[200] max-w-[220px] rounded-xl border border-border/60 bg-card p-3 shadow-xl"
+          style={{ top: popupPos.top, left: popupPos.left }}
+        >
+          <p className="text-xs font-semibold text-foreground">{activeEntry.term}</p>
+          <p className="mt-1 text-xs font-light text-muted-foreground">{activeEntry.definition}</p>
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
 function ResultAside({
   resultData,
   error,
@@ -294,7 +363,22 @@ function ResultAside({
           ) : error ? (
             <p className="text-sm font-light leading-relaxed text-red-500">{error}</p>
           ) : resultData ? (
-            <p className="whitespace-pre-wrap text-sm font-light leading-relaxed tracking-wide">{resultData.simplified_text}</p>
+            <>
+              <AnnotatedText text={resultData.simplified_text} glossary={resultData.glossary} />
+              {resultData.glossary.length > 0 && (
+                <div className="mt-6 border-t border-border/40 pt-4">
+                  <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Palabras difíciles</p>
+                  <div className="space-y-2">
+                    {resultData.glossary.map((entry) => (
+                      <div key={entry.term}>
+                        <span className="text-xs font-medium text-[#2E85C8]">{entry.term}</span>
+                        <span className="text-xs text-muted-foreground"> — {entry.definition}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           ) : null}
         </div>
       </div>
@@ -368,7 +452,7 @@ function ResultAside({
 
 export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: SimplifierPageProps) {
   const [text, setText] = useState("")
-  const [level, setLevel] = useState<Level>("facil")
+  const [level, setLevel] = useState<Level>("intermedio")
   const [resultData, setResultData] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [asideOpen, setAsideOpen] = useState(false)
@@ -384,8 +468,11 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) setResultData(JSON.parse(saved))
+      const raw = localStorage.getItem(storageKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<ResultData>
+        setResultData({ ...saved, glossary: saved.glossary ?? [] } as ResultData)
+      }
     } catch {}
   }, [storageKey])
 
@@ -450,6 +537,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
         if (res.success) {
           const nextResult = {
             simplified_text: res.simplified_text,
+            glossary: res.glossary ?? [],
             idl_score: res.idl_score,
             achievable: res.achievable,
             attempts: res.attempts,

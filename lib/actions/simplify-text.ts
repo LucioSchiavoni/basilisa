@@ -6,7 +6,12 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { analyzeText } from "@/lib/services/idl"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 
-type DifficultyLevel = "muy_facil" | "facil" | "medio" | "dificil"
+type DifficultyLevel = "inicial" | "intermedio" | "avanzado"
+
+export type GlossaryEntry = {
+  term: string
+  definition: string
+}
 
 export type SimplifyResult =
   | {
@@ -16,6 +21,7 @@ export type SimplifyResult =
       achievable: boolean
       attempts: number
       metrics: { structural: StructuralMetrics; lexical: LexicalMetrics }
+      glossary: GlossaryEntry[]
       usage_today?: number
       daily_limit?: number
     }
@@ -32,101 +38,103 @@ const SIMPLIFIER_FEATURE_KEY = "text_simplifier"
 const DAILY_PERIOD = "daily"
 
 const TARGET_RANGES = {
-  muy_facil: { min: 0, max: 20, label: "Muy fácil" },
-  facil: { min: 20, max: 40, label: "Fácil" },
-  medio: { min: 40, max: 60, label: "Medio" },
-  dificil: { min: 60, max: 80, label: "Difícil" },
+  inicial: { min: 0, max: 30, label: "Inicial" },
+  intermedio: { min: 30, max: 55, label: "Intermedio" },
+  avanzado: { min: 55, max: 80, label: "Avanzado" },
 }
 
-const METRIC_TARGETS: Record<
-  DifficultyLevel,
-  {
-    avg_words_per_sentence: number
-    long_sentence_ratio: number
-    avg_letters_per_word: number
-    medium_word_ratio: number
-    rare_word_ratio: number
-  }
-> = {
-  muy_facil: { avg_words_per_sentence: 6, long_sentence_ratio: 0, avg_letters_per_word: 3.8, medium_word_ratio: 0.05, rare_word_ratio: 0 },
-  facil: { avg_words_per_sentence: 9, long_sentence_ratio: 0, avg_letters_per_word: 4.5, medium_word_ratio: 0.10, rare_word_ratio: 0.03 },
-  medio: { avg_words_per_sentence: 12, long_sentence_ratio: 0.20, avg_letters_per_word: 5.0, medium_word_ratio: 0.15, rare_word_ratio: 0.08 },
-  dificil: { avg_words_per_sentence: 18, long_sentence_ratio: 0.50, avg_letters_per_word: 5.5, medium_word_ratio: 0.20, rare_word_ratio: 0.12 },
+const METRIC_TARGETS: Record<DifficultyLevel, { avg_words_per_sentence: number; long_sentence_ratio: number; avg_letters_per_word: number; medium_word_ratio: number; rare_word_ratio: number }> = {
+  inicial: { avg_words_per_sentence: 7, long_sentence_ratio: 0, avg_letters_per_word: 3.8, medium_word_ratio: 0.05, rare_word_ratio: 0 },
+  intermedio: { avg_words_per_sentence: 10, long_sentence_ratio: 0, avg_letters_per_word: 4.5, medium_word_ratio: 0.10, rare_word_ratio: 0.03 },
+  avanzado: { avg_words_per_sentence: 14, long_sentence_ratio: 0.15, avg_letters_per_word: 5.0, medium_word_ratio: 0.15, rare_word_ratio: 0.08 },
 }
 
-const SYSTEM_PROMPT = `Eres un motor de simplificación lectora clínica para niños con dislexia.
-Reescribes textos en español para alcanzar un IDL objetivo específico.
+const SYSTEM_PROMPT = `Eres un simplificador de textos para niños con dislexia. Tu tarea es reescribir textos preservando todo el contenido y el sentido original, modificando únicamente el vocabulario, la sintaxis y el estilo. Nunca omitas ideas. Nunca inventes información.
 
-## FÓRMULA IDL
+## PERFILES
 
-IDL = 100 × min(1, suma_ponderada / 3.6)
+### INICIAL
+Para lectores en etapa temprana con dislexia severa.
 
-suma_ponderada = (1.0 × LMO_n) + (1.2 × OL15_n) + (1.0 × LMP_n) + (1.0 × PL78_n) + (1.5 × Rare_n)
+Sintaxis:
+- Oraciones de 5 a 8 palabras. Ninguna supera 10 palabras.
+- Orden estricto: sujeto → verbo → objeto. Sin variaciones, sin subordinaciones.
+- Una idea por oración. Siempre.
 
-Variables normalizadas (0.0 a 1.0):
-- LMO_n = promedio_palabras_por_oración / 20
-- OL15_n = proporción_oraciones_con_más_de_15_palabras
-- LMP_n = promedio_letras_por_palabra / 8
-- PL78_n = proporción_palabras_con_7_u_8_letras
-- Rare_n = proporción_palabras_con_9_o_más_letras
+Vocabulario:
+- Palabras de 1 a 5 letras preferentemente. Evitar palabras de más de 7 letras.
+- Solo vocabulario que un niño de 6 a 8 años usa o escucha a diario.
+- Primera sílaba de estructura simple: consonante+vocal (CA, LU, PE) o consonante+vocal+consonante (CAR, LUN, PER).
+- Palabras donde grafemas y fonemas se corresponden uno a uno siempre que sea posible.
+- Sustantivos concretos e imaginables (casa, perro, río) sobre abstractos (proceso, concepto, situación).
 
-"Letras" = caracteres alfabéticos (a-z, á,é,í,ó,ú,ü,ñ). No contar números, signos, guiones.
-"Palabras" = tokens separados por espacios, excluyendo tokens de solo puntuación o números.
-"Oraciones" = segmentos terminados en punto, signo de interrogación o exclamación.
+Estilo:
+- La fluidez narrativa la dan los conectores, no la estructura de la oración.
+- Conectores simples: porque, entonces, pero, también, y.
+- El texto debe sonar natural. Nunca telegráfico.
 
-## TARGETS POR NIVEL
+### INTERMEDIO
+Para lectores con dislexia moderada que ya tienen cierta fluidez.
 
-### IDL 0-20 (Muy fácil)
-- Oraciones de 5-7 palabras en promedio, NINGUNA mayor a 15
-- Promedio de letras por palabra ≤ 3.8
-- CERO palabras de 9+ letras
-- Máximo 5% de palabras con 7-8 letras
-- Usar solo palabras muy cortas y muy frecuentes
+Sintaxis:
+- Oraciones de 8 a 12 palabras. Ninguna supera 15 palabras.
+- Minimizar subordinaciones. Preferir coordinación con conectores claros.
 
-### IDL 20-40 (Fácil)
-- Oraciones de 8-10 palabras en promedio, NINGUNA mayor a 15
-- Promedio de letras por palabra ≤ 4.5
-- Máximo 3% de palabras de 9+ letras
-- Máximo 10% de palabras con 7-8 letras
+Vocabulario:
+- Evitar palabras de más de 8 letras salvo términos irremplazables.
+- Vocabulario frecuente del español. Las palabras específicas se definen brevemente en la misma oración.
+- Sustantivos concretos siempre que sea posible.
 
-### IDL 40-60 (Medio)
-- Oraciones de 10-14 palabras en promedio, máximo 20% mayores a 15
-- Promedio de letras por palabra ≤ 5.0
-- Máximo 8% de palabras de 9+ letras
-- Máximo 15% de palabras con 7-8 letras
+Estilo:
+- Conectores que favorezcan la comprensión: porque, además, por ejemplo, entonces, pero, también, sin embargo.
+- Estilo narrativo o descriptivo claro.
+- El texto debe sonar fluido y bien escrito.
 
-### IDL 60-80 (Difícil)
-- Oraciones de hasta 18 palabras en promedio, máximo 50% mayores a 15
-- Promedio de letras por palabra ≤ 5.5
-- Máximo 12% de palabras de 9+ letras
+### AVANZADO
+Para lectores con dislexia leve o en etapa de consolidación.
 
-## PRIORIDAD DE SIMPLIFICACIÓN (mayor impacto primero)
+Sintaxis:
+- Oraciones de hasta 15 palabras en promedio.
+- Estructura cercana al original. Simplificar solo lo que dificulte la lectura fluida.
 
-1. ELIMINAR palabras de 9+ letras (peso 1.5): "alimentación"→"comida", "temperatura"→"calor", "diferentes"→"otros", "descubrimiento"→"hallazgo", "características"→"rasgos", "necesitan"→"deben"
-2. DIVIDIR oraciones >15 palabras (peso 1.2) en dos o más oraciones claras
-3. ACORTAR oraciones al promedio del nivel (peso 1.0)
-4. PREFERIR palabras cortas (peso 1.0): "utilizar"→"usar", "poseer"→"tener", "realizar"→"hacer", "pequeño"→"chico"
-5. REDUCIR palabras de 7-8 letras (peso 1.0): "también"→"y", "algunos"→"unos", "momento"→"rato"
+Vocabulario:
+- Vocabulario cercano al original.
+- Simplificar solo palabras infrecuentes o de pronunciación compleja.
+- Se permiten palabras largas si son frecuentes o el niño las conoce por contexto.
 
-## CRITERIOS CLÍNICOS PARA DISLEXIA
+Estilo:
+- Preservar el estilo y la voz del texto fuente.
+- Conectores para asegurar fluidez narrativa donde haga falta.
 
-- Sílabas directas (CA-SA, LU-NA) sobre complejas (TRANS, BLAN, PREN)
-- Palabras frecuentes del español cotidiano
-- Sustantivos concretos e imaginables (casa, perro, río) sobre abstractos (concepto, proceso)
-- Mantener nombres propios sin modificar
-- Si una palabra técnica es irremplazable (dinosaurio, volcán, planeta), mantenerla
+## REGLAS UNIVERSALES
 
-## RESTRICCIONES
+Contenido:
+- Preservar todas las ideas del texto original sin excepción.
+- Mantener nombres propios sin modificar.
+- En textos informativos, eliminar solo información redundante o ambigua, nunca información relevante.
 
-- NO inventar información
-- NO cambiar el tipo de texto (narrativo→narrativo, informativo→informativo)
-- El texto debe sonar natural, NUNCA telegráfico
-- Mantener la coherencia y el hilo narrativo
+Vocabulario:
+- Prohibido repetir el mismo adjetivo o sustantivo en la misma oración o en oraciones consecutivas del mismo párrafo. Si la idea lo requiere, usar un sinónimo o reestructurar la oración.
+- Preferir palabras con sílabas simples (consonante+vocal) sobre grupos consonánticos complejos (trans-, blan-, pren-, -str-).
+- Sustituir palabras largas por equivalentes cortos cuando existan: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros, también→y, algunos→unos, momento→rato.
+
+Sintaxis:
+- Nunca usar comas para reemplazar un verbo omitido.
+- Oraciones largas se dividen en oraciones completas independientes, cada una con sujeto y verbo propios. El límite por perfil es el que define cuándo una oración es demasiado larga.
+
+Estilo:
+- El texto simplificado debe sonar escrito por un autor cuidadoso, no como una lista de frases cortas.
+- Usar conectores para guiar al lector: porque, además, por eso, entonces, por ejemplo, pero, también, sin embargo.
+- Preferir estilo narrativo incluso en textos informativos.
+
+## GLOSARIO
+
+Identifica las palabras del texto simplificado que puedan resultar difíciles de comprender para un niño del perfil indicado. Selecciona un máximo de 5 términos, priorizando los más complejos o infrecuentes. Para cada término escribe una definición breve, en lenguaje simple, apropiada para el perfil. Si no hay términos que lo justifiquen, devuelve un array vacío.
 
 ## FORMATO DE RESPUESTA
 
 JSON puro, sin markdown, sin backticks:
-{"simplified_text": "texto aquí"}`
+{"simplified_text": "texto aquí", "glossary": [{"term": "término", "definition": "definición breve en lenguaje simple"}]}`
 
 function distanceToRange(score: number, level: DifficultyLevel): number {
   const { min, max } = TARGET_RANGES[level]
@@ -169,25 +177,31 @@ function buildFeedback(
           .join("\n")
       : "Todas las variables están dentro del objetivo. El IDL puede verse afectado por interacciones no lineales."
 
-  return `Tu simplificación anterior dio un IDL de ${score.toFixed(1)} (objetivo: ${range.min}-${range.max}).
+  return `Tu simplificación anterior fue validada. Estos son los resultados:
 
-Métricas del microservicio (valores reales):
-- LMO (palabras/oración): ${structural.avg_words_per_sentence.toFixed(1)} (normalizado: ${(structural.avg_words_per_sentence / 20).toFixed(3)})
-- OL15 (% oraciones >15 palabras): ${(structural.long_sentence_ratio * 100).toFixed(1)}%
-- LMP (letras/palabra): ${structural.avg_letters_per_word.toFixed(2)} (normalizado: ${(structural.avg_letters_per_word / 8).toFixed(3)})
-- PL78 (% palabras 7-8 letras): ${(structural.medium_word_ratio * 100).toFixed(1)}%
-- Rare (% palabras 9+ letras): ${(structural.rare_word_ratio * 100).toFixed(1)}%
+Perfil objetivo: ${range.label}
+IDL obtenido: ${score.toFixed(1)}
 
-Métricas léxicas de la base de datos clínica:
-- Frecuencia promedio: ${lexical.avg_frequency.toFixed(2)} (escala 0-10, objetivo >6)
-- Imaginabilidad promedio: ${lexical.avg_imageability.toFixed(2)} (escala 1-7, objetivo >4)
-- Palabras no encontradas en DB clínica: ${(lexical.unknown_word_ratio * 100).toFixed(1)}%
+Métricas estructurales:
+- Palabras por oración (promedio): ${structural.avg_words_per_sentence.toFixed(1)}
+- Oraciones de más de 15 palabras: ${(structural.long_sentence_ratio * 100).toFixed(1)}%
+- Letras por palabra (promedio): ${structural.avg_letters_per_word.toFixed(2)}
+- Palabras de 7 a 8 letras: ${(structural.medium_word_ratio * 100).toFixed(1)}%
+- Palabras de 9 o más letras: ${(structural.rare_word_ratio * 100).toFixed(1)}%
 
-Variables que MÁS necesitan bajar (ordenadas por impacto):
+Métricas léxicas:
+- Frecuencia promedio: ${lexical.avg_frequency.toFixed(2)} / 10 (objetivo: mayor a 6)
+- Imaginabilidad promedio: ${lexical.avg_imageability.toFixed(2)} / 7 (objetivo: mayor a 4)
+- Palabras fuera de la base léxica: ${(lexical.unknown_word_ratio * 100).toFixed(1)}%
+
+Aspectos a corregir ordenados por impacto:
 ${exceedingList}
 
-Reescribe el texto corrigiendo específicamente esas variables.
-Responde solo con JSON: {"simplified_text": "texto corregido aquí"}`
+Reescribe el texto corrigiendo específicamente esos aspectos. Si una métrica no se puede mejorar sin deteriorar la calidad del texto, prioriza siempre la calidad. El objetivo es un texto bien escrito para un niño con dislexia, no optimizar números.
+
+Devuelve el glosario actualizado si algún término cambió. Si no hubo cambios en los términos, devuelve el mismo glosario anterior.
+
+Responde solo con JSON: {"simplified_text": "texto corregido aquí", "glossary": [{"term": "término", "definition": "definición breve en lenguaje simple"}]}`
 }
 
 export async function getSimplificationUsage(): Promise<{ usage_today: number; daily_limit: number }> {
@@ -312,6 +326,7 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
   }
 
   let bestAttempt: Attempt | null = null
+  let parsedGlossary: GlossaryEntry[] = []
   const conversationHistory: Anthropic.MessageParam[] = [
     {
       role: "user",
@@ -337,8 +352,9 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
 
       conversationHistory.push({ role: "assistant", content: textBlock.text })
 
-      const parsed = JSON.parse(textBlock.text.trim()) as { simplified_text: string }
+      const parsed = JSON.parse(textBlock.text.trim()) as { simplified_text: string; glossary?: GlossaryEntry[] }
       claudeText = parsed.simplified_text
+      parsedGlossary = Array.isArray(parsed.glossary) ? parsed.glossary : []
     } catch {
       if (attempt === 1) return { success: false, error: "Error al llamar a la API de Claude." }
       break
@@ -390,6 +406,7 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
         achievable: true,
         attempts: attempt,
         metrics: { structural: idlResult.structural, lexical: idlResult.lexical },
+        glossary: parsedGlossary,
         usage_today: updatedUsage ?? currentUsage + 1,
         daily_limit: dailyLimit,
       }
@@ -424,6 +441,7 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
     achievable: false,
     attempts: 3,
     metrics: bestAttempt!.metrics,
+    glossary: parsedGlossary,
     usage_today: updatedUsage ?? currentUsage + 1,
     daily_limit: dailyLimit,
   }
