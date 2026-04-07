@@ -10,21 +10,6 @@ import {
 } from "@/lib/schemas/exercise";
 import type { Json } from "@/types/database.types";
 import { getWorldByDifficulty } from "@/lib/worlds"
-import { analyzeText } from "@/lib/services/idl"
-
-async function computeIdlScore(content: CreateExerciseInput["content"]): Promise<number | null> {
-  const text = "reading_text" in content && typeof content.reading_text === "string" && content.reading_text.trim()
-    ? content.reading_text
-    : null
-  if (!text) return null
-  try {
-    const result = await analyzeText(text)
-    return result.score
-  } catch {
-    return null
-  }
-};
-
 
 const createUserSchema = z
   .object({
@@ -204,9 +189,8 @@ export async function createExercise(
     return { error: validated.error.issues[0].message };
   }
 
-  const { content, ...baseData } = validated.data;
+  const { content, exercise_type_name: _, ...baseData } = validated.data;
   const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
-  const idlScore = await computeIdlScore(content);
 
   const adminClient = createAdminClient();
 
@@ -214,7 +198,6 @@ export async function createExercise(
     ...baseData,
     world_id: worldSlug,
     content: content as unknown as Json,
-    idl_score: idlScore,
     created_by: user.id,
     is_active: true,
   }).select("id").single();
@@ -228,7 +211,7 @@ export async function createExercise(
     const { data: world } = await adminClient
       .from("worlds")
       .select("id")
-      .eq("name", worldSlug)
+      .eq("slug", worldSlug)
       .single();
 
     if (world) {
@@ -284,9 +267,8 @@ export async function updateExercise(
     return { error: validated.error.issues[0].message };
   }
 
-  const { content, ...baseData } = validated.data;
+  const { content, exercise_type_name: _, ...baseData } = validated.data;
   const worldSlug = getWorldByDifficulty(baseData.difficulty_level);
-  const idlScore = await computeIdlScore(content);
 
   const adminClient = createAdminClient();
 
@@ -296,7 +278,6 @@ export async function updateExercise(
       ...baseData,
       world_id: worldSlug,
       content: content as unknown as Json,
-      idl_score: idlScore,
     })
     .eq("id", parsed.data);
 
@@ -309,7 +290,7 @@ export async function updateExercise(
     const { data: world } = await adminClient
       .from("worlds")
       .select("id")
-      .eq("name", worldSlug)
+      .eq("slug", worldSlug)
       .single();
 
     if (world) {

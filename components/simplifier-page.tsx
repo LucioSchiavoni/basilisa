@@ -262,6 +262,8 @@ function ResultAside({
   open,
   onClose,
   onOpen,
+  asideWidth,
+  onWidthChange,
 }: {
   resultData: ResultData | null
   error: string | null
@@ -269,11 +271,35 @@ function ResultAside({
   open: boolean
   onClose: () => void
   onOpen: () => void
+  asideWidth: number
+  onWidthChange: (w: number) => void
 }) {
   const [copied, setCopied] = useState(false)
   const [metricsOpen, setMetricsOpen] = useState(false)
   const [warningOpen, setWarningOpen] = useState(false)
   const visible = open && (isPending || !!resultData || !!error)
+  const isDragging = useRef(false)
+  const dragStartX = useRef(0)
+  const dragStartWidth = useRef(0)
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!isDragging.current) return
+      const delta = dragStartX.current - e.clientX
+      const newWidth = Math.min(768, Math.max(320, dragStartWidth.current + delta))
+      onWidthChange(newWidth)
+    }
+    function onMouseUp() {
+      isDragging.current = false
+    }
+    document.addEventListener("mousemove", onMouseMove)
+    document.addEventListener("mouseup", onMouseUp)
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove)
+      document.removeEventListener("mouseup", onMouseUp)
+    }
+  }, [onWidthChange])
+
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -294,11 +320,30 @@ function ResultAside({
     <>
       <div
         className={cn(
-          "fixed right-0 top-0 z-65 flex h-full w-full max-w-sm translate-x-full flex-col border-l border-border/60 bg-card transition-transform duration-300 ease-out",
+          "fixed right-0 top-0 z-65 flex h-full w-full translate-x-full flex-col border-l border-border/60 bg-card transition-transform duration-300 ease-out",
           visible && "translate-x-0"
         )}
-        style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }}
+        style={{ width: asideWidth, maxWidth: "768px", minWidth: "320px", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }}
       >
+        <div
+          className="absolute left-0 top-0 h-full w-4 cursor-col-resize z-10 group hidden sm:flex items-center justify-center"
+          onMouseDown={(e) => {
+            isDragging.current = true
+            dragStartX.current = e.clientX
+            dragStartWidth.current = asideWidth
+            e.preventDefault()
+          }}
+        >
+          <div className="h-full w-px bg-border group-hover:bg-[#2E85C8]/40 transition-colors duration-150" />
+          <div className="absolute top-1/2 -translate-y-1/2 flex flex-col gap-1 items-center justify-center">
+            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 group-hover:bg-[#2E85C8] transition-colors duration-150" />
+            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 group-hover:bg-[#2E85C8] transition-colors duration-150" />
+            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 group-hover:bg-[#2E85C8] transition-colors duration-150" />
+          </div>
+        </div>
+        <div className="flex justify-center pt-2 pb-1 sm:hidden">
+          <div className="h-1 w-10 rounded-full bg-border/60" />
+        </div>
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-4">
           <div className="flex items-center gap-2">
             {resultData && !resultData.achievable && (
@@ -462,6 +507,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   const [resultData, setResultData] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [asideOpen, setAsideOpen] = useState(false)
+  const [asideWidth, setAsideWidth] = useState(384)
   const [usageToday, setUsageToday] = useState<number | null>(initialUsageToday)
   const [dailyLimit, setDailyLimit] = useState(initialDailyLimit)
   const [originalIdl, setOriginalIdl] = useState<number | null>(null)
@@ -606,6 +652,8 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
         open={asideOpen}
         onClose={() => setAsideOpen(false)}
         onOpen={() => setAsideOpen(true)}
+        asideWidth={asideWidth}
+        onWidthChange={setAsideWidth}
       />
 
       {complexityModalOpen && createPortal(
