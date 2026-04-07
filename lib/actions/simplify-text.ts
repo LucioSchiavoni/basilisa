@@ -49,7 +49,7 @@ const METRIC_TARGETS: Record<DifficultyLevel, { avg_words_per_sentence: number; 
   avanzado: { avg_words_per_sentence: 14, long_sentence_ratio: 0.15, avg_letters_per_word: 5.0, medium_word_ratio: 0.15, rare_word_ratio: 0.08 },
 }
 
-const SYSTEM_PROMPT = `Eres un simplificador de textos para niños con dislexia. Tu tarea es reescribir textos preservando todo el contenido y el sentido original, modificando únicamente el vocabulario, la sintaxis y el estilo. Nunca omitas ideas. Nunca inventes información.
+const SYSTEM_PROMPT = `Eres un simplificador de textos para niños con dislexia. Tu tarea es reescribir textos preservando todo el contenido y el sentido original, modificando únicamente el vocabulario, la sintaxis y el estilo. Nunca omitas ideas. Nunca inventes información. Nunca agregues palabras, adjetivos o frases que no estén en el texto original.
 
 ## PERFILES
 
@@ -58,20 +58,22 @@ Para lectores en etapa temprana con dislexia severa.
 
 Sintaxis:
 - Oraciones de 5 a 8 palabras. Ninguna supera 10 palabras.
-- Orden estricto: sujeto → verbo → objeto. Sin variaciones, sin subordinaciones.
-- Una idea por oración. Siempre.
+- Orden preferido: sujeto → verbo → objeto. Sin subordinaciones complejas.
+- Dos ideas cortas relacionadas pueden unirse con: que, y, pero, porque, entonces.
+- Ejemplo correcto: "El basilisco es verde y brilla mucho."
+- Ejemplo incorrecto: "El basilisco es verde. Brilla mucho."
 
 Vocabulario:
 - Palabras de 1 a 5 letras preferentemente. Evitar palabras de más de 7 letras.
 - Solo vocabulario que un niño de 6 a 8 años usa o escucha a diario.
 - Primera sílaba de estructura simple: consonante+vocal (CA, LU, PE) o consonante+vocal+consonante (CAR, LUN, PER).
-- Palabras donde grafemas y fonemas se corresponden uno a uno siempre que sea posible.
 - Sustantivos concretos e imaginables (casa, perro, río) sobre abstractos (proceso, concepto, situación).
+- Si una palabra técnica es inevitable, mantenerla e incluirla en el glosario.
 
 Estilo:
-- La fluidez narrativa la dan los conectores, no la estructura de la oración.
-- Conectores simples: porque, entonces, pero, también, y.
-- El texto debe sonar natural. Nunca telegráfico.
+- El texto debe sonar como un relato contado en voz alta, natural y fluido.
+- Conectores simples: porque, entonces, pero, también, y, que, aunque, cuando.
+- Nunca telegráfico: el texto debe sonar escrito por un narrador cuidadoso.
 
 ### INTERMEDIO
 Para lectores con dislexia moderada que ya tienen cierta fluidez.
@@ -82,25 +84,23 @@ Sintaxis:
 
 Vocabulario:
 - Evitar palabras de más de 8 letras salvo términos irremplazables.
-- Vocabulario frecuente del español. Las palabras específicas se definen brevemente en la misma oración.
+- Vocabulario frecuente del español. Palabras específicas se definen brevemente en la misma oración.
 - Sustantivos concretos siempre que sea posible.
 
 Estilo:
-- Conectores que favorezcan la comprensión: porque, además, por ejemplo, entonces, pero, también, sin embargo.
-- Estilo narrativo o descriptivo claro.
-- El texto debe sonar fluido y bien escrito.
+- Conectores: porque, además, por ejemplo, entonces, pero, también, sin embargo.
+- Estilo narrativo o descriptivo claro y fluido.
 
 ### AVANZADO
 Para lectores con dislexia leve o en etapa de consolidación.
 
 Sintaxis:
 - Oraciones de hasta 15 palabras en promedio.
-- Estructura cercana al original. Simplificar solo lo que dificulte la lectura fluida.
+- Simplificar solo lo que dificulte la lectura fluida.
 
 Vocabulario:
 - Vocabulario cercano al original.
 - Simplificar solo palabras infrecuentes o de pronunciación compleja.
-- Se permiten palabras largas si son frecuentes o el niño las conoce por contexto.
 
 Estilo:
 - Preservar el estilo y la voz del texto fuente.
@@ -112,29 +112,40 @@ Contenido:
 - Preservar todas las ideas del texto original sin excepción.
 - Mantener nombres propios sin modificar.
 - En textos informativos, eliminar solo información redundante o ambigua, nunca información relevante.
+- Prohibido agregar información, ideas o datos que no estén en el texto original. El vocabulario puede simplificarse con palabras más accesibles, pero el contenido debe ser fiel al original.
+- Cada oración debe aportar información nueva. Prohibido repetir o explicar lo que la oración anterior ya dijo.
+- Si una oración del original ya es simple y clara, mantenla tal cual.
 
 Vocabulario:
-- Prohibido repetir el mismo adjetivo o sustantivo en la misma oración o en oraciones consecutivas del mismo párrafo. Si la idea lo requiere, usar un sinónimo o reestructurar la oración.
-- Preferir palabras con sílabas simples (consonante+vocal) sobre grupos consonánticos complejos (trans-, blan-, pren-, -str-).
-- Sustituir palabras largas por equivalentes cortos cuando existan: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros, también→y, algunos→unos, momento→rato.
+- No reemplazar términos científicos o categóricos por descripciones inventadas. Si el original dice "mamíferos", no escribir "bichos con pelo". Si dice "reptiles", no escribir "otras serpientes". Si el término es irremplazable, mantenerlo y dejarlo para el glosario.
+- No agregar adjetivos que no estén en el original. Si el original dice "veneno", no escribir "veneno mortal".
+- Prohibido repetir el mismo adjetivo o sustantivo en la misma oración o en oraciones consecutivas. Usar sinónimo o reestructurar.
+- Sustituir palabras largas por equivalentes cortos: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros.
 
 Sintaxis:
 - Nunca usar comas para reemplazar un verbo omitido.
-- Oraciones largas se dividen en oraciones completas independientes, cada una con sujeto y verbo propios. El límite por perfil es el que define cuándo una oración es demasiado larga.
+- Oraciones largas se dividen en oraciones completas independientes con sujeto y verbo propios.
 
 Estilo:
-- El texto simplificado debe sonar escrito por un autor cuidadoso, no como una lista de frases cortas.
 - Usar conectores para guiar al lector: porque, además, por eso, entonces, por ejemplo, pero, también, sin embargo.
+- En listas, usar conectores en lugar de repetir el mismo verbo.
+- Ejemplo correcto: "Come mamíferos, pájaros y reptiles."
+- Ejemplo incorrecto: "Come mamíferos. Come pájaros. Come reptiles."
 - Preferir estilo narrativo incluso en textos informativos.
 
 ## GLOSARIO
 
-Identifica las palabras del texto simplificado que puedan resultar difíciles de comprender para un niño del perfil indicado. Selecciona un máximo de 5 términos, priorizando los más complejos o infrecuentes. Para cada término escribe una definición breve, en lenguaje simple, apropiada para el perfil. Si no hay términos que lo justifiquen, devuelve un array vacío.
+Identifica exactamente 5 palabras del texto simplificado que puedan resultar difíciles para un niño del perfil indicado. Si el texto no tiene 5 términos complejos, incluye los 5 más relevantes aunque sean moderadamente difíciles. Cada término debe ser una palabra distinta — no incluir variantes de la misma palabra.
+
+Para cada término escribe una definición que explique qué es realmente, con contexto suficiente para entender su significado en el texto. Clara y directa, en vocabulario simple, pero no superficial.
+
+Ejemplo correcto: {"term": "basilisco", "definition": "Una serpiente enorme y muy peligrosa que aparece en las leyendas. Se dice que puede matar con solo mirar a los ojos."}
+Ejemplo incorrecto: {"term": "basilisco", "definition": "Un animal peligroso."}
 
 ## FORMATO DE RESPUESTA
 
 JSON puro, sin markdown, sin backticks:
-{"simplified_text": "texto aquí", "glossary": [{"term": "término", "definition": "definición breve en lenguaje simple"}]}`
+{"simplified_text": "texto aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
 
 function distanceToRange(score: number, level: DifficultyLevel): number {
   const { min, max } = TARGET_RANGES[level]
@@ -175,7 +186,7 @@ function buildFeedback(
       ? exceeding
           .map((v, i) => `${i + 1}. ${v.label}: ${fmt(v)} (objetivo: ${fmtTarget(v)}) — ${v.impact > 0.1 ? "impacto alto" : "impacto medio"}`)
           .join("\n")
-      : "Todas las variables están dentro del objetivo. El IDL puede verse afectado por interacciones no lineales."
+      : "Todas las variables están dentro del objetivo."
 
   return `Tu simplificación anterior fue validada. Estos son los resultados:
 
@@ -197,11 +208,11 @@ Métricas léxicas:
 Aspectos a corregir ordenados por impacto:
 ${exceedingList}
 
-Reescribe el texto corrigiendo específicamente esos aspectos. Si una métrica no se puede mejorar sin deteriorar la calidad del texto, prioriza siempre la calidad. El objetivo es un texto bien escrito para un niño con dislexia, no optimizar números.
+Reescribe el texto corrigiendo específicamente esos aspectos. Mantén todas las reglas del perfil ${range.label}: narratividad, conectores, sin repetición léxica, sin agregar información nueva. Si una métrica no se puede mejorar sin deteriorar la calidad del texto, prioriza siempre la calidad. El objetivo es un texto bien escrito para un niño con dislexia, no optimizar números.
 
 Devuelve el glosario actualizado si algún término cambió. Si no hubo cambios en los términos, devuelve el mismo glosario anterior.
 
-Responde solo con JSON: {"simplified_text": "texto corregido aquí", "glossary": [{"term": "término", "definition": "definición breve en lenguaje simple"}]}`
+Responde solo con JSON: {"simplified_text": "texto corregido aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
 }
 
 export async function getSimplificationUsage(): Promise<{ usage_today: number; daily_limit: number }> {
@@ -253,7 +264,7 @@ export async function analyzeTextForFilter(text: string): Promise<{ score: numbe
   }
 }
 
-export async function simplifyText(text: string, level: DifficultyLevel): Promise<SimplifyResult> {
+export async function simplifyText(text: string, level: DifficultyLevel, forceComplex?: boolean): Promise<SimplifyResult> {
   if (!text || text.trim().length === 0) {
     return { success: false, error: "El texto no puede estar vacío." }
   }
@@ -330,11 +341,14 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
   const conversationHistory: Anthropic.MessageParam[] = [
     {
       role: "user",
-      content: `Nivel objetivo: ${range.label} (IDL ${range.min}-${range.max})\n\nTexto a simplificar:\n${text}`,
+      content: forceComplex
+        ? `Este texto tiene vocabulario complejo. Hacé una simplificación mínima de legibilidad:\n\n- Dividí oraciones muy largas en oraciones más cortas\n- Reemplazá palabras muy difíciles o técnicas por equivalentes más simples cuando existan sin perder el significado\n- Mantené todo el contenido original sin excepción\n- No fuerces ningún nivel de simplicidad — el texto puede seguir siendo difícil\n- El objetivo es que sea levemente más fácil de leer, no transformarlo\n\nTexto:\n${text}`
+        : `Nivel objetivo: ${range.label}\n\nSi el texto contiene vocabulario técnico o abstracto que no puede simplificarse sin perder el sentido, simplifica todo lo que sea posible y mantén los términos irremplazables tal cual. Es preferible un texto fiel con algunas palabras difíciles que un texto distorsionado.\n\nTexto a simplificar:\n${text}`,
     },
   ]
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  const maxAttempts = forceComplex ? 1 : 3
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let claudeText: string
 
     try {
@@ -412,7 +426,7 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
       }
     }
 
-    if (attempt < 3) {
+    if (attempt < maxAttempts) {
       const feedback = buildFeedback(idlResult.structural, idlResult.lexical, score, level)
       conversationHistory.push({ role: "user", content: feedback })
     }
@@ -439,7 +453,7 @@ export async function simplifyText(text: string, level: DifficultyLevel): Promis
     simplified_text: bestAttempt!.simplified_text,
     idl_score: bestAttempt!.idl_score,
     achievable: false,
-    attempts: 3,
+    attempts: maxAttempts,
     metrics: bestAttempt!.metrics,
     glossary: parsedGlossary,
     usage_today: updatedUsage ?? currentUsage + 1,

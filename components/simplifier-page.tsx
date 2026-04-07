@@ -35,6 +35,12 @@ const LEVELS: { value: Level; label: string; idl: string; max: number }[] = [
 const MAX_CHARS = 5000
 const BUTTON_COOLDOWN_MS = 1500
 
+const COMPLEXITY_THRESHOLDS: Record<Level, number> = {
+  inicial: 40,
+  intermedio: 65,
+  avanzado: Infinity,
+}
+
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-0.5">
@@ -459,6 +465,8 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   const [usageToday, setUsageToday] = useState<number | null>(initialUsageToday)
   const [dailyLimit, setDailyLimit] = useState(initialDailyLimit)
   const [originalIdl, setOriginalIdl] = useState<number | null>(null)
+  const [complexityWarning, setComplexityWarning] = useState(false)
+  const [complexityModalOpen, setComplexityModalOpen] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState<number>(0)
   const [isPending, startTransition] = useTransition()
   const submitLockRef = useRef(false)
@@ -498,6 +506,13 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   }, [draftStorageKey, text])
 
   useEffect(() => {
+    if (originalIdl === null) return
+    setComplexityWarning(
+      COMPLEXITY_THRESHOLDS[level] !== Infinity && originalIdl > COMPLEXITY_THRESHOLDS[level]
+    )
+  }, [level, originalIdl])
+
+  useEffect(() => {
     if (text.trim().length < 50) {
       setOriginalIdl(null)
       return
@@ -505,6 +520,9 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
     const timer = setTimeout(() => {
       analyzeTextForFilter(text).then((res) => {
         setOriginalIdl(res?.score ?? null)
+        setComplexityWarning(
+          res !== null && COMPLEXITY_THRESHOLDS[level] !== Infinity && res.score > COMPLEXITY_THRESHOLDS[level]
+        )
       })
     }, 800)
     return () => clearTimeout(timer)
@@ -520,10 +538,25 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   )
   const noLevelsAvailable = originalIdl !== null && availableLevels.length === 0
 
-  function handleSimplify() {
+  function handleComplexityConfirm(changeLevel: boolean) {
+    if (changeLevel) setLevel("avanzado")
+    setComplexityModalOpen(false)
+    setTimeout(() => {
+      submitLockRef.current = false
+      handleSimplify(true)
+    }, 50)
+  }
+
+  function handleSimplify(forceComplex?: boolean) {
     if (submitLockRef.current || cooldownActive || isPending || !text.trim() || overLimit || limitReached || noLevelsAvailable) {
       return
     }
+
+    if (complexityWarning && !complexityModalOpen) {
+      setComplexityModalOpen(true)
+      return
+    }
+    setComplexityModalOpen(false)
 
     submitLockRef.current = true
     setCooldownUntil(Date.now() + BUTTON_COOLDOWN_MS)
@@ -533,7 +566,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
 
     startTransition(async () => {
       try {
-        const res: SimplifyResult = await simplifyText(text, level)
+        const res: SimplifyResult = await simplifyText(text, level, forceComplex)
         if (res.success) {
           const nextResult = {
             simplified_text: res.simplified_text,
@@ -574,6 +607,49 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
         onClose={() => setAsideOpen(false)}
         onOpen={() => setAsideOpen(true)}
       />
+
+      {complexityModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setComplexityModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border/60 bg-white p-6 shadow-2xl dark:bg-zinc-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-500">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" x2="12" y1="9" y2="13" />
+                <line x1="12" x2="12.01" y1="17" y2="17" />
+              </svg>
+              <p className="text-sm font-semibold text-foreground">Texto muy complejo</p>
+            </div>
+            <p className="mb-5 text-xs font-light leading-relaxed text-muted-foreground">
+              {mode === "admin"
+                ? "Este texto tiene alta complejidad para el perfil seleccionado. Simplificarlo puede distorsionar el contenido original. Se recomienda usar perfil Avanzado o revisar el resultado manualmente."
+                : "Este texto es muy complejo para el perfil seleccionado. El resultado puede no preservar bien el sentido original."}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => handleComplexityConfirm(true)}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl bg-[#2E85C8] text-xs font-medium text-white transition-colors hover:bg-[#276fa7]"
+              >
+                Cambiar a Avanzado y simplificar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleComplexityConfirm(false)}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                Continuar con el perfil actual
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <div className={cn("w-full space-y-4", mode === "admin" ? "max-w-3xl" : "max-w-2xl")}>
         <div className={cn(mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}>
@@ -646,7 +722,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
               <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} />
               <button
                 type="button"
-                onClick={handleSimplify}
+                onClick={() => handleSimplify()}
                 disabled={isPending || cooldownActive || overLimit || limitReached || !text.trim() || noLevelsAvailable}
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-lg text-white transition-all hover:opacity-90 active:scale-95",
