@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,19 @@ function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function parseTextToParagraphs(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((block) =>
+      block
+        .split(/\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .join(" ")
+    )
+    .filter(Boolean);
 }
 
 type Props = {
@@ -51,6 +64,7 @@ export function PhaseReading({
   const accentColor = worldConfig?.accentColor ?? "#2E85C8";
   const accentFg = worldConfig?.accentFg ?? "#ffffff";
   const { speak, stop, isSpeaking, isSupported } = useSpeech();
+  const [speakingMode, setSpeakingMode] = useState<"all" | "paragraph" | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
@@ -67,13 +81,10 @@ export function PhaseReading({
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-
     checkScroll();
-
     const observer = new ResizeObserver(checkScroll);
     observer.observe(el);
     el.addEventListener("scroll", checkScroll, { passive: true });
-
     return () => {
       observer.disconnect();
       el.removeEventListener("scroll", checkScroll);
@@ -83,24 +94,50 @@ export function PhaseReading({
   const scrollByViewport = useCallback((direction: "down" | "up") => {
     const el = scrollContainerRef.current;
     if (!el) return;
-
-    const overlap = 80;
-    const step = el.clientHeight - overlap;
-
-    el.scrollBy({
-      top: direction === "down" ? step : -step,
-      behavior: "smooth",
-    });
+    el.scrollBy({ top: direction === "down" ? el.clientHeight - 80 : -(el.clientHeight - 80), behavior: "smooth" });
   }, []);
+
+  const paragraphs = useMemo(() => parseTextToParagraphs(readingText), [readingText]);
+  const hasMultipleParagraphs = paragraphs.length > 1;
+
+  useEffect(() => {
+    if (!isSpeaking) setSpeakingMode(null);
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    stop();
+    setSpeakingMode(null);
+  }, [activeParagraph, stop]);
+
+  useEffect(() => () => stop(), [stop]);
+
+  const handleSpeakAll = useCallback(() => {
+    if (speakingMode === "all" && isSpeaking) {
+      stop();
+      setSpeakingMode(null);
+    } else {
+      stop();
+      setSpeakingMode("all");
+      speak(paragraphs.join(" "));
+    }
+  }, [speakingMode, isSpeaking, stop, speak, paragraphs]);
+
+  const handleSpeakParagraph = useCallback(() => {
+    if (activeParagraph === null) return;
+    if (speakingMode === "paragraph" && isSpeaking) {
+      stop();
+      setSpeakingMode(null);
+    } else {
+      stop();
+      setSpeakingMode("paragraph");
+      speak(paragraphs[activeParagraph]);
+    }
+  }, [activeParagraph, speakingMode, isSpeaking, stop, speak, paragraphs]);
 
   return (
     <div
       className="h-screen flex flex-col relative"
-      style={{
-        background: "#ffffff",
-        color: "#1a1a1a",
-        fontFamily: "'Lexend', sans-serif",
-      }}
+      style={{ background: "#ffffff", color: "#1a1a1a", fontFamily: "'Lexend', sans-serif" }}
     >
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-neutral-100 z-10">
         <button
@@ -112,52 +149,88 @@ export function PhaseReading({
           <ArrowLeft className="h-6 w-6" strokeWidth={2.5} />
         </button>
 
-        {isTimedReading && showTimer && (
-          <div className="flex items-center gap-1.5 text-neutral-400">
-            <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
-            <span className="text-sm font-mono tabular-nums tracking-tight">
-              {formatTimer(timerSeconds)}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isSupported && activeParagraph !== null && (
+            <button
+              type="button"
+              onClick={handleSpeakParagraph}
+              aria-label={speakingMode === "paragraph" && isSpeaking ? "Detener lectura del párrafo" : "Escuchar párrafo"}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
+                speakingMode === "paragraph" && isSpeaking
+                  ? "text-white"
+                  : "text-neutral-600 bg-neutral-100 hover:bg-neutral-200"
+              )}
+              style={speakingMode === "paragraph" && isSpeaking ? { backgroundColor: accentColor, color: accentFg } : undefined}
+            >
+              {speakingMode === "paragraph" && isSpeaking
+                ? <VolumeX className="h-3.5 w-3.5" strokeWidth={2} />
+                : <Volume2 className="h-3.5 w-3.5" strokeWidth={2} />}
+              Párrafo
+            </button>
+          )}
+          {isSupported && (
+            <button
+              type="button"
+              onClick={handleSpeakAll}
+              aria-label={speakingMode === "all" && isSpeaking ? "Detener lectura" : "Escuchar todo"}
+              className={cn(
+                "p-2 rounded-lg transition-colors cursor-pointer",
+                speakingMode === "all" && isSpeaking
+                  ? "text-neutral-800 bg-neutral-100"
+                  : "text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50"
+              )}
+            >
+              {speakingMode === "all" && isSpeaking
+                ? <VolumeX className="h-5 w-5" strokeWidth={2} />
+                : <Volume2 className="h-5 w-5" strokeWidth={2} />}
+            </button>
+          )}
+          {isTimedReading && showTimer && (
+            <div className="flex items-center gap-1.5 text-neutral-400">
+              <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <span className="text-sm font-mono tabular-nums tracking-tight">
+                {formatTimer(timerSeconds)}
+              </span>
+            </div>
+          )}
+        </div>
       </header>
 
       <main
         ref={scrollContainerRef}
         onClick={() => onActiveParagraphChange(null)}
-        className="flex-1 min-h-0 overflow-y-auto px-6 py-6 sm:px-10 md:px-16 sm:py-8"
+        className="flex-1 min-h-0 overflow-y-auto px-6 py-8 sm:px-10 md:px-16 sm:py-10"
       >
-        <div className="max-w-[540px] mx-auto space-y-5">
+        <div className="max-w-[560px] mx-auto">
           {readingAudioUrl && (
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-8">
               <AudioPlayer src={readingAudioUrl} autoPlay={false} />
             </div>
           )}
 
-          <div className="space-y-4">
-            {readingText
-              .split(/\n+/)
-              .filter((p) => p.trim())
-              .map((paragraph, idx) => (
-                <p
-                  key={idx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onActiveParagraphChange(idx === activeParagraph ? null : idx);
-                  }}
-                  className={cn(
-                    "text-[19px] sm:text-[22px] md:text-[24px] lg:text-[26px] leading-[1.85] tracking-[0.01em] cursor-pointer transition-colors duration-200 select-none",
-                    idx === activeParagraph
-                      ? "text-neutral-900"
-                      : activeParagraph !== null
-                        ? "text-neutral-300"
-                        : "text-neutral-700"
-                  )}
-                  style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300 }}
-                >
-                  {paragraph}
-                </p>
-              ))}
+          <div className={cn("space-y-6", !hasMultipleParagraphs && "space-y-0")}>
+            {paragraphs.map((paragraph, idx) => (
+              <p
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onActiveParagraphChange(idx === activeParagraph ? null : idx);
+                }}
+                className={cn(
+                  "leading-[1.9] tracking-[0.01em] cursor-pointer transition-colors duration-200 select-none",
+                  "text-[19px] sm:text-[21px] md:text-[23px]",
+                  idx === activeParagraph
+                    ? "text-neutral-900"
+                    : activeParagraph !== null
+                      ? "text-neutral-300"
+                      : "text-neutral-700"
+                )}
+                style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300 }}
+              >
+                {paragraph}
+              </p>
+            ))}
           </div>
         </div>
       </main>
@@ -170,9 +243,7 @@ export function PhaseReading({
           aria-label="Subir"
           className={cn(
             "p-3 rounded-full shadow-md transition-all duration-200",
-            canScrollUp
-              ? "cursor-pointer hover:opacity-90 hover:shadow-lg"
-              : "opacity-0 pointer-events-none"
+            canScrollUp ? "cursor-pointer hover:opacity-90 hover:shadow-lg" : "opacity-0 pointer-events-none"
           )}
           style={{ backgroundColor: accentColor, color: accentFg }}
         >
@@ -185,9 +256,7 @@ export function PhaseReading({
           aria-label="Bajar"
           className={cn(
             "p-3 rounded-full shadow-md transition-all duration-200",
-            canScrollDown
-              ? "cursor-pointer hover:opacity-90 hover:shadow-lg"
-              : "opacity-0 pointer-events-none"
+            canScrollDown ? "cursor-pointer hover:opacity-90 hover:shadow-lg" : "opacity-0 pointer-events-none"
           )}
           style={{ backgroundColor: accentColor, color: accentFg }}
         >
@@ -196,7 +265,7 @@ export function PhaseReading({
       </div>
 
       <footer className="flex-shrink-0 px-4 py-3 bg-white border-t border-neutral-100 z-10">
-        <div className="max-w-[540px] mx-auto flex items-center justify-between lg:justify-end">
+        <div className="max-w-[560px] mx-auto flex items-center justify-between lg:justify-end">
           <div className="flex items-center gap-1.5 lg:hidden">
             <button
               type="button"
@@ -205,9 +274,7 @@ export function PhaseReading({
               aria-label="Subir"
               className={cn(
                 "p-1.5 rounded-full shadow-sm transition-all duration-200",
-                canScrollUp
-                  ? "cursor-pointer hover:opacity-90"
-                  : "opacity-20 pointer-events-none"
+                canScrollUp ? "cursor-pointer hover:opacity-90" : "opacity-20 pointer-events-none"
               )}
               style={{ backgroundColor: accentColor, color: accentFg }}
             >
@@ -220,9 +287,7 @@ export function PhaseReading({
               aria-label="Bajar"
               className={cn(
                 "p-1.5 rounded-full shadow-sm transition-all duration-200",
-                canScrollDown
-                  ? "cursor-pointer hover:opacity-90"
-                  : "opacity-20 pointer-events-none"
+                canScrollDown ? "cursor-pointer hover:opacity-90" : "opacity-20 pointer-events-none"
               )}
               style={{ backgroundColor: accentColor, color: accentFg }}
             >

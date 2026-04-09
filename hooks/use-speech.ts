@@ -26,10 +26,13 @@ function selectBestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice |
 }
 
 export function useSpeech() {
-  const isSupported = typeof window !== "undefined" && "speechSynthesis" in window
-
+  const [isSupported, setIsSupported] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
+
+  useEffect(() => {
+    setIsSupported(typeof window !== "undefined" && "speechSynthesis" in window)
+  }, [])
 
   useEffect(() => {
     if (!isSupported) return
