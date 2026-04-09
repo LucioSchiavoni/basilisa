@@ -211,7 +211,7 @@ export async function createExercise(
     const { data: world } = await adminClient
       .from("worlds")
       .select("id")
-      .eq("slug", worldSlug)
+      .eq("name", worldSlug)
       .single();
 
     if (world) {
@@ -223,11 +223,15 @@ export async function createExercise(
         .limit(1)
         .maybeSingle();
 
-      await adminClient.from("world_exercises").insert({
+      const { error: weError } = await adminClient.from("world_exercises").insert({
         world_id: world.id,
         exercise_id: inserted.id,
         position: (lastPos?.position ?? 0) + 1,
       });
+
+      if (weError) {
+        console.error("world_exercises insert error:", weError);
+      }
     }
   }
 
@@ -290,7 +294,7 @@ export async function updateExercise(
     const { data: world } = await adminClient
       .from("worlds")
       .select("id")
-      .eq("slug", worldSlug)
+      .eq("name", worldSlug)
       .single();
 
     if (world) {

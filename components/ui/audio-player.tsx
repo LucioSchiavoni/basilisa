@@ -8,7 +8,7 @@ interface AudioPlayerProps {
   autoPlay?: boolean
 }
 
-export function AudioPlayer({ src, autoPlay = true }: AudioPlayerProps) {
+export function AudioPlayer({ src, autoPlay = false }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [ended, setEnded] = useState(false)

@@ -25,6 +25,7 @@ export type Option = {
   id: string;
   text: string;
   image_url?: string | null;
+  audio_label?: string | null;
 };
 
 export type Question = {
@@ -229,12 +230,6 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
       .finally(() => setIsCompleting(false));
   }, [exercise.id, wordCount]);
 
-  useEffect(() => {
-    if (!isTimedReading || phase !== "reading") return;
-    if (timerSeconds >= maxReadingTime) {
-      handleFinishReading();
-    }
-  }, [timerSeconds, maxReadingTime, isTimedReading, phase, handleFinishReading]);
 
   const handleCheck = useCallback((optionId: string) => {
     if (!currentQuestion) return;

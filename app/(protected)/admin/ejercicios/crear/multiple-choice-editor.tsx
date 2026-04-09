@@ -40,8 +40,8 @@ export function MultipleChoiceEditor({ form, exerciseId }: MultipleChoiceEditorP
       question_image_url: "",
       question_audio_url: "",
       options: [
-        { id: optionId1, text: "", image_url: "" },
-        { id: optionId2, text: "", image_url: "" },
+        { id: optionId1, text: "", image_url: "", audio_label: "" },
+        { id: optionId2, text: "", image_url: "", audio_label: "" },
       ],
       correct_option_id: "",
       explanation: "",

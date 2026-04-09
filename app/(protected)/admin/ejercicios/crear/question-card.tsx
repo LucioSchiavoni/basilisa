@@ -44,7 +44,7 @@ export function QuestionCard({
   const correctOptionId = form.watch(
     `${basePath}.${questionIndex}.correct_option_id`
   )
-  const watchedOptions = form.watch(optionsPath) as Array<{ id: string }> | undefined
+  const watchedOptions = form.watch(optionsPath) as Array<{ id: string; image_url?: string | null }> | undefined
 
   function handleAddOption() {
     if (optionFields.length >= 6) return
@@ -52,6 +52,7 @@ export function QuestionCard({
       id: crypto.randomUUID(),
       text: "",
       image_url: "",
+      audio_label: "",
     })
   }
 
@@ -299,6 +300,25 @@ export function QuestionCard({
                   </FormItem>
                 )}
               />
+
+              {variant === "multiple_choice" && watchedOptions?.[optionIndex]?.image_url && (
+                <FormField
+                  control={form.control}
+                  name={`${optionsPath}.${optionIndex}.audio_label`}
+                  render={({ field }) => (
+                    <FormItem className="pl-7">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value ?? ""}
+                          placeholder="Texto que se leerá en voz alta"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
           )
         })}

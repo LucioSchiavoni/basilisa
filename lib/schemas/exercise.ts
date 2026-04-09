@@ -10,6 +10,7 @@ const multipleChoiceOptionSchema = z.object({
   id: z.string().uuid(),
   text: z.string().default(""),
   image_url: optionalUrl,
+  audio_label: z.string().nullish().transform((val) => (!val ? null : val)).pipe(z.string().nullable()),
 }).refine(
   (data) => data.text.trim().length > 0 || (data.image_url !== null && data.image_url !== undefined),
   { message: "La opcion debe tener texto, imagen o ambos", path: ["text"] }

@@ -11,7 +11,10 @@ import {
   ChevronUp,
   Clock,
   CheckCircle2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { useSpeech } from "@/hooks/use-speech";
 import type { WorldConfig } from "@/lib/worlds";
 
 function formatTimer(seconds: number): string {
@@ -47,6 +50,7 @@ export function PhaseReading({
 }: Props) {
   const accentColor = worldConfig?.accentColor ?? "#2E85C8";
   const accentFg = worldConfig?.accentFg ?? "#ffffff";
+  const { speak, stop, isSpeaking, isSupported } = useSpeech();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
@@ -126,7 +130,7 @@ export function PhaseReading({
         <div className="max-w-[540px] mx-auto space-y-5">
           {readingAudioUrl && (
             <div className="flex justify-center">
-              <AudioPlayer src={readingAudioUrl} />
+              <AudioPlayer src={readingAudioUrl} autoPlay={false} />
             </div>
           )}
 
@@ -229,6 +233,7 @@ export function PhaseReading({
             <Button
               size="sm"
               onClick={onDone}
+              tabIndex={-1}
               className="gap-1.5 rounded-full px-5 h-10 text-sm font-normal"
               style={{ backgroundColor: accentColor, color: accentFg }}
             >
@@ -239,6 +244,7 @@ export function PhaseReading({
             <button
               type="button"
               onClick={onDone}
+              tabIndex={-1}
               className="inline-flex items-center gap-1 text-sm font-normal transition-colors rounded-full px-5 py-2.5 hover:opacity-90 cursor-pointer"
               style={{ backgroundColor: accentColor, color: accentFg }}
             >

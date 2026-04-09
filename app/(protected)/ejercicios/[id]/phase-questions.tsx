@@ -12,9 +12,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { BookOpen, Loader2, XCircle } from "lucide-react";
+import { BookOpen, Loader2, Volume2, VolumeX, XCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { useSpeech } from "@/hooks/use-speech";
 import type { WorldConfig } from "@/lib/worlds";
-import type { Question } from "./exercise-player";
+import type { Question, Option } from "./exercise-player";
 
 type Props = {
   worldConfig: WorldConfig | null;
@@ -48,6 +50,20 @@ export function PhaseQuestions({
   onOptionClick,
 }: Props) {
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
+  const [speakingOptionId, setSpeakingOptionId] = useState<string | null>(null);
+  const { speak, stop, isSpeaking, isSupported } = useSpeech();
+
+  function handleAudioClick(e: React.MouseEvent, option: Option, index: number) {
+    e.stopPropagation();
+    const text = option.audio_label || `Opción ${index + 1}`;
+    if (speakingOptionId === option.id && isSpeaking) {
+      stop();
+      setSpeakingOptionId(null);
+    } else {
+      setSpeakingOptionId(option.id);
+      speak(text);
+    }
+  }
 
   const questionImageUrls = useMemo(() => {
     const urls: string[] = [];
@@ -68,6 +84,13 @@ export function PhaseQuestions({
   }, [questionImageUrls]);
 
   const allImagesReady = questionImageUrls.every((url) => loadedUrls.has(url));
+  const hasImageOptions = activeQuestion?.options.some((o) => o.image_url) ?? false;
+  const optionCount = activeQuestion?.options.length ?? 0;
+  const optionsGridClass = hasImageOptions
+    ? optionCount === 2
+      ? "grid grid-cols-2 gap-3"
+      : "grid grid-cols-1 gap-3"
+    : "space-y-3";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -198,20 +221,22 @@ export function PhaseQuestions({
           )}
 
           {!allImagesReady ? (
-            <div className="space-y-3">
+            <div className={optionsGridClass}>
               {activeQuestion?.options.map((_, index) => (
                 <div
                   key={index}
-                  className="w-full h-[56px] rounded-2xl bg-muted animate-pulse"
+                  className={cn(
+                    "w-full rounded-2xl bg-muted animate-pulse",
+                    hasImageOptions ? "aspect-square" : "h-14"
+                  )}
                   style={{ animationDelay: `${index * 80}ms` }}
                 />
               ))}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className={optionsGridClass}>
               {activeQuestion?.options.map((option, index) => {
                 const isSelected = selectedOptionId === option.id;
-
                 return (
                   <button
                     key={option.id}
@@ -223,35 +248,71 @@ export function PhaseQuestions({
                     }}
                     style={{ animationDelay: `${index * 80}ms` }}
                     className={cn(
-                      "w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 min-h-[56px] text-sm sm:text-base bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 font-normal",
+                      "relative w-full text-left rounded-2xl border-2 transition-all duration-150 text-sm sm:text-base bg-white dark:bg-stone-800 text-gray-900 dark:text-stone-100 font-normal overflow-hidden",
                       "animate-in slide-in-from-right-4 fade-in duration-300 fill-mode-backwards",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       !isSelected && !isPending && "border-gray-200 dark:border-stone-700 hover:border-blue-300 hover:bg-blue-100 dark:hover:border-blue-500 dark:hover:bg-blue-900 active:scale-[0.98]",
                       isSelected && "border-blue-500 bg-blue-50 dark:bg-blue-900/40",
-                      isPending && "cursor-default"
+                      isPending && "cursor-default",
+                      !option.image_url && "p-4 min-h-14"
                     )}
                   >
-                    <div className={cn("flex items-center gap-3", option.image_url && "flex-row")}>
-                      <span
-                        className={cn(
-                          "flex shrink-0 items-center justify-center h-8 w-8 rounded-xl border-2 text-xs font-bold transition-colors",
-                          !isSelected && "border-gray-200 dark:border-stone-600 text-gray-400 dark:text-stone-500",
-                          isSelected && "border-blue-500 bg-blue-500 text-white",
+                    {option.image_url ? (
+                      <>
+                        <div className="relative aspect-square">
+                          <Image
+                            src={option.image_url}
+                            alt={option.audio_label || option.text || `Opción ${index + 1}`}
+                            fill
+                            className="object-contain p-4"
+                          />
+                        </div>
+                        <span
+                          className={cn(
+                            "absolute top-2 left-2 flex items-center justify-center h-7 w-7 rounded-xl border-2 text-xs font-bold transition-colors",
+                            !isSelected && "border-gray-200 dark:border-stone-600 text-gray-400 dark:text-stone-500 bg-white/80 dark:bg-stone-800/80",
+                            isSelected && "border-blue-500 bg-blue-500 text-white"
+                          )}
+                        >
+                          {String.fromCharCode(65 + index)}
+                        </span>
+                        {isSupported && (
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => handleAudioClick(e, option, index)}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleAudioClick(e as unknown as React.MouseEvent, option, index); }}
+                            className="absolute bottom-3 right-3 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 dark:border-stone-600 text-gray-700 dark:text-stone-300 hover:bg-white dark:hover:bg-stone-700 transition-colors cursor-pointer"
+                            aria-label={`Escuchar opción ${index + 1}`}
+                          >
+                            {speakingOptionId === option.id && isSpeaking ? (
+                              <motion.span
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ repeat: Infinity, duration: 0.7 }}
+                                className="flex items-center justify-center"
+                              >
+                                <VolumeX className="h-4 w-4" />
+                              </motion.span>
+                            ) : (
+                              <Volume2 className="h-4 w-4" />
+                            )}
+                          </div>
                         )}
-                      >
-                        {String.fromCharCode(65 + index)}
-                      </span>
-                      {option.image_url && (
-                        <Image
-                          src={option.image_url}
-                          alt={option.text}
-                          width={200}
-                          height={80}
-                          className="max-h-[80px] w-auto rounded-md object-contain"
-                        />
-                      )}
-                      <span className="flex-1">{option.text}</span>
-                    </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={cn(
+                            "flex shrink-0 items-center justify-center h-8 w-8 rounded-xl border-2 text-xs font-bold transition-colors",
+                            !isSelected && "border-gray-200 dark:border-stone-600 text-gray-400 dark:text-stone-500",
+                            isSelected && "border-blue-500 bg-blue-500 text-white"
+                          )}
+                        >
+                          {String.fromCharCode(65 + index)}
+                        </span>
+                        <span className="flex-1">{option.text}</span>
+                      </div>
+                    )}
                   </button>
                 );
               })}

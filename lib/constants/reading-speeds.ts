@@ -34,7 +34,7 @@ export function getExerciseWordCount(content: Record<string, unknown>): number |
   }
   if (typeof content.reading_text === "string") {
     const words = content.reading_text.split(/\s+/).filter(Boolean);
-    return words.length;
+    return words.length > 0 ? words.length : null;
   }
   return null;
 }
