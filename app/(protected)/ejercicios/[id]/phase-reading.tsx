@@ -36,6 +36,17 @@ function parseTextToParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
+function detectWordList(text: string): boolean {
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length < 4) return false;
+  const shortLines = lines.filter((l) => l.trim().split(/\s+/).length <= 2);
+  return shortLines.length / lines.length >= 0.6;
+}
+
+function parseWordList(text: string): string[] {
+  return text.split("\n").map((l) => l.trim()).filter(Boolean);
+}
+
 type Props = {
   readingText: string;
   readingAudioUrl: string | null;
@@ -99,6 +110,8 @@ export function PhaseReading({
 
   const paragraphs = useMemo(() => parseTextToParagraphs(readingText), [readingText]);
   const hasMultipleParagraphs = paragraphs.length > 1;
+  const isWordList = useMemo(() => detectWordList(readingText), [readingText]);
+  const wordListItems = useMemo(() => isWordList ? parseWordList(readingText) : [], [isWordList, readingText]);
 
   useEffect(() => {
     if (!isSpeaking) setSpeakingMode(null);
@@ -210,27 +223,41 @@ export function PhaseReading({
           )}
 
           <div className={cn("space-y-6", !hasMultipleParagraphs && "space-y-0")}>
-            {paragraphs.map((paragraph, idx) => (
-              <p
-                key={idx}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onActiveParagraphChange(idx === activeParagraph ? null : idx);
-                }}
-                className={cn(
-                  "leading-[1.9] tracking-[0.01em] cursor-pointer transition-colors duration-200 select-none",
-                  "text-[19px] sm:text-[21px] md:text-[23px]",
-                  idx === activeParagraph
-                    ? "text-neutral-900"
-                    : activeParagraph !== null
-                      ? "text-neutral-300"
-                      : "text-neutral-700"
-                )}
-                style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300 }}
-              >
-                {paragraph}
-              </p>
-            ))}
+            {isWordList ? (
+              <div className="columns-2 sm:columns-3 gap-x-6">
+                {wordListItems.map((word, idx) => (
+                  <p
+                    key={idx}
+                    className="text-[19px] sm:text-[21px] md:text-[23px] leading-[2.1] tracking-[0.01em] break-inside-avoid text-neutral-700"
+                    style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300 }}
+                  >
+                    {word}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              paragraphs.map((paragraph, idx) => (
+                <p
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onActiveParagraphChange(idx === activeParagraph ? null : idx);
+                  }}
+                  className={cn(
+                    "leading-[1.9] tracking-[0.01em] cursor-pointer transition-colors duration-200 select-none",
+                    "text-[19px] sm:text-[21px] md:text-[23px]",
+                    idx === activeParagraph
+                      ? "text-neutral-900"
+                      : activeParagraph !== null
+                        ? "text-neutral-300"
+                        : "text-neutral-700"
+                  )}
+                  style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300 }}
+                >
+                  {paragraph}
+                </p>
+              ))
+            )}
           </div>
         </div>
       </main>
