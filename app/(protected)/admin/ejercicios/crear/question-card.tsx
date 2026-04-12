@@ -301,7 +301,7 @@ export function QuestionCard({
                 )}
               />
 
-              {variant === "multiple_choice" && watchedOptions?.[optionIndex]?.image_url && (
+              {watchedOptions?.[optionIndex]?.image_url && (
                 <FormField
                   control={form.control}
                   name={`${optionsPath}.${optionIndex}.audio_label`}
