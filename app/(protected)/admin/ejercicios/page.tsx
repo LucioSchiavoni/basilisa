@@ -2,13 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ClipboardList, Plus } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { WORLDS } from "@/lib/worlds";
-
-const worldButtonColors: Record<string, string> = {
-  agua: "#286BB0",
-  fuego: "#8F1E28",
-  cielo: "#7F49B3",
-};
+import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes";
 
 export default async function AdminExercisesPage() {
   const adminClient = createAdminClient();
@@ -56,8 +50,7 @@ export default async function AdminExercisesPage() {
 
       <div className="grid gap-4 pt-3 md:grid-cols-2 xl:grid-cols-3">
         {(worlds ?? []).map((world) => {
-          const config = WORLDS[world.name];
-          const buttonColor = worldButtonColors[world.name] ?? config?.accentColor ?? "#94a3b8";
+          const config = getScheme(world.name);
           return (
             <div
               key={world.id}
@@ -72,7 +65,7 @@ export default async function AdminExercisesPage() {
                 </div>
                 <div
                   className="h-3 w-3 rounded-full border border-white/30"
-                  style={{ backgroundColor: buttonColor }}
+                  style={{ backgroundColor: config.accentColor }}
                 />
               </div>
 
@@ -85,8 +78,8 @@ export default async function AdminExercisesPage() {
                   href={`/admin/ejercicios/mundos/${world.id}`}
                   className="group/button shadow-sm transition-all hover:shadow-md"
                   style={{
-                    background: `linear-gradient(135deg, ${buttonColor} 0%, ${buttonColor}dd 100%)`,
-                    color: config?.accentFg ?? "#0f172a",
+                    background: config.buttonGradient,
+                    color: config.accentFg,
                   }}
                 >
                   <span className="font-semibold">Ver ejercicios del mundo</span>

@@ -4,9 +4,7 @@ import { useState, useCallback, useRef, useTransition, useEffect } from "react"
 import { fireWinConfetti } from "@/lib/confetti"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { AudioPlayer } from "@/components/ui/audio-player"
 import { cn } from "@/lib/utils"
 import {
   Sheet,
@@ -16,16 +14,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import {
-  ArrowLeft,
   BookOpen,
-  BarChart3,
   Clock,
   XCircle,
-  ChevronRight,
   Loader2,
 } from "lucide-react"
 import { completeLetterGap } from "./actions"
 import { PhaseReading } from "./phase-reading"
+import { PhaseIntro } from "./phase-intro"
+import type { Question } from "./exercise-player"
 import type { LetterGapAnswerResult } from "./actions"
 import { AnswersChart, type AnswersChartItem } from "./answers-chart"
 import { ScorePie } from "./score-pie"
@@ -70,22 +67,6 @@ type Phase = "intro" | "reading" | "playing" | "results"
 
 type SentenceStatus = "empty" | "placed"
 
-const difficultyLabels: Record<number, string> = {
-  1: "Muy fácil",
-  2: "Fácil",
-  3: "Intermedio",
-  4: "Difícil",
-  5: "Muy difícil",
-}
-
-const difficultyColors: Record<number, string> = {
-  1: "text-green-600",
-  2: "text-green-600",
-  3: "text-yellow-600",
-  4: "text-red-600",
-  5: "text-red-600",
-}
-
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
@@ -127,7 +108,6 @@ function buildOptions(
 }
 
 export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, backHref }: LetterGapPlayerProps) {
-  const router = useRouter()
   const content = exercise.content as unknown as LetterGapContent
   const sentences = content.sentences || []
   const worldScheme = worldName ? getScheme(worldName) : null
@@ -383,71 +363,17 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
 
   if (phase === "intro") {
     return (
-      <div className="min-h-screen flex flex-col">
-        {worldBg}
-        <header className="relative z-20 p-4">
-          <button
-            type="button"
-            onClick={() => router.push(backHref)}
-            className="relative z-20 inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
-            style={{ color: "#0B1926", background: "white" }}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </button>
-        </header>
-
-        <main className="relative z-0 flex flex-1 items-center justify-center px-4 pb-6 pt-0 sm:px-6">
-          <div className="w-full max-w-lg text-center space-y-3 sm:space-y-4">
-            {worldConfig && (
-              <div className="pointer-events-none flex justify-center -mt-10 -mb-3 sm:-mt-12 sm:-mb-4">
-                <Image
-                  src={worldConfig.characterImage}
-                  alt=""
-                  width={500}
-                  height={500}
-                  className="h-[360px] w-[360px] scale-[1.3] object-contain object-bottom animate-fade-in-up sm:h-[430px] sm:w-[430px] sm:scale-[1.35]"
-                />
-              </div>
-            )}
-            <div className="space-y-3">
-              <span
-                className="inline-block rounded-full border border-slate-900/20 bg-black/10 px-2.5 py-1 text-xs font-medium text-slate-900 dark:border-white/25 dark:bg-white/10 dark:text-white"
-              >
-                {exercise.typeDisplayName}
-              </span>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
-                {exercise.title}
-              </h1>
-              <p className="font-semibold text-slate-800/90 dark:text-white/90">{exercise.instructions}</p>
-              {exercise.instructionsAudioUrl && (
-                <div className="mt-4">
-                  <AudioPlayer src={exercise.instructionsAudioUrl} />
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-6 text-sm text-slate-600/80 dark:text-white/80">
-              <span className="flex items-center gap-1.5">
-                <BarChart3 className="h-4 w-4" />
-                {difficultyLabels[exercise.difficultyLevel]}
-              </span>
-              <span className="flex items-center gap-1.5">
-                {sentences.length} frase{sentences.length !== 1 && "s"}
-              </span>
-            </div>
-
-            <Button
-              size="lg"
-              className="w-full max-w-xs text-base h-12"
-              onClick={handleStart}
-            >
-              Comenzar
-              <ChevronRight className="h-5 w-5 ml-1" />
-            </Button>
-          </div>
-        </main>
-      </div>
+      <PhaseIntro
+        exercise={exercise}
+        worldConfig={worldConfig}
+        isReadingComprehension={false}
+        isTimedReading={false}
+        questions={sentences.map((s) => ({ id: s.id, text: s.display_sentence, options: [], points: s.points })) as unknown as Question[]}
+        wordCount={sentences.length}
+        backHref={backHref}
+        idlScore={null}
+        onStart={handleStart}
+      />
     )
   }
 

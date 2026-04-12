@@ -44,18 +44,18 @@ const LISA_COLORS: Record<string, string> = {
   A: "#2E85C8",
 }
 
-function splitWords(el: HTMLElement): HTMLElement[] {
-  const raw = el.textContent || ""
+function splitWords(el: HTMLElement, chunkSize = 4): HTMLElement[] {
+  const words = (el.textContent || "").split(" ")
   el.innerHTML = ""
   const spans: HTMLElement[] = []
-  raw.split(" ").forEach((word, i) => {
+  for (let i = 0; i < words.length; i += chunkSize) {
+    if (i > 0) el.appendChild(document.createTextNode(" "))
     const span = document.createElement("span")
     span.style.display = "inline"
-    span.style.willChange = "opacity, transform, filter"
-    span.textContent = (i > 0 ? " " : "") + word
+    span.textContent = words.slice(i, i + chunkSize).join(" ")
     el.appendChild(span)
     spans.push(span)
-  })
+  }
   return spans
 }
 
@@ -67,7 +67,6 @@ function splitWordsBlock(el: HTMLElement): HTMLElement[] {
     if (i > 0) el.appendChild(document.createTextNode(" "))
     const span = document.createElement("span")
     span.style.display = "inline-block"
-    span.style.willChange = "opacity, transform, filter"
     if (word === "LISA") {
       Array.from(word).forEach((letter) => {
         const ls = document.createElement("span")
@@ -117,9 +116,9 @@ export function ScrollContainer() {
   const ctaButtonsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const ro = new ResizeObserver(() => ScrollTrigger.refresh())
-    ro.observe(document.body)
-    return () => ro.disconnect()
+    const handler = () => ScrollTrigger.refresh()
+    window.addEventListener("resize", handler)
+    return () => window.removeEventListener("resize", handler)
   }, [])
 
   useLayoutEffect(() => {
@@ -205,7 +204,6 @@ export function ScrollContainer() {
                 end: "+=15000",
                 scrub: 1.5,
                 pin: true,
-                anticipatePin: 1,
                 invalidateOnRefresh: true,
               },
             })
@@ -234,7 +232,7 @@ export function ScrollContainer() {
                 0
               )
               .to(heroWords, {
-                opacity: 1, y: 0, duration: 1, ease: "power2.out", stagger: 0.03,
+                opacity: 1, y: 0, duration: 1, ease: "power2.out", stagger: 0.11,
               }, 1.5)
               .to(knowMoreBtnRef.current, { opacity: 0, y: -8, duration: 0.5, ease: "power2.in" }, 1.5)
               .to(scrollMiniRef.current, { opacity: 1, duration: 0.6, ease: "power2.out" }, 1.5)
@@ -243,7 +241,7 @@ export function ScrollContainer() {
               .to(panel2Ref.current, { opacity: 1, duration: 1, ease: "power2.inOut" }, 5)
 
               .to(idlWords, {
-                opacity: 1, stagger: 0.12, ease: "none",
+                opacity: 1, stagger: 0.45, ease: "none",
               }, 6.5)
 
               .to(panel2Ref.current, { opacity: 0, duration: 1, ease: "power2.inOut" }, 13)

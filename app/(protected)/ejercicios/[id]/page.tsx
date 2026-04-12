@@ -119,22 +119,20 @@ export default async function ExercisePage({
 
   const rawContent = validExercise.content as Record<string, unknown>;
 
-  let idlScore = validExercise.idl_score ?? null;
+  const idlScore = validExercise.idl_score ?? null;
 
   if (idlScore === null && (typeName === "reading_comprehension" || typeName === "timed_reading")) {
     const readingText = typeof rawContent.reading_text === "string" && rawContent.reading_text.trim()
       ? rawContent.reading_text
       : null;
     if (readingText) {
-      try {
-        const result = await analyzeText(readingText);
-        idlScore = result.score;
-        if (idlScore !== null) {
-          await admin.from("exercises").update({ idl_score: idlScore } as any).eq("id", validExercise.id);
-        }
-      } catch {
-        // IDL service unavailable, continue without score
-      }
+      analyzeText(readingText)
+        .then(async (result) => {
+          if (result.score !== null) {
+            await admin.from("exercises").update({ idl_score: result.score } as any).eq("id", validExercise.id);
+          }
+        })
+        .catch(() => {});
     }
   }
 

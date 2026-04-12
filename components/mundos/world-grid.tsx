@@ -4,24 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { WorldPath } from "@/components/mundos/world-path"
-
-const WORLD_IMAGE: Record<string, string> = {
-  medieval: "/mundos/medieval.png",
-  agua:     "/mundos/oceano.png",
-  bosque:   "/mundos/bosque.png",
-  hielo:    "/mundos/hielo.png",
-  fuego:    "/mundos/fuego.png",
-  cielo:    "/mundos/cielo.png",
-}
-
-const WORLD_COLOR: Record<string, string> = {
-  medieval: "#B8832A",
-  agua:     "#1478A0",
-  bosque:   "#2D7A4E",
-  hielo:    "#41B0C4",
-  fuego:    "#C04A28",
-  cielo:    "#6044B0",
-}
+import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes"
 
 type WorldData = {
   id: string
@@ -106,8 +89,9 @@ export function WorldGrid({ worlds, userName }: { worlds: WorldData[]; userName?
       ) : (
         <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3 lg:gap-4">
           {worlds.map((world) => {
-            const color = WORLD_COLOR[world.name] ?? "#4A6080"
-            const mundoSrc = WORLD_IMAGE[world.name]
+            const scheme = getScheme(world.name)
+            const color = scheme.accentColor
+            const mundoSrc = scheme.worldImage
             const completed = world.completedExercises
             const total = world.totalExercises
             const isDone = total > 0 && completed >= total

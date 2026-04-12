@@ -149,7 +149,7 @@ export function PhaseReading({
 
   return (
     <div
-      className="h-screen flex flex-col relative"
+      className="h-dvh flex flex-col relative"
       style={{ background: "#ffffff", color: "#1a1a1a", fontFamily: "'Lexend', sans-serif" }}
     >
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-neutral-100 z-10">

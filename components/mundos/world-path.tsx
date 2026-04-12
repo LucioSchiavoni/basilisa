@@ -1,6 +1,7 @@
 "use client"
 
 import { LevelNode } from "./level-node"
+import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes"
 
 type WorldData = {
   id: string
@@ -9,33 +10,6 @@ type WorldData = {
   difficultyLevel: number
   totalExercises: number
   completedExercises: number
-}
-
-const WORLD_IMAGES: Record<string, string> = {
-  medieval: "/mundos/medieval.png",
-  agua:     "/mundos/oceano.png",
-  bosque:   "/mundos/bosque.png",
-  hielo:    "/mundos/hielo.png",
-  fuego:    "/mundos/fuego.png",
-  cielo:    "/mundos/cielo.png",
-}
-
-const WORLD_BG_COLORS: Record<string, string> = {
-  medieval: "#FFFFFF",
-  agua:     "#FFFFFF",
-  bosque:   "#FFFFFF",
-  hielo:    "#FFFFFF",
-  fuego:    "#FFFFFF",
-  cielo:    "#FFFFFF",
-}
-
-const WORLD_ACCENT_COLORS: Record<string, string> = {
-  medieval: "#f5c842",
-  agua:     "#22d3ee",
-  bosque:   "#4ade80",
-  hielo:    "#41B0C4",
-  fuego:    "#ef4444",
-  cielo:    "#7dd3fc",
 }
 
 const DIFFICULTY_LABELS: Record<number, string> = {
@@ -91,9 +65,7 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
 
   const renderNodes = (points: [number, number][]) =>
     worlds.map((world, index) => {
-      const image = WORLD_IMAGES[world.name]
-      const accentColor = WORLD_ACCENT_COLORS[world.name] ?? "#22d3ee"
-      const bgColor = WORLD_BG_COLORS[world.name] ?? "transparent"
+      const scheme = getScheme(world.name)
       const difficultyLabel = DIFFICULTY_LABELS[world.difficultyLevel] ?? "Nivel " + world.difficultyLevel
       const [xPos, yPos] = points[index]
       return (
@@ -108,13 +80,13 @@ export function WorldPath({ worlds }: { worlds: WorldData[] }) {
         >
           <LevelNode
             name={world.displayName}
-            imageUrl={image ?? ""}
+            imageUrl={scheme.worldImage}
             href={`/ejercicios/mundos/${world.id}`}
             completedExercises={world.completedExercises}
             totalExercises={world.totalExercises}
-            accentColor={accentColor}
+            accentColor={scheme.accentColor}
             difficultyLabel={difficultyLabel}
-            bgColor={bgColor}
+            bgColor="#ffffff"
             hideName
           />
         </div>

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WorldExercisesList } from "./world-exercises-list";
-import { WorldBackButton } from "./world-back-button";
 
 export default async function WorldDetailPage({
   params,
@@ -20,7 +19,7 @@ export default async function WorldDetailPage({
   const [{ data: world }, { data: worldExercisesData }] = await Promise.all([
     adminClient
       .from("worlds")
-      .select("id, name, display_name, description, icon_url")
+      .select("id, name, display_name, description, icon_url, difficulty_level")
       .eq("id", worldId)
       .eq("is_active", true)
       .single(),
@@ -79,16 +78,13 @@ export default async function WorldDetailPage({
   const completedIds = (completedSessionsData ?? []).map((s) => s.exercise_id).filter((id): id is string => id !== null);
 
   return (
-    <>
-      <WorldBackButton worldName={world.name} displayName={world.display_name} />
-
-      <WorldExercisesList
-        exercises={exercises}
-        completedExerciseIds={completedIds}
-        worldName={world.name}
-        displayName={world.display_name}
-        worldId={worldId}
-      />
-    </>
+    <WorldExercisesList
+      exercises={exercises}
+      completedExerciseIds={completedIds}
+      worldName={world.name}
+      displayName={world.display_name}
+      worldId={worldId}
+      difficultyLevel={(world as { difficulty_level: number }).difficulty_level}
+    />
   );
 }

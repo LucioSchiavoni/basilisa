@@ -1,68 +1,14 @@
-export type WorldConfig = {
-  id: string
-  name: string
-  displayName: string
-  backgroundColor: string
-  characterImage: string
-  accentColor: string
-  accentFg: string
-}
+import { getScheme, WorldColorScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-color-schemes"
 
-export const WORLDS: Record<string, WorldConfig> = {
-  medieval: {
-    id: "medieval",
-    name: "medieval",
-    displayName: "Mundo Medieval",
-    backgroundColor: "linear-gradient(to bottom, #1a0a2e, #2d1b4e, #0d0820)",
-    characterImage: "/pj/medieval-pj.png",
-    accentColor: "#d4af37",
-    accentFg: "#1e293b",
-  },
-  bosque: {
-    id: "bosque",
-    name: "bosque",
-    displayName: "Mundo Bosque",
-    backgroundColor: "linear-gradient(to bottom, #071a07, #0d2e12, #051209)",
-    characterImage: "/pj/bosque-pj.png",
-    accentColor: "#10b981",
-    accentFg: "#1e293b",
-  },
-  agua: {
-    id: "agua",
-    name: "agua",
-    displayName: "Mundo Agua",
-    backgroundColor: "linear-gradient(to bottom, #020b2a, #041e4a, #051b3a)",
-    characterImage: "/pj/oceano-pj.png",
-    accentColor: "#06b6d4",
-    accentFg: "#1e293b",
-  },
-  fuego: {
-    id: "fuego",
-    name: "fuego",
-    displayName: "Mundo Fuego",
-    backgroundColor: "linear-gradient(to bottom, #1a0500, #3a0c00, #1f0800)",
-    characterImage: "/pj/fuego-pj.png",
-    accentColor: "#f97316",
-    accentFg: "#1e293b",
-  },
-  hielo: {
-    id: "hielo",
-    name: "hielo",
-    displayName: "Mundo Hielo",
-    backgroundColor: "linear-gradient(to bottom, #b8d4e8, #daeaf5, #f0f8ff)",
-    characterImage: "/pj/hielo-pj.png",
-    accentColor: "#7dd3fc",
-    accentFg: "#1e293b",
-  },
-  cielo: {
-    id: "cielo",
-    name: "cielo",
-    displayName: "Mundo Cielo",
-    backgroundColor: "linear-gradient(to bottom, #87ceeb, #9b8ec4, #6a5acd)",
-    characterImage: "/pj/cielo-pj.png",
-    accentColor: "#38bdf8",
-    accentFg: "#1e293b",
-  },
+export type WorldConfig = WorldColorScheme & { displayName: string }
+
+const DISPLAY_NAMES: Record<string, string> = {
+  medieval: "Mundo Medieval",
+  bosque:   "Mundo Bosque",
+  agua:     "Mundo Agua",
+  fuego:    "Mundo Fuego",
+  hielo:    "Mundo Hielo",
+  cielo:    "Mundo Cielo",
 }
 
 const DIFFICULTY_TO_WORLD: Record<number, string> = {
@@ -74,14 +20,23 @@ const DIFFICULTY_TO_WORLD: Record<number, string> = {
   6: "cielo",
 }
 
+export const WORLDS: Record<string, WorldConfig> = Object.fromEntries(
+  Object.entries(DISPLAY_NAMES).map(([name, displayName]) => [
+    name,
+    { ...getScheme(name), displayName },
+  ])
+)
+
 export function getWorldByDifficulty(difficultyLevel: number): string | null {
   return DIFFICULTY_TO_WORLD[difficultyLevel] ?? null
 }
 
 export function getWorldConfig(worldId: string): WorldConfig | null {
-  return WORLDS[worldId] ?? null
+  const displayName = DISPLAY_NAMES[worldId]
+  if (!displayName) return null
+  return { ...getScheme(worldId), displayName }
 }
 
 export function getWorldBackground(worldId: string): string {
-  return WORLDS[worldId]?.backgroundColor ?? ""
+  return getScheme(worldId).playerBackground
 }

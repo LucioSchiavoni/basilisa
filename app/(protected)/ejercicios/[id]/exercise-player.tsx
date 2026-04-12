@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition, useRef, useEffect } from "react";
+import { useReducer, useCallback, useTransition, useRef, useEffect } from "react";
 import { completeExercise, completeTimedReading, getPreviousAttempts } from "./actions";
 import { calculateMaxReadingTime, getExerciseWordCount, EXPECTED_READING_SPEEDS } from "@/lib/constants/reading-speeds";
 import type { AnswerResult } from "./actions";
@@ -61,6 +61,117 @@ export type ExerciseProps = {
 
 type Phase = "intro" | "reading" | "questions" | "results";
 
+type ExerciseState = {
+  phase: Phase;
+  currentIndex: number;
+  selectedOptionId: string | null;
+  correctCount: number;
+  totalPoints: number;
+  earnedPoints: number;
+  gemsAwarded: number | null;
+  isCompleting: boolean;
+  previousAttempts: { score: number; date: string }[];
+  timerSeconds: number;
+  finalTimeSeconds: number;
+  wordsPerMinute: number;
+  activeParagraph: number | null;
+  totalTimeSeconds: number;
+  readingTimeSeconds: number | undefined;
+};
+
+type ExerciseAction =
+  | { type: "START"; toReading: boolean }
+  | { type: "BACK_TO_INTRO" }
+  | { type: "START_QUESTIONS"; readingTimeSeconds: number }
+  | { type: "TICK_TIMER" }
+  | { type: "SET_ACTIVE_PARAGRAPH"; paragraph: number | null }
+  | { type: "SELECT_OPTION"; optionId: string }
+  | { type: "ANSWER_QUESTION"; isCorrect: boolean; points: number; isLast: boolean; totalTimeSeconds: number; readingTimeSeconds: number | undefined }
+  | { type: "FINISH_TIMED_READING"; elapsed: number; wpm: number; totalTime: number }
+  | { type: "EXERCISE_COMPLETED"; gemsAwarded: number; previousAttempts: { score: number; date: string }[] }
+  | { type: "EXERCISE_COMPLETE_ERROR" };
+
+const initialExerciseState: ExerciseState = {
+  phase: "intro",
+  currentIndex: 0,
+  selectedOptionId: null,
+  correctCount: 0,
+  totalPoints: 0,
+  earnedPoints: 0,
+  gemsAwarded: null,
+  isCompleting: false,
+  previousAttempts: [],
+  timerSeconds: 0,
+  finalTimeSeconds: 0,
+  wordsPerMinute: 0,
+  activeParagraph: null,
+  totalTimeSeconds: 0,
+  readingTimeSeconds: undefined,
+};
+
+function exerciseReducer(state: ExerciseState, action: ExerciseAction): ExerciseState {
+  switch (action.type) {
+    case "START":
+      return { ...state, phase: action.toReading ? "reading" : "questions" };
+    case "BACK_TO_INTRO":
+      return { ...state, phase: "intro" };
+    case "START_QUESTIONS":
+      return { ...state, phase: "questions", readingTimeSeconds: action.readingTimeSeconds };
+    case "TICK_TIMER":
+      return { ...state, timerSeconds: state.timerSeconds + 1 };
+    case "SET_ACTIVE_PARAGRAPH":
+      return { ...state, activeParagraph: action.paragraph };
+    case "SELECT_OPTION":
+      return { ...state, selectedOptionId: action.optionId };
+    case "ANSWER_QUESTION": {
+      const newCorrect = action.isCorrect ? state.correctCount + 1 : state.correctCount;
+      const newEarned = action.isCorrect ? state.earnedPoints + action.points : state.earnedPoints;
+      const newTotal = state.totalPoints + action.points;
+      if (action.isLast) {
+        return {
+          ...state,
+          correctCount: newCorrect,
+          earnedPoints: newEarned,
+          totalPoints: newTotal,
+          selectedOptionId: null,
+          phase: "results",
+          isCompleting: true,
+          totalTimeSeconds: action.totalTimeSeconds,
+          readingTimeSeconds: action.readingTimeSeconds,
+        };
+      }
+      return {
+        ...state,
+        correctCount: newCorrect,
+        earnedPoints: newEarned,
+        totalPoints: newTotal,
+        currentIndex: state.currentIndex + 1,
+        selectedOptionId: null,
+      };
+    }
+    case "FINISH_TIMED_READING":
+      return {
+        ...state,
+        phase: "results",
+        isCompleting: true,
+        finalTimeSeconds: action.elapsed,
+        wordsPerMinute: action.wpm,
+        totalTimeSeconds: action.totalTime,
+      };
+    case "EXERCISE_COMPLETED":
+      return {
+        ...state,
+        gemsAwarded: action.gemsAwarded,
+        previousAttempts: action.previousAttempts,
+        isCompleting: false,
+      };
+    case "EXERCISE_COMPLETE_ERROR":
+      return { ...state, gemsAwarded: 0, isCompleting: false };
+    default:
+      return state;
+  }
+}
+
 function getQuestions(content: Record<string, unknown>): Question[] {
   return (content.questions as Question[]) || [];
 }
@@ -93,23 +204,27 @@ export function ExercisePlayer({ exercise, answerKey, initialGems, gradeYear, wo
   );
 }
 
-function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, worldId, worldName, backHref }: ExerciseProps) {
-  const [phase, setPhase] = useState<Phase>("intro");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [earnedPoints, setEarnedPoints] = useState(0);
+function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, worldName, backHref }: ExerciseProps) {
+  const [state, dispatch] = useReducer(exerciseReducer, initialExerciseState);
   const [isPending, startTransition] = useTransition();
-  const [gemsAwarded, setGemsAwarded] = useState<number | null>(null);
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [previousAttempts, setPreviousAttempts] = useState<{ score: number; date: string }[]>([]);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const [finalTimeSeconds, setFinalTimeSeconds] = useState(0);
-  const [wordsPerMinute, setWordsPerMinute] = useState(0);
-  const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
-  const [totalTimeSeconds, setTotalTimeSeconds] = useState(0);
-  const [readingTimeSeconds, setReadingTimeSeconds] = useState<number | undefined>(undefined);
+
+  const {
+    phase,
+    currentIndex,
+    selectedOptionId,
+    correctCount,
+    totalPoints,
+    earnedPoints,
+    gemsAwarded,
+    isCompleting,
+    previousAttempts,
+    timerSeconds,
+    finalTimeSeconds,
+    wordsPerMinute,
+    activeParagraph,
+    totalTimeSeconds,
+    readingTimeSeconds,
+  } = state;
 
   const answersRef = useRef<AnswerResult[]>([]);
   const startedAtRef = useRef(0);
@@ -153,11 +268,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
 
   const handleStart = useCallback(() => {
     startedAtRef.current = Date.now();
-    if (isReadingComprehension || isTimedReading) {
-      setPhase("reading");
-    } else {
-      setPhase("questions");
-    }
+    dispatch({ type: "START", toReading: isReadingComprehension || isTimedReading });
   }, [isReadingComprehension, isTimedReading]);
 
   useEffect(() => {
@@ -165,7 +276,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     readingStartRef.current = Date.now();
     if (!isTimedReading) return;
     const interval = setInterval(() => {
-      setTimerSeconds((s) => s + 1);
+      dispatch({ type: "TICK_TIMER" });
     }, 1000);
     return () => clearInterval(interval);
   }, [phase, isTimedReading]);
@@ -185,51 +296,39 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
     });
   }, [currentIndex]);
 
-  const finishExercise = useCallback(() => {
-    setPhase("results");
-    setIsCompleting(true);
-    const durationSeconds = Math.round((Date.now() - startedAtRef.current) / 1000);
-    setTotalTimeSeconds(durationSeconds);
-    setReadingTimeSeconds(readingTimeRef.current);
-    const actualCorrect = answersRef.current.filter((a) => a.isCorrect).length;
+  const finishExercise = useCallback((durationSeconds: number) => {
     completeExercise({
       exerciseId: exercise.id,
       answers: answersRef.current,
       totalQuestions: questions.length,
-      correctAnswers: actualCorrect,
+      correctAnswers: answersRef.current.filter((a) => a.isCorrect).length,
       durationSeconds,
       readingTimeSeconds: readingTimeRef.current,
     })
-      .then((result) => {
-        setGemsAwarded(result.gemsAwarded);
-        getPreviousAttempts(exercise.id).then(setPreviousAttempts).catch(() => {});
+      .then(async (result) => {
+        const attempts = await getPreviousAttempts(exercise.id).catch(() => [] as { score: number; date: string }[]);
+        dispatch({ type: "EXERCISE_COMPLETED", gemsAwarded: result.gemsAwarded, previousAttempts: attempts });
       })
-      .catch(() => setGemsAwarded(0))
-      .finally(() => setIsCompleting(false));
+      .catch(() => dispatch({ type: "EXERCISE_COMPLETE_ERROR" }));
   }, [exercise.id, questions.length]);
 
   const handleFinishReading = useCallback(() => {
     const elapsed = Math.round((Date.now() - readingStartRef.current) / 1000);
-    const timeForCalc = Math.max(elapsed, 1);
-    const wpm = Math.round((wordCount / timeForCalc) * 60);
-    setFinalTimeSeconds(elapsed);
-    setWordsPerMinute(wpm);
-    setPhase("results");
-    setIsCompleting(true);
+    const wpm = Math.round((wordCount / Math.max(elapsed, 1)) * 60);
+    const totalTime = Math.round((Date.now() - startedAtRef.current) / 1000);
+    dispatch({ type: "FINISH_TIMED_READING", elapsed, wpm, totalTime });
     completeTimedReading({
       exerciseId: exercise.id,
       timeSeconds: elapsed,
       wordCount,
       wordsPerMinute: wpm,
     })
-      .then((result) => {
-        setGemsAwarded(result.gemsAwarded);
-        getPreviousAttempts(exercise.id).then(setPreviousAttempts).catch(() => {});
+      .then(async (result) => {
+        const attempts = await getPreviousAttempts(exercise.id).catch(() => [] as { score: number; date: string }[]);
+        dispatch({ type: "EXERCISE_COMPLETED", gemsAwarded: result.gemsAwarded, previousAttempts: attempts });
       })
-      .catch(() => setGemsAwarded(0))
-      .finally(() => setIsCompleting(false));
+      .catch(() => dispatch({ type: "EXERCISE_COMPLETE_ERROR" }));
   }, [exercise.id, wordCount]);
-
 
   const handleCheck = useCallback((optionId: string) => {
     if (!currentQuestion) return;
@@ -246,19 +345,20 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
       timedOut,
     });
     const pts = currentQuestion.points || 1;
-    setTotalPoints((p) => p + pts);
-    if (isCorrect) {
-      setCorrectCount((c) => c + 1);
-      setEarnedPoints((p) => p + pts);
-    }
+    const durationSeconds = Math.round((Date.now() - startedAtRef.current) / 1000);
     startTransition(() => {
-      if (isLastQuestion) {
-        finishExercise();
-      } else {
-        setCurrentIndex((i) => i + 1);
-        setSelectedOptionId(null);
-      }
+      dispatch({
+        type: "ANSWER_QUESTION",
+        isCorrect,
+        points: pts,
+        isLast: isLastQuestion,
+        totalTimeSeconds: durationSeconds,
+        readingTimeSeconds: readingTimeRef.current,
+      });
     });
+    if (isLastQuestion) {
+      finishExercise(durationSeconds);
+    }
   }, [currentQuestion, answerKey, isLastQuestion, finishExercise, maxReadingTime]);
 
   return (
@@ -293,11 +393,12 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
             timerSeconds={timerSeconds}
             worldConfig={worldConfig}
             activeParagraph={activeParagraph}
-            onActiveParagraphChange={setActiveParagraph}
-            onBack={() => setPhase("intro")}
+            onActiveParagraphChange={(p) => dispatch({ type: "SET_ACTIVE_PARAGRAPH", paragraph: p })}
+            onBack={() => dispatch({ type: "BACK_TO_INTRO" })}
             onDone={isTimedReading ? handleFinishReading : () => {
-              readingTimeRef.current = Math.round((Date.now() - readingStartRef.current) / 1000);
-              setPhase("questions");
+              const readingTime = Math.round((Date.now() - readingStartRef.current) / 1000);
+              readingTimeRef.current = readingTime;
+              dispatch({ type: "START_QUESTIONS", readingTimeSeconds: readingTime });
             }}
           />
         )}
@@ -341,7 +442,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
             readingText={readingText}
             backHref={backHref}
             onOptionClick={(optionId) => {
-              setSelectedOptionId(optionId);
+              dispatch({ type: "SELECT_OPTION", optionId });
               handleCheck(optionId);
             }}
           />

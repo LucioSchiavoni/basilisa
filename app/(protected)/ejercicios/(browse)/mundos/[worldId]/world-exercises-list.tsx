@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Check, ChevronRight, Star, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronRight, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getScheme } from "../world-color-schemes";
 import { getWorldConfig } from "@/lib/worlds";
@@ -30,12 +30,16 @@ export function WorldExercisesList({
   worldName,
   displayName,
   worldId,
+  difficultyLevel,
+  lastSession,
 }: {
   exercises: ExerciseItem[];
   completedExerciseIds: string[];
   worldName: string;
   displayName: string;
   worldId: string;
+  difficultyLevel: number;
+  lastSession?: string;
 }) {
   const scheme = getScheme(worldName);
   const completedSet = new Set(completedExerciseIds);
@@ -87,58 +91,70 @@ export function WorldExercisesList({
 
   return (
     <>
-      <div className="px-4">
-        <div
-          className="max-w-md mx-auto rounded-2xl p-3 flex items-center relative overflow-visible"
-          style={{
-            paddingLeft: worldConfig?.characterImage ? "9rem" : "0.75rem",
-            background: `linear-gradient(135deg, color-mix(in srgb, ${scheme.particles} 38%, #000000) 0%, color-mix(in srgb, ${scheme.particles} 18%, #000000) 100%)`,
-            border: `1px solid ${scheme.particles}55`,
-            boxShadow: `0 4px 20px rgba(0,0,0,0.35), 0 0 20px ${scheme.particles}18`,
-          }}
+      <div
+        className="-mx-4 px-6 pt-5 pb-4"
+        style={{
+          background: `linear-gradient(160deg, color-mix(in srgb, ${scheme.particles} 55%, #000) 0%, color-mix(in srgb, ${scheme.particles} 30%, #000) 100%)`,
+        }}
+      >
+        <Link
+          href="/ejercicios/mundos"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white/90 transition-colors mb-4"
         >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Volver
+        </Link>
+
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-end sm:gap-5">
           {worldConfig?.characterImage && (
-            <div className="absolute left-0 top-0 bottom-0 flex items-center justify-center" style={{ width: "9rem" }}>
-              <Image
-                src={worldConfig.characterImage}
-                alt={`Personaje de ${displayName}`}
-                width={192}
-                height={192}
-                className="w-48 h-48 sm:w-52 sm:h-52 object-contain drop-shadow-2xl"
+            <Image
+              src={worldConfig.characterImage}
+              alt=""
+              width={128}
+              height={128}
+              className="w-32 h-32 object-contain object-bottom drop-shadow-2xl self-end"
+            />
+          )}
+          <div className="flex-1 text-center sm:text-left pb-1">
+            <p className="text-[11px] font-medium tracking-widest uppercase mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Nivel {difficultyLevel} · Mundo
+            </p>
+            <h1 className="text-2xl font-medium leading-tight mb-3" style={{ color: "#fff8f0" }}>
+              {displayName}
+            </h1>
+            <div className="h-1.5 rounded-full mb-1.5" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0}%`,
+                  background: scheme.particles,
+                }}
               />
             </div>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <h2
-              className="text-lg sm:text-xl font-bold leading-tight"
-              style={{ color: "#ffffff", textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}
-            >
-              {displayName}
-            </h2>
-
-            <div className="flex items-center gap-2 mt-1.5">
-              <span
-                className="text-sm font-bold tabular-nums"
-                style={{ color: scheme.particles, textShadow: `0 0 8px ${scheme.particles}80` }}
-              >
-                {completedExercises}/{totalExercises}
-              </span>
-              <span className="text-xs text-white/60">completados</span>
-            </div>
-
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+              {completedExercises}/{totalExercises} completados
+            </p>
             {isWorldComplete && (
-              <div className="flex items-center gap-1.5 mt-1.5">
+              <div className="flex items-center gap-1.5 mt-1.5 justify-center sm:justify-start">
                 <Star className="h-3 w-3 fill-current" style={{ color: scheme.particles }} />
-                <span
-                  className="text-xs font-bold"
-                  style={{ color: scheme.particles, textShadow: `0 0 6px ${scheme.particles}80` }}
-                >
+                <span className="text-xs font-bold" style={{ color: scheme.particles }}>
                   ¡Completado!
                 </span>
               </div>
             )}
           </div>
+        </div>
+
+        <div className="border-t border-white/10 mt-3 pt-3 flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:items-center">
+          {lastSession ? (
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>Última sesión: {lastSession}</p>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
+          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs bg-white/10" style={{ color: "rgba(255,255,255,0.7)" }}>
+            <BookOpen className="h-3 w-3" />
+            {exercises.length} ejercicio{exercises.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
