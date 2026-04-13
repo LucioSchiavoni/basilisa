@@ -76,7 +76,7 @@ const METRIC_TARGETS: Record<
   },
 }
 
-const SYSTEM_PROMPT = `Eres un simplificador de textos para niños con dislexia. Tu tarea es reescribir textos preservando todo el contenido y el sentido original, modificando únicamente el vocabulario, la sintaxis y el estilo. Nunca omitas ideas. Nunca inventes información. Nunca agregues palabras, adjetivos o frases que no estén en el texto original.
+const SYSTEM_PROMPT = `Eres un simplificador de textos para niños con dislexia. Tu tarea es reescribir textos adaptando el vocabulario, la sintaxis y el estilo al perfil indicado. Preservá todas las ideas centrales del texto original. Podés reformular libremente — el contenido debe mantenerse, la forma puede cambiar de manera considerable. Un texto más simple y fluido siempre es preferible a uno que conserva la complejidad original.
 
 ## PERFILES
 
@@ -100,7 +100,7 @@ Vocabulario:
 Estilo:
 - El texto debe sonar como un relato contado en voz alta, natural y fluido.
 - Conectores simples: porque, entonces, pero, también, y, que, aunque, cuando.
-- Nunca telegráfico: el texto debe sonar escrito por un narrador cuidadoso.
+- Nunca telegráfico: cada idea se conecta con la siguiente usando conectores.
 
 ### INTERMEDIO
 Para lectores con dislexia moderada que ya tienen cierta fluidez.
@@ -136,25 +136,26 @@ Estilo:
 ## REGLAS UNIVERSALES
 
 Contenido:
-- Preservar todas las ideas del texto original sin excepción.
+- Preservar todas las ideas centrales del texto original.
 - Mantener nombres propios sin modificar.
-- En textos informativos, eliminar solo información redundante o ambigua, nunca información relevante.
-- Prohibido agregar información, ideas o datos que no estén en el texto original. El vocabulario puede simplificarse con palabras más accesibles, pero el contenido debe ser fiel al original.
-- Cada oración debe aportar información nueva. Prohibido repetir o explicar lo que la oración anterior ya dijo.
-- Si una oración del original ya es simple y clara, mantenla tal cual.
+- Podés reformular oraciones de manera considerable siempre que el sentido general se mantenga. Una paráfrasis fiel es preferible a una traducción literal compleja.
+- Prohibido agregar datos, cifras o hechos que no estén en el texto original.
+- Cada oración debe aportar información nueva. Prohibido repetir lo que la oración anterior ya dijo.
+- Simplificá activamente todas las oraciones, incluso las que parezcan simples. Una oración puede mantenerse igual solo si ya cumple los criterios de longitud y vocabulario del perfil objetivo.
 
 Vocabulario:
-- No reemplazar términos científicos o categóricos por descripciones inventadas. Si el original dice "mamíferos", no escribir "bichos con pelo". Si dice "reptiles", no escribir "otras serpientes". Si el término es irremplazable, mantenerlo y dejarlo para el glosario.
-- No agregar adjetivos que no estén en el original. Si el original dice "veneno", no escribir "veneno mortal".
-- Prohibido repetir el mismo adjetivo o sustantivo en la misma oración o en oraciones consecutivas. Usar sinónimo o reestructurar.
-- Sustituir palabras largas por equivalentes cortos: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros.
+- No reemplazar términos científicos o categóricos por descripciones inventadas que cambien el significado. Si el original dice "mamíferos", no escribir "bichos con pelo". Si el término es irremplazable, mantenerlo y agregarlo al glosario.
+- No agregar adjetivos valorativos que no estén en el original.
+- Prohibido repetir el mismo adjetivo o sustantivo en oraciones consecutivas. Usar sinónimo o reestructurar.
+- Sustituir palabras largas por equivalentes cortos: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros, constituye→es, especialmente→muy, acumuladas→guardadas, dependiendo→usando.
 
 Sintaxis:
 - Nunca usar comas para reemplazar un verbo omitido.
 - Oraciones largas se dividen en oraciones completas independientes con sujeto y verbo propios.
+- Prohibido el estilo telegráfico: nunca dos oraciones seguidas sin conector entre ellas.
 
 Estilo:
-- Usar conectores para guiar al lector: porque, además, por eso, entonces, por ejemplo, pero, también, sin embargo.
+- Usar conectores para guiar al lector: porque, además, por eso, entonces, por ejemplo, pero, también, sin embargo, aunque.
 - En listas, usar conectores en lugar de repetir el mismo verbo.
 - Ejemplo correcto: "Come mamíferos, pájaros y reptiles."
 - Ejemplo incorrecto: "Come mamíferos. Come pájaros. Come reptiles."
@@ -282,10 +283,10 @@ function buildFeedback(
           .join("\n\n")
       : "Todas las variables están dentro del objetivo."
 
-  return `Tu simplificación anterior fue validada. Estos son los resultados:
+return `Tu simplificación anterior no alcanzó el IDL objetivo. Necesitás simplificar más.
 
-Perfil objetivo: ${range.label}
-IDL obtenido: ${score.toFixed(1)}
+Perfil objetivo: ${range.label} (IDL ${range.min}–${range.max})
+IDL obtenido: ${score.toFixed(1)} — ${score > range.max ? "el texto sigue siendo demasiado complejo" : "el texto quedó demasiado simple"}
 
 Métricas estructurales:
 - Palabras por oración (promedio): ${structural.avg_words_per_sentence.toFixed(1)}
@@ -299,14 +300,12 @@ Métricas léxicas:
 - Imaginabilidad promedio: ${lexical.avg_imageability.toFixed(2)} / 7 (objetivo: mayor a 4)
 - Palabras fuera de la base léxica: ${(lexical.unknown_word_ratio * 100).toFixed(1)}%
 
-Correcciones necesarias ordenadas por impacto:
+Correcciones requeridas ordenadas por impacto:
 ${exceedingList}
 
-Reescribe el texto aplicando exactamente esas correcciones. Mantené todas las reglas del perfil ${range.label}: narratividad, conectores, sin repetición léxica, sin agregar información nueva. Si una métrica no se puede mejorar sin deteriorar la calidad del texto, priorizá siempre la calidad narrativa. El objetivo es un texto bien escrito para un niño con dislexia, no optimizar números.
+Reescribí el texto desde cero aplicando esas correcciones de forma agresiva. No hagas ajustes menores sobre la versión anterior — reescribí completamente con el perfil ${range.label} en mente. Priorizá la simplificación sobre la fidelidad estilística. El contenido central debe preservarse, la forma puede cambiar considerablemente.
 
-Devuelve el glosario actualizado si algún término cambió. Si no hubo cambios en los términos, devuelve el mismo glosario anterior.
-
-Responde solo con JSON: {"simplified_text": "texto corregido aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
+Respondé solo con JSON: {"simplified_text": "texto corregido aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
 }
 
 export async function getSimplificationUsage(): Promise<{
