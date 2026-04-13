@@ -756,9 +756,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      patient_stats_weekly: {
+        Row: {
+          patient_id: string
+          week_start: string
+          avg_wpm: number | null
+          max_wpm: number | null
+          avg_accuracy: number | null
+          reading_minutes: number
+          sessions_count: number
+          reading_sessions: number
+          wpm_by_type: Record<string, { avg: number; sessions: number; display_name: string }>
+          accuracy_by_type: Record<string, { avg: number; sessions: number; display_name: string }>
+        }
+        Relationships: []
+      }
     }
     Functions: {
+        upsert_patient_weekly_stats: {
+          Args: { p_patient_id: string; p_week_start: string; p_session_id: string }
+          Returns: undefined
+        }
         get_user_feature_limit: {
           Args: { p_feature_key: string; p_period: string; p_user_id: string }
           Returns: number
