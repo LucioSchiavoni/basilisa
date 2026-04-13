@@ -205,6 +205,16 @@ export async function completeExercise(input: {
 
   if (scoreError) throw new Error("Error al guardar puntaje");
 
+  const weekStart = new Date()
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
+  const weekStartStr = weekStart.toISOString().split('T')[0]
+
+  await supabase.rpc('upsert_patient_weekly_stats', {
+    p_patient_id: patientId,
+    p_week_start: weekStartStr,
+    p_session_id: session.id,
+  })
+
   const [gemResult] = await Promise.all([
     awardExerciseGems(session.id, patientId),
     isAssigned
@@ -332,6 +342,16 @@ export async function completeTimedReading(input: {
     });
 
   if (scoreError) throw new Error("Error al guardar puntaje");
+
+  const weekStart = new Date()
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
+  const weekStartStr = weekStart.toISOString().split('T')[0]
+
+  await supabase.rpc('upsert_patient_weekly_stats', {
+    p_patient_id: patientId,
+    p_week_start: weekStartStr,
+    p_session_id: session.id,
+  })
 
   const [gemResult] = await Promise.all([
     awardExerciseGems(session.id, patientId),
@@ -548,6 +568,16 @@ export async function completeLetterGap(input: {
     });
 
   if (scoreError) throw new Error("Error al guardar puntaje");
+
+  const weekStart = new Date()
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
+  const weekStartStr = weekStart.toISOString().split('T')[0]
+
+  await supabase.rpc('upsert_patient_weekly_stats', {
+    p_patient_id: patientId,
+    p_week_start: weekStartStr,
+    p_session_id: session.id,
+  })
 
   const [gemResult] = await Promise.all([
     awardExerciseGems(session.id, patientId),

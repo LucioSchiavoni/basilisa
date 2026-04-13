@@ -16,6 +16,7 @@ import {
   X,
   Menu,
   CreditCard,
+  TrendingUp,
 } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useEffect } from "react";
@@ -49,6 +50,13 @@ const navItems = [
     exact: true,
     accentColor: "#2E85C8",
     icon: ALargeSmall,
+  },
+  {
+    href: "/progreso",
+    label: "Progreso",
+    exact: true,
+    accentColor: "#579F93",
+    icon: TrendingUp,
   },
   {
     href: "/ranking",

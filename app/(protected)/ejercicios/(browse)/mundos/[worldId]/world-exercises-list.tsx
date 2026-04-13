@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, BookOpen, Check, ChevronRight, Star, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getScheme } from "../world-color-schemes";
 import { getWorldConfig } from "@/lib/worlds";
@@ -91,74 +91,86 @@ export function WorldExercisesList({
 
   return (
     <>
-      <div
-        className="-mx-4 px-6 pt-5 pb-4"
-        style={{
-          background: `linear-gradient(160deg, color-mix(in srgb, ${scheme.particles} 55%, #000) 0%, color-mix(in srgb, ${scheme.particles} 30%, #000) 100%)`,
-        }}
-      >
-        <Link
-          href="/ejercicios/mundos"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white/90 transition-colors mb-4"
+      <div className="-mx-4 lg:mx-0 px-3 sm:px-8 lg:px-20 py-2.5">
+        <div
+          className="relative rounded-2xl overflow-hidden"
+          style={{
+            background: scheme.particles,
+            boxShadow: `0 6px 0 color-mix(in srgb, ${scheme.particles} 55%, #000), 0 8px 20px rgba(0,0,0,0.22)`,
+          }}
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Volver
-        </Link>
+          <div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 55%)",
+            }}
+          />
 
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-end sm:gap-5">
-          {worldConfig?.characterImage && (
-            <Image
-              src={worldConfig.characterImage}
-              alt=""
-              width={128}
-              height={128}
-              className="w-32 h-32 object-contain object-bottom drop-shadow-2xl self-end"
-            />
-          )}
-          <div className="flex-1 text-center sm:text-left pb-1">
-            <p className="text-[11px] font-medium tracking-widest uppercase mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>
-              Nivel {difficultyLevel} · Mundo
-            </p>
-            <h1 className="text-2xl font-medium leading-tight mb-3" style={{ color: "#fff8f0" }}>
-              {displayName}
-            </h1>
-            <div className="h-1.5 rounded-full mb-1.5" style={{ background: "rgba(255,255,255,0.15)" }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
+          <div className="relative flex items-center justify-between gap-2 px-3 sm:px-5 py-3 sm:py-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <Link
+                href="/ejercicios/mundos"
+                className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-all hover:bg-white/25 active:scale-95"
                 style={{
-                  width: `${totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0}%`,
-                  background: scheme.particles,
+                  background: "rgba(255,255,255,0.22)",
+                  color: "#ffffff",
+                  boxShadow: "0 2px 0 rgba(0,0,0,0.15)",
                 }}
-              />
-            </div>
-            <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
-              {completedExercises}/{totalExercises} completados
-            </p>
-            {isWorldComplete && (
-              <div className="flex items-center gap-1.5 mt-1.5 justify-center sm:justify-start">
-                <Star className="h-3 w-3 fill-current" style={{ color: scheme.particles }} />
-                <span className="text-xs font-bold" style={{ color: scheme.particles }}>
-                  ¡Completado!
-                </span>
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+              </Link>
+              <div className="min-w-0">
+                <p
+                  className="hidden sm:block text-[9px] font-semibold tracking-widest uppercase leading-none mb-0.5"
+                  style={{ color: "rgba(255,255,255,0.65)" }}
+                >
+                  Nivel {difficultyLevel} · Mundo
+                </p>
+                <h1
+                  className="text-base sm:text-lg font-bold leading-tight truncate"
+                  style={{ color: "#ffffff", textShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
+                >
+                  {displayName}
+                </h1>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        <div className="border-t border-white/10 mt-3 pt-3 flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:items-center">
-          {lastSession ? (
-            <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>Última sesión: {lastSession}</p>
-          ) : (
-            <span className="hidden sm:block" />
-          )}
-          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs bg-white/10" style={{ color: "rgba(255,255,255,0.7)" }}>
-            <BookOpen className="h-3 w-3" />
-            {exercises.length} ejercicio{exercises.length !== 1 ? "s" : ""}
-          </span>
+            <div
+              className="shrink-0 flex items-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2"
+              style={{
+                background: "rgba(0,0,0,0.18)",
+                border: "1px solid rgba(255,255,255,0.15)",
+              }}
+            >
+              <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/80" />
+              <span className="text-xs sm:text-[13px] font-bold text-white tabular-nums">
+                {completedExercises}
+                <span className="text-white/55 font-medium">/{totalExercises}</span>
+              </span>
+              {isWorldComplete && (
+                <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" strokeWidth={3} />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="relative flex flex-col items-center gap-0 pb-16 mt-14">
+      <div className="relative flex flex-col items-center gap-0 pb-16 mt-10">
+        {worldConfig?.characterImage && (
+          <div
+            className="absolute pointer-events-none select-none translate-x-16 sm:translate-x-0"
+            style={{ top: "-10px", left: "calc(50% - 310px)", zIndex: 0 }}
+          >
+            <Image
+              src={worldConfig.characterImage}
+              alt=""
+              width={440}
+              height={440}
+              className="w-80 h-80 sm:w-md sm:h-112 object-contain drop-shadow-2xl"
+            />
+          </div>
+        )}
+
         {exercises.map((exercise, index) => {
           const isCompleted = completedSet.has(exercise.id);
           const offset = getNodeOffset(index);
@@ -253,7 +265,7 @@ export function WorldExercisesList({
                     }}
                   >
                     <div
-                      className="absolute -top-1.75 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 sm:hidden"
+                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 sm:hidden"
                       style={{
                         background: `color-mix(in srgb, ${scheme.particles} 90%, #000000)`,
                         borderTop: `1px solid ${scheme.particles}50`,
@@ -261,7 +273,7 @@ export function WorldExercisesList({
                       }}
                     />
                     <div
-                      className="absolute top-1/2 -left-1.75 -translate-y-1/2 w-3 h-3 rotate-45 hidden sm:block"
+                      className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 rotate-45 hidden sm:block"
                       style={{
                         background: `color-mix(in srgb, ${scheme.particles} 90%, #000000)`,
                         borderLeft: `1px solid ${scheme.particles}50`,
