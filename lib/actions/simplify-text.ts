@@ -43,10 +43,37 @@ const TARGET_RANGES = {
   avanzado: { min: 55, max: 80, label: "Avanzado" },
 }
 
-const METRIC_TARGETS: Record<DifficultyLevel, { avg_words_per_sentence: number; long_sentence_ratio: number; avg_letters_per_word: number; medium_word_ratio: number; rare_word_ratio: number }> = {
-  inicial: { avg_words_per_sentence: 7, long_sentence_ratio: 0, avg_letters_per_word: 3.8, medium_word_ratio: 0.05, rare_word_ratio: 0 },
-  intermedio: { avg_words_per_sentence: 10, long_sentence_ratio: 0, avg_letters_per_word: 4.5, medium_word_ratio: 0.10, rare_word_ratio: 0.03 },
-  avanzado: { avg_words_per_sentence: 14, long_sentence_ratio: 0.15, avg_letters_per_word: 5.0, medium_word_ratio: 0.15, rare_word_ratio: 0.08 },
+const METRIC_TARGETS: Record<
+  DifficultyLevel,
+  {
+    avg_words_per_sentence: number
+    long_sentence_ratio: number
+    avg_letters_per_word: number
+    medium_word_ratio: number
+    rare_word_ratio: number
+  }
+> = {
+  inicial: {
+    avg_words_per_sentence: 7,
+    long_sentence_ratio: 0,
+    avg_letters_per_word: 3.8,
+    medium_word_ratio: 0.05,
+    rare_word_ratio: 0,
+  },
+  intermedio: {
+    avg_words_per_sentence: 10,
+    long_sentence_ratio: 0,
+    avg_letters_per_word: 4.5,
+    medium_word_ratio: 0.1,
+    rare_word_ratio: 0.03,
+  },
+  avanzado: {
+    avg_words_per_sentence: 14,
+    long_sentence_ratio: 0.15,
+    avg_letters_per_word: 5.0,
+    medium_word_ratio: 0.15,
+    rare_word_ratio: 0.08,
+  },
 }
 
 const SYSTEM_PROMPT = `Eres un simplificador de textos para niños con dislexia. Tu tarea es reescribir textos preservando todo el contenido y el sentido original, modificando únicamente el vocabulario, la sintaxis y el estilo. Nunca omitas ideas. Nunca inventes información. Nunca agregues palabras, adjetivos o frases que no estén en el texto original.
@@ -147,6 +174,30 @@ Ejemplo incorrecto: {"term": "basilisco", "definition": "Un animal peligroso."}
 JSON puro, sin markdown, sin backticks:
 {"simplified_text": "texto aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
 
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function callClaudeWithRetry(
+  client: Anthropic,
+  params: Anthropic.MessageCreateParamsNonStreaming,
+  maxRetries = 2
+): Promise<Anthropic.Message> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await client.messages.create(params)
+    } catch (err) {
+      const isRetryable =
+        err instanceof Anthropic.APIError &&
+        (err.status === 429 || err.status === 529 || err.status >= 500)
+
+      if (!isRetryable || attempt === maxRetries) throw err
+      await sleep(1000 * Math.pow(2, attempt))
+    }
+  }
+  throw new Error("Max retries exceeded")
+}
+
 function distanceToRange(score: number, level: DifficultyLevel): number {
   const { min, max } = TARGET_RANGES[level]
   if (score < min) return min - score
@@ -164,28 +215,71 @@ function buildFeedback(
   const range = TARGET_RANGES[level]
 
   const variables = [
-    { label: "Rare (% palabras 9+ letras)", value: structural.rare_word_ratio, target: targets.rare_word_ratio, weight: 1.5, isRatio: true },
-    { label: "OL15 (% oraciones >15 palabras)", value: structural.long_sentence_ratio, target: targets.long_sentence_ratio, weight: 1.2, isRatio: true },
-    { label: "LMO (palabras/oración)", value: structural.avg_words_per_sentence, target: targets.avg_words_per_sentence, weight: 1.0, isRatio: false },
-    { label: "LMP (letras/palabra)", value: structural.avg_letters_per_word, target: targets.avg_letters_per_word, weight: 1.0, isRatio: false },
-    { label: "PL78 (% palabras 7-8 letras)", value: structural.medium_word_ratio, target: targets.medium_word_ratio, weight: 1.0, isRatio: true },
+    {
+      label: "Rare (% palabras 9+ letras)",
+      value: structural.rare_word_ratio,
+      target: targets.rare_word_ratio,
+      weight: 1.5,
+      isRatio: true,
+      action:
+        "Reemplazá cada palabra de 9 o más letras por un sinónimo más corto. Si no existe sinónimo, mantené el término y agregalo al glosario.",
+    },
+    {
+      label: "OL15 (% oraciones >15 palabras)",
+      value: structural.long_sentence_ratio,
+      target: targets.long_sentence_ratio,
+      weight: 1.2,
+      isRatio: true,
+      action:
+        "Dividí cada oración larga en dos oraciones más cortas, cada una con sujeto y verbo propios. No uses coma para separar — usá punto y comenzá una nueva oración.",
+    },
+    {
+      label: "LMO (palabras/oración)",
+      value: structural.avg_words_per_sentence,
+      target: targets.avg_words_per_sentence,
+      weight: 1.0,
+      isRatio: false,
+      action:
+        "Cortá las oraciones más largas en dos. Cada oración debe tener sujeto y verbo propios.",
+    },
+    {
+      label: "LMP (letras/palabra)",
+      value: structural.avg_letters_per_word,
+      target: targets.avg_letters_per_word,
+      weight: 1.0,
+      isRatio: false,
+      action:
+        "Reemplazá palabras largas por equivalentes más cortos: utilizar→usar, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros.",
+    },
+    {
+      label: "PL78 (% palabras 7-8 letras)",
+      value: structural.medium_word_ratio,
+      target: targets.medium_word_ratio,
+      weight: 1.0,
+      isRatio: true,
+      action:
+        "Buscá palabras de 7 u 8 letras que tengan sinónimos más cortos y reemplazalas. Si no hay sinónimo disponible, mantené la palabra.",
+    },
   ]
 
   const exceeding = variables
-    .filter(v => v.value > v.target)
-    .map(v => ({ ...v, impact: (v.value - v.target) * v.weight }))
+    .filter((v) => v.value > v.target)
+    .map((v) => ({ ...v, impact: (v.value - v.target) * v.weight }))
     .sort((a, b) => b.impact - a.impact)
 
-  const fmt = (v: typeof exceeding[0]) =>
+  const fmt = (v: (typeof exceeding)[0]) =>
     v.isRatio ? `${(v.value * 100).toFixed(1)}%` : v.value.toFixed(1)
-  const fmtTarget = (v: typeof exceeding[0]) =>
+  const fmtTarget = (v: (typeof exceeding)[0]) =>
     v.isRatio ? `≤${(v.target * 100).toFixed(0)}%` : `≤${v.target}`
 
   const exceedingList =
     exceeding.length > 0
       ? exceeding
-          .map((v, i) => `${i + 1}. ${v.label}: ${fmt(v)} (objetivo: ${fmtTarget(v)}) — ${v.impact > 0.1 ? "impacto alto" : "impacto medio"}`)
-          .join("\n")
+          .map(
+            (v, i) =>
+              `${i + 1}. ${v.label}: ${fmt(v)} (objetivo: ${fmtTarget(v)})\n   → Qué hacer: ${v.action}`
+          )
+          .join("\n\n")
       : "Todas las variables están dentro del objetivo."
 
   return `Tu simplificación anterior fue validada. Estos son los resultados:
@@ -205,17 +299,20 @@ Métricas léxicas:
 - Imaginabilidad promedio: ${lexical.avg_imageability.toFixed(2)} / 7 (objetivo: mayor a 4)
 - Palabras fuera de la base léxica: ${(lexical.unknown_word_ratio * 100).toFixed(1)}%
 
-Aspectos a corregir ordenados por impacto:
+Correcciones necesarias ordenadas por impacto:
 ${exceedingList}
 
-Reescribe el texto corrigiendo específicamente esos aspectos. Mantén todas las reglas del perfil ${range.label}: narratividad, conectores, sin repetición léxica, sin agregar información nueva. Si una métrica no se puede mejorar sin deteriorar la calidad del texto, prioriza siempre la calidad. El objetivo es un texto bien escrito para un niño con dislexia, no optimizar números.
+Reescribe el texto aplicando exactamente esas correcciones. Mantené todas las reglas del perfil ${range.label}: narratividad, conectores, sin repetición léxica, sin agregar información nueva. Si una métrica no se puede mejorar sin deteriorar la calidad del texto, priorizá siempre la calidad narrativa. El objetivo es un texto bien escrito para un niño con dislexia, no optimizar números.
 
 Devuelve el glosario actualizado si algún término cambió. Si no hubo cambios en los términos, devuelve el mismo glosario anterior.
 
 Responde solo con JSON: {"simplified_text": "texto corregido aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
 }
 
-export async function getSimplificationUsage(): Promise<{ usage_today: number; daily_limit: number }> {
+export async function getSimplificationUsage(): Promise<{
+  usage_today: number
+  daily_limit: number
+}> {
   const supabase = await createClient()
   const adminClient = createAdminClient()
   const {
@@ -229,19 +326,22 @@ export async function getSimplificationUsage(): Promise<{ usage_today: number; d
     .eq("id", user.id)
     .single()
 
-  const dailyLimit = profile?.role === "admin"
-    ? ADMIN_DAILY_LIMIT
-    : await (async () => {
-        const { data: resolvedLimit } = await supabase.rpc("get_user_feature_limit", {
-          p_user_id: user.id,
-          p_feature_key: SIMPLIFIER_FEATURE_KEY,
-          p_period: DAILY_PERIOD,
-        })
+  const dailyLimit =
+    profile?.role === "admin"
+      ? ADMIN_DAILY_LIMIT
+      : await (async () => {
+          const { data: resolvedLimit } = await supabase.rpc("get_user_feature_limit", {
+            p_user_id: user.id,
+            p_feature_key: SIMPLIFIER_FEATURE_KEY,
+            p_period: DAILY_PERIOD,
+          })
 
-        return typeof resolvedLimit === "number" && Number.isFinite(resolvedLimit) && resolvedLimit >= 0
-          ? resolvedLimit
-          : DEFAULT_DAILY_LIMIT
-      })()
+          return typeof resolvedLimit === "number" &&
+            Number.isFinite(resolvedLimit) &&
+            resolvedLimit >= 0
+            ? resolvedLimit
+            : DEFAULT_DAILY_LIMIT
+        })()
 
   const today = new Date().toISOString().slice(0, 10)
   const { count } = await adminClient
@@ -264,7 +364,11 @@ export async function analyzeTextForFilter(text: string): Promise<{ score: numbe
   }
 }
 
-export async function simplifyText(text: string, level: DifficultyLevel, forceComplex?: boolean): Promise<SimplifyResult> {
+export async function simplifyText(
+  text: string,
+  level: DifficultyLevel,
+  forceComplex?: boolean
+): Promise<SimplifyResult> {
   if (!text || text.trim().length === 0) {
     return { success: false, error: "El texto no puede estar vacío." }
   }
@@ -295,11 +399,14 @@ export async function simplifyText(text: string, level: DifficultyLevel, forceCo
     p_period: DAILY_PERIOD,
   })
 
-  const dailyLimit = profile?.role === "admin"
-    ? ADMIN_DAILY_LIMIT
-    : typeof resolvedLimit === "number" && Number.isFinite(resolvedLimit) && resolvedLimit >= 0
-      ? resolvedLimit
-      : DEFAULT_DAILY_LIMIT
+  const dailyLimit =
+    profile?.role === "admin"
+      ? ADMIN_DAILY_LIMIT
+      : typeof resolvedLimit === "number" &&
+          Number.isFinite(resolvedLimit) &&
+          resolvedLimit >= 0
+        ? resolvedLimit
+        : DEFAULT_DAILY_LIMIT
 
   const { count: usageToday } = await adminClient
     .from("text_simplification_logs")
@@ -352,9 +459,10 @@ export async function simplifyText(text: string, level: DifficultyLevel, forceCo
     let claudeText: string
 
     try {
-      const response = await client.messages.create({
+      const response = await callClaudeWithRetry(client, {
         model: "claude-sonnet-4-20250514",
         max_tokens: 4096,
+        stream: false,
         system: SYSTEM_PROMPT,
         messages: conversationHistory,
       })
@@ -366,12 +474,34 @@ export async function simplifyText(text: string, level: DifficultyLevel, forceCo
 
       conversationHistory.push({ role: "assistant", content: textBlock.text })
 
-      const parsed = JSON.parse(textBlock.text.trim()) as { simplified_text: string; glossary?: GlossaryEntry[] }
+      let parsed: { simplified_text: string; glossary?: GlossaryEntry[] }
+      try {
+        parsed = JSON.parse(textBlock.text.trim()) as {
+          simplified_text: string
+          glossary?: GlossaryEntry[]
+        }
+      } catch {
+        return {
+          success: false,
+          error:
+            "La respuesta del modelo no pudo procesarse. Intentá de nuevo con un texto diferente.",
+        }
+      }
+
       claudeText = parsed.simplified_text
       parsedGlossary = Array.isArray(parsed.glossary) ? parsed.glossary : []
-    } catch {
-      if (attempt === 1) return { success: false, error: "Error al llamar a la API de Claude." }
-      break
+    } catch (err) {
+      const isApiError = err instanceof Anthropic.APIError
+      if (isApiError && err.status === 429) {
+        return {
+          success: false,
+          error: "El servicio está temporalmente ocupado. Esperá unos segundos e intentá de nuevo.",
+        }
+      }
+      return {
+        success: false,
+        error: "No se pudo conectar con el servicio de simplificación. Intentá de nuevo.",
+      }
     }
 
     let idlResult: { structural: StructuralMetrics; lexical: LexicalMetrics; score: number | null }
@@ -460,4 +590,3 @@ export async function simplifyText(text: string, level: DifficultyLevel, forceCo
     daily_limit: dailyLimit,
   }
 }
-
