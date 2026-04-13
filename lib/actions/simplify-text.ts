@@ -85,22 +85,20 @@ Para lectores en etapa temprana con dislexia severa.
 
 Sintaxis:
 - Oraciones de 5 a 8 palabras. Ninguna supera 10 palabras.
-- Orden preferido: sujeto → verbo → objeto. Sin subordinaciones complejas.
-- Dos ideas cortas relacionadas pueden unirse con: que, y, pero, porque, entonces.
-- Ejemplo correcto: "El basilisco es verde y brilla mucho."
-- Ejemplo incorrecto: "El basilisco es verde. Brilla mucho."
+- Orden estricto: sujeto → verbo → objeto. Sin variaciones, sin subordinaciones.
+- Una idea por oración. Siempre.
 
 Vocabulario:
 - Palabras de 1 a 5 letras preferentemente. Evitar palabras de más de 7 letras.
 - Solo vocabulario que un niño de 6 a 8 años usa o escucha a diario.
 - Primera sílaba de estructura simple: consonante+vocal (CA, LU, PE) o consonante+vocal+consonante (CAR, LUN, PER).
+- Palabras donde grafemas y fonemas se corresponden uno a uno siempre que sea posible.
 - Sustantivos concretos e imaginables (casa, perro, río) sobre abstractos (proceso, concepto, situación).
-- Si una palabra técnica es inevitable, mantenerla e incluirla en el glosario.
 
 Estilo:
-- El texto debe sonar como un relato contado en voz alta, natural y fluido.
-- Conectores simples: porque, entonces, pero, también, y, que, aunque, cuando.
-- Nunca telegráfico: cada idea se conecta con la siguiente usando conectores.
+- La fluidez narrativa la dan los conectores, no la estructura de la oración.
+- Conectores simples: porque, entonces, pero, también, y.
+- El texto debe sonar natural. Nunca telegráfico.
 
 ### INTERMEDIO
 Para lectores con dislexia moderada que ya tienen cierta fluidez.
@@ -111,23 +109,25 @@ Sintaxis:
 
 Vocabulario:
 - Evitar palabras de más de 8 letras salvo términos irremplazables.
-- Vocabulario frecuente del español. Palabras específicas se definen brevemente en la misma oración.
+- Vocabulario frecuente del español. Las palabras específicas se definen brevemente en la misma oración.
 - Sustantivos concretos siempre que sea posible.
 
 Estilo:
-- Conectores: porque, además, por ejemplo, entonces, pero, también, sin embargo.
-- Estilo narrativo o descriptivo claro y fluido.
+- Conectores que favorezcan la comprensión: porque, además, por ejemplo, entonces, pero, también, sin embargo.
+- Estilo narrativo o descriptivo claro.
+- El texto debe sonar fluido y bien escrito.
 
 ### AVANZADO
 Para lectores con dislexia leve o en etapa de consolidación.
 
 Sintaxis:
 - Oraciones de hasta 15 palabras en promedio.
-- Simplificar solo lo que dificulte la lectura fluida.
+- Estructura cercana al original. Simplificar solo lo que dificulte la lectura fluida.
 
 Vocabulario:
 - Vocabulario cercano al original.
 - Simplificar solo palabras infrecuentes o de pronunciación compleja.
+- Se permiten palabras largas si son frecuentes o el niño las conoce por contexto.
 
 Estilo:
 - Preservar el estilo y la voz del texto fuente.
@@ -138,42 +138,33 @@ Estilo:
 Contenido:
 - Preservar todas las ideas centrales del texto original.
 - Mantener nombres propios sin modificar.
-- Podés reformular oraciones de manera considerable siempre que el sentido general se mantenga. Una paráfrasis fiel es preferible a una traducción literal compleja.
-- Prohibido agregar datos, cifras o hechos que no estén en el texto original.
-- Cada oración debe aportar información nueva. Prohibido repetir lo que la oración anterior ya dijo.
+- En textos informativos, eliminar solo información redundante o ambigua, nunca información relevante.
 - Simplificá activamente todas las oraciones, incluso las que parezcan simples. Una oración puede mantenerse igual solo si ya cumple los criterios de longitud y vocabulario del perfil objetivo.
 
 Vocabulario:
-- No reemplazar términos científicos o categóricos por descripciones inventadas que cambien el significado. Si el original dice "mamíferos", no escribir "bichos con pelo". Si el término es irremplazable, mantenerlo y agregarlo al glosario.
-- No agregar adjetivos valorativos que no estén en el original.
-- Prohibido repetir el mismo adjetivo o sustantivo en oraciones consecutivas. Usar sinónimo o reestructurar.
-- Sustituir palabras largas por equivalentes cortos: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros, constituye→es, especialmente→muy, acumuladas→guardadas, dependiendo→usando.
+- Prohibido repetir el mismo adjetivo o sustantivo en la misma oración o en oraciones consecutivas del mismo párrafo. Si la idea lo requiere, usar un sinónimo o reestructurar la oración.
+- Preferir palabras con sílabas simples (consonante+vocal) sobre grupos consonánticos complejos (trans-, blan-, pren-, -str-).
+- Sustituir palabras largas por equivalentes cortos cuando existan: utilizar→usar, poseer→tener, realizar→hacer, alimentación→comida, temperatura→calor, diferentes→otros, también→y, algunos→unos, momento→rato, constituye→es, especialmente→muy, acumuladas→guardadas, dependiendo→usando.
 
 Sintaxis:
 - Nunca usar comas para reemplazar un verbo omitido.
-- Oraciones largas se dividen en oraciones completas independientes con sujeto y verbo propios.
-- Prohibido el estilo telegráfico: nunca dos oraciones seguidas sin conector entre ellas.
+- Oraciones largas se dividen en oraciones completas independientes, cada una con sujeto y verbo propios. El límite por perfil es el que define cuándo una oración es demasiado larga.
 
 Estilo:
-- Usar conectores para guiar al lector: porque, además, por eso, entonces, por ejemplo, pero, también, sin embargo, aunque.
-- En listas, usar conectores en lugar de repetir el mismo verbo.
-- Ejemplo correcto: "Come mamíferos, pájaros y reptiles."
-- Ejemplo incorrecto: "Come mamíferos. Come pájaros. Come reptiles."
+- El texto simplificado debe sonar escrito por un autor cuidadoso, no como una lista de frases cortas.
+- Usar conectores para guiar al lector: porque, además, por eso, entonces, por ejemplo, pero, también, sin embargo.
 - Preferir estilo narrativo incluso en textos informativos.
 
 ## GLOSARIO
 
-Identifica exactamente 5 palabras del texto simplificado que puedan resultar difíciles para un niño del perfil indicado. Si el texto no tiene 5 términos complejos, incluye los 5 más relevantes aunque sean moderadamente difíciles. Cada término debe ser una palabra distinta — no incluir variantes de la misma palabra.
+Identifica las palabras del texto simplificado que puedan resultar difíciles de comprender para un niño del perfil indicado. Selecciona un máximo de 5 términos, priorizando los más complejos o infrecuentes. Para cada término escribe una definición breve, en lenguaje simple, apropiada para el perfil.
 
-Para cada término escribe una definición que explique qué es realmente, con contexto suficiente para entender su significado en el texto. Clara y directa, en vocabulario simple, pero no superficial.
-
-Ejemplo correcto: {"term": "basilisco", "definition": "Una serpiente enorme y muy peligrosa que aparece en las leyendas. Se dice que puede matar con solo mirar a los ojos."}
-Ejemplo incorrecto: {"term": "basilisco", "definition": "Un animal peligroso."}
+No incluyas en el glosario palabras que ya sean simples o cotidianas para el perfil. Si no hay términos que lo justifiquen, devuelve un array vacío.
 
 ## FORMATO DE RESPUESTA
 
 JSON puro, sin markdown, sin backticks:
-{"simplified_text": "texto aquí", "glossary": [{"term": "término", "definition": "definición"}]}`
+{"simplified_text": "texto aquí", "glossary": [{"term": "término", "definition": "definición breve en lenguaje simple"}]}`
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -497,6 +488,7 @@ export async function simplifyText(
           error: "El servicio está temporalmente ocupado. Esperá unos segundos e intentá de nuevo.",
         }
       }
+      console.error("Claude API error:", err)
       return {
         success: false,
         error: "No se pudo conectar con el servicio de simplificación. Intentá de nuevo.",
