@@ -13,8 +13,6 @@ type ResultData = {
   simplified_text: string
   glossary: GlossaryEntry[]
   idl_score: number
-  achievable: boolean
-  attempts: number
   metrics: { structural: StructuralMetrics; lexical: LexicalMetrics }
 }
 
@@ -276,7 +274,6 @@ function ResultAside({
 }) {
   const [copied, setCopied] = useState(false)
   const [metricsOpen, setMetricsOpen] = useState(false)
-  const [warningOpen, setWarningOpen] = useState(false)
   const visible = open && (isPending || !!resultData || !!error)
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
@@ -346,20 +343,6 @@ function ResultAside({
         </div>
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-4">
           <div className="flex items-center gap-2">
-            {resultData && !resultData.achievable && (
-              <button
-                type="button"
-                onClick={() => setWarningOpen(true)}
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-amber-500 transition-colors hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                aria-label="Ver advertencia"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" x2="12" y1="9" y2="13" />
-                  <line x1="12" x2="12.01" y1="17" y2="17" />
-                </svg>
-              </button>
-            )}
             {resultData && (
               <button
                 type="button"
@@ -467,34 +450,6 @@ function ResultAside({
           </svg>
           Resultado
         </button>
-      )}
-
-      {warningOpen && resultData && (
-        <>
-          <div className="fixed inset-0 z-70 bg-black/40" onClick={() => setWarningOpen(false)} />
-          <div className="fixed inset-x-4 top-1/2 z-75 -translate-y-1/2 rounded-xl border border-amber-300/60 bg-card p-5 shadow-xl sm:inset-x-auto sm:right-96 sm:w-80">
-            <div className="mb-2 flex items-start justify-between gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-amber-500">
-                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" x2="12" y1="9" y2="13" />
-                <line x1="12" x2="12.01" y1="17" y2="17" />
-              </svg>
-              <button
-                type="button"
-                onClick={() => setWarningOpen(false)}
-                className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                </svg>
-              </button>
-            </div>
-            <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-              No fue posible alcanzar el nivel objetivo. IDL alcanzado: {resultData.idl_score.toFixed(1)}.
-              Esto puede ocurrir cuando el contenido requiere palabras técnicas que no pueden simplificarse más sin perder el sentido.
-            </p>
-          </div>
-        </>
       )}
     </>,
     document.body
@@ -635,12 +590,10 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
       try {
         const res: SimplifyResult = await simplifyText(text, level, forceComplex)
         if (res.success) {
-          const nextResult = {
+          const nextResult: ResultData = {
             simplified_text: res.simplified_text,
             glossary: res.glossary ?? [],
             idl_score: res.idl_score,
-            achievable: res.achievable,
-            attempts: res.attempts,
             metrics: res.metrics,
           }
           setResultData(nextResult)
