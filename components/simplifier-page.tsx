@@ -513,6 +513,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   const [originalIdl, setOriginalIdl] = useState<number | null>(null)
   const [complexityWarning, setComplexityWarning] = useState(false)
   const [complexityModalOpen, setComplexityModalOpen] = useState(false)
+  const [clearModalOpen, setClearModalOpen] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState<number>(0)
   const [isPending, startTransition] = useTransition()
   const submitLockRef = useRef(false)
@@ -583,6 +584,26 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
     (l) => originalIdl === null || l.max < originalIdl
   )
   const noLevelsAvailable = originalIdl !== null && availableLevels.length === 0
+
+  function handleClearText() {
+    setText("")
+    setOriginalIdl(null)
+    try { localStorage.removeItem(draftStorageKey) } catch {}
+    setClearModalOpen(false)
+  }
+
+  function handleClearAll() {
+    setText("")
+    setResultData(null)
+    setError(null)
+    setAsideOpen(false)
+    setOriginalIdl(null)
+    try {
+      localStorage.removeItem(storageKey)
+      localStorage.removeItem(draftStorageKey)
+    } catch {}
+    setClearModalOpen(false)
+  }
 
   function handleComplexityConfirm(changeLevel: boolean) {
     if (changeLevel) setLevel("avanzado")
@@ -699,11 +720,57 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
         document.body
       )}
 
+      {clearModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setClearModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border/60 bg-white p-6 shadow-2xl dark:bg-zinc-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-1 text-sm font-semibold text-foreground">¿Qué querés limpiar?</p>
+            <p className="mb-5 text-xs font-light leading-relaxed text-muted-foreground">
+              Podés borrar solo el texto ingresado o también el resultado de la última simplificación.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleClearText}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Solo el texto ingresado
+              </button>
+              {resultData !== null && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  Texto y resultado
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setClearModalOpen(false)}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <div className={cn("w-full space-y-4", mode === "admin" ? "max-w-3xl" : "max-w-2xl")}>
-        <div className={cn(mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}>
+        <div className={cn("space-y-2", mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}>
           <h1 className={cn("font-light uppercase tracking-widest", mode === "admin" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl")}>
-            {mode === "admin" ? "Simplificador de Textos" : "Simplificador"}
+            Simplificador de Textos
           </h1>
+          <p className="text-sm font-light leading-relaxed text-muted-foreground">
+            Pegá cualquier texto y lo adaptamos para que sea más fácil de leer y entender.
+          </p>
         </div>
 
         {limitReached && mode === "patient" && (
@@ -756,16 +823,10 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
             style={{ resize: "none" }}
           />
 
-          <div className={cn(
-            "px-4 pb-4",
-            mode === "admin" ? "flex items-center justify-end gap-2" : "flex items-center justify-between gap-2"
-          )}>
-            {mode === "patient" && (
-              <span className={cn("text-[11px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/40")}>
-                {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
-              </span>
-            )}
-
+          <div className="flex items-center justify-between gap-2 px-4 pb-4">
+            <span className={cn("text-[10px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
+              {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
+            </span>
             <div className="flex items-center gap-2">
               <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} />
               <button
@@ -797,13 +858,18 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
 
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-3">
-            {mode === "patient" && usageToday !== null && (
-              <UsageCounter used={usageToday} total={dailyLimit} />
-            )}
-            {mode === "admin" ? (
-              <span className={cn("text-[11px] tabular-nums", limitReached ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
-                {usageToday ?? 0}/{dailyLimit} hoy
-              </span>
+            {(text.trim().length > 0 || resultData !== null) ? (
+              <button
+                type="button"
+                onClick={() => setClearModalOpen(true)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-red-500 bg-transparent px-2 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-500/8"
+                aria-label="Limpiar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+                Limpiar
+              </button>
             ) : cooldownActive ? (
               <span className="text-[11px] text-muted-foreground/55">
                 Esperá un instante para volver a intentar.
@@ -811,9 +877,13 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
             ) : null}
           </div>
 
-          <span className={cn("text-[11px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
-            {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
-          </span>
+          {mode === "admin" ? (
+            <span className={cn("text-[11px] tabular-nums", limitReached ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
+              {usageToday ?? 0}/{dailyLimit} hoy
+            </span>
+          ) : usageToday !== null ? (
+            <UsageCounter used={usageToday} total={dailyLimit} />
+          ) : null}
         </div>
 
         {resultData && (
