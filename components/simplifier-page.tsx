@@ -8,6 +8,7 @@ import { simplifyText, analyzeTextForFilter } from "@/lib/actions/simplify-text"
 import type { SimplifyResult, GlossaryEntry } from "@/lib/actions/simplify-text"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 import { TypewriterLoading } from "@/components/typewriter-loading"
+import { AnimatePresence, motion } from "framer-motion"
 
 type ResultData = {
   simplified_text: string
@@ -470,6 +471,10 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   const [complexityModalOpen, setComplexityModalOpen] = useState(false)
   const [clearModalOpen, setClearModalOpen] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState<number>(0)
+  const [expanded, setExpanded] = useState(false)
+  const [expandedHeight] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 640 ? 400 : 632
+  )
   const [isPending, startTransition] = useTransition()
   const submitLockRef = useRef(false)
 
@@ -540,12 +545,6 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   )
   const noLevelsAvailable = originalIdl !== null && availableLevels.length === 0
 
-  function handleClearText() {
-    setText("")
-    setOriginalIdl(null)
-    try { localStorage.removeItem(draftStorageKey) } catch {}
-    setClearModalOpen(false)
-  }
 
   function handleClearAll() {
     setText("")
@@ -682,33 +681,24 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
             className="w-full max-w-sm rounded-2xl border border-border/60 bg-white p-6 shadow-2xl dark:bg-zinc-900"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="mb-1 text-sm font-semibold text-foreground">¿Qué querés limpiar?</p>
+            <p className="mb-1 text-sm font-semibold text-foreground">¿Eliminar contenido?</p>
             <p className="mb-5 text-xs font-light leading-relaxed text-muted-foreground">
-              Podés borrar solo el texto ingresado o también el resultado de la última simplificación.
+              Se eliminará el texto ingresado{resultData !== null ? " y el resultado de la simplificación" : ""}.
             </p>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={handleClearText}
-                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-              >
-                Solo el texto ingresado
-              </button>
-              {resultData !== null && (
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-                >
-                  Texto y resultado
-                </button>
-              )}
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setClearModalOpen(false)}
-                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-xl bg-red-500 text-xs font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Eliminar
               </button>
             </div>
           </div>
@@ -717,14 +707,25 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
       )}
 
       <div className={cn("w-full space-y-4", mode === "admin" ? "max-w-3xl" : "max-w-2xl")}>
-        <div className={cn("space-y-2", mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}>
-          <h1 className={cn("font-light uppercase tracking-widest", mode === "admin" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl")}>
-            Simplificador de Textos
-          </h1>
-          <p className="text-sm font-light leading-relaxed text-muted-foreground">
-            Pegá cualquier texto y lo adaptamos para que sea más fácil de leer y entender.
-          </p>
-        </div>
+        <AnimatePresence initial={false}>
+          {!expanded && (
+            <motion.div
+              key="header"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto", transition: { type: "spring", stiffness: 220, damping: 30 } }}
+              exit={{ opacity: 0, height: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } }}
+              style={{ overflow: "hidden" }}
+              className={cn("space-y-2", mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}
+            >
+              <h1 className={cn("font-light uppercase tracking-widest", mode === "admin" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl")}>
+                Simplificador de Textos
+              </h1>
+              <p className="text-sm font-light leading-relaxed text-muted-foreground">
+                Pegá cualquier texto y lo adaptamos para que sea más fácil de leer y entender.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {limitReached && mode === "patient" && (
           <div className="rounded-2xl border border-border/60 bg-card/95 px-4 py-4 shadow-[0_12px_30px_-20px_rgba(0,0,0,0.35)] sm:px-5">
@@ -759,22 +760,41 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
           className={cn("flex flex-col border border-border/60 bg-card", mode === "admin" ? "rounded-lg" : "rounded-xl")}
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 20px rgba(0,0,0,0.09), 0 20px 48px -8px rgba(0,0,0,0.14)" }}
         >
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={mode === "admin"
-              ? "Pegá o escribí el texto que querés transformar... cuanto más oscuro el texto, más lo iluminamos."
-              : "Pegá o escribí el texto que querés simplificar..."}
-            rows={mode === "admin" ? 8 : 7}
-            disabled={limitReached && mode === "patient"}
-            className={cn(
-              "w-full resize-none bg-transparent px-4 pb-3 pt-4 text-sm leading-relaxed focus:outline-none sm:px-5",
-              mode === "admin"
-                ? "placeholder:text-muted-foreground/40 sm:pb-4 sm:pt-5"
-                : "font-light placeholder:text-muted-foreground/40 disabled:opacity-50 sm:pb-4 sm:pt-5"
-            )}
-            style={{ resize: "none" }}
-          />
+          <div className="relative">
+            <motion.textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={mode === "admin"
+                ? "Pegá o escribí el texto que querés transformar... cuanto más oscuro el texto, más lo iluminamos."
+                : "Pegá o escribí el texto que querés simplificar..."}
+              disabled={limitReached && mode === "patient"}
+              className={cn(
+                "w-full resize-none bg-transparent px-4 pb-3 pt-4 text-sm leading-relaxed focus:outline-none sm:px-5",
+                mode === "admin"
+                  ? "placeholder:text-muted-foreground/40 sm:pb-4 sm:pt-5"
+                  : "font-light placeholder:text-muted-foreground/40 disabled:opacity-50 sm:pb-4 sm:pt-5"
+              )}
+              style={{ resize: "none" }}
+              animate={{ height: expanded ? expandedHeight : (mode === "admin" ? 210 : 210) }}
+              transition={{ type: "spring", stiffness: 220, damping: 30 }}
+            />
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded text-foreground/75 transition-colors hover:text-foreground"
+              aria-label={expanded ? "Contraer" : "Expandir"}
+            >
+              {expanded ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="10" y1="14" x2="3" y2="21" /><line x1="21" y1="3" x2="14" y2="10" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+              )}
+            </button>
+          </div>
 
           <div className="flex items-center justify-between gap-2 px-4 pb-4">
             <span className={cn("text-[10px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
