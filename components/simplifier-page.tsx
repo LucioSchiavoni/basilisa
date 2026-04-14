@@ -8,7 +8,7 @@ import { simplifyText, analyzeTextForFilter } from "@/lib/actions/simplify-text"
 import type { SimplifyResult, GlossaryEntry } from "@/lib/actions/simplify-text"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 import { TypewriterLoading } from "@/components/typewriter-loading"
-import { AnimatePresence, motion } from "framer-motion"
+import { motion } from "framer-motion"
 
 type ResultData = {
   simplified_text: string
@@ -147,19 +147,16 @@ function LevelDropdown({
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={displayLevels.length === 0}
-        className="flex w-36 items-center justify-between gap-2 whitespace-nowrap rounded-lg border border-border/50 bg-background/40 px-3 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:w-44"
+        className="flex w-28 items-center justify-between gap-2 whitespace-nowrap rounded-lg border border-border/50 bg-background/40 px-3 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <span className="flex items-center gap-1.5">
-          <span>{selected.label}</span>
-          <span className="font-normal text-muted-foreground">{selected.idl}</span>
-        </span>
+        <span>{selected.label}</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cn("shrink-0 opacity-40 transition-transform", open && "rotate-180")}>
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
 
       {open && displayLevels.length > 0 && (
-        <div className="absolute bottom-full right-0 z-50 mb-1.5 min-w-44 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
+        <div className="absolute bottom-full right-0 z-50 mb-1.5 min-w-28 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
           {displayLevels.map((l) => (
             <button
               key={l.value}
@@ -176,7 +173,6 @@ function LevelDropdown({
               <span className={cn("font-medium", l.value === value ? "text-foreground" : "text-foreground/80")}>
                 {l.label}
               </span>
-              <span className="tabular-nums text-muted-foreground">{l.idl}</span>
             </button>
           ))}
         </div>
@@ -707,25 +703,22 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
       )}
 
       <div className={cn("w-full space-y-4", mode === "admin" ? "max-w-3xl" : "max-w-2xl")}>
-        <AnimatePresence initial={false}>
-          {!expanded && (
-            <motion.div
-              key="header"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto", transition: { type: "spring", stiffness: 220, damping: 30 } }}
-              exit={{ opacity: 0, height: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } }}
-              style={{ overflow: "hidden" }}
-              className={cn("space-y-2", mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}
-            >
-              <h1 className={cn("font-light uppercase tracking-widest", mode === "admin" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl")}>
-                Simplificador de Textos
-              </h1>
-              <p className="text-sm font-light leading-relaxed text-muted-foreground">
-                Pegá cualquier texto y lo adaptamos para que sea más fácil de leer y entender.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          animate={{
+            height: expanded ? 0 : "auto",
+            opacity: expanded ? 0 : 1,
+          }}
+          transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+          style={{ overflow: "hidden" }}
+          className={cn("space-y-2", mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}
+        >
+          <h1 className={cn("font-light uppercase tracking-widest", mode === "admin" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl")}>
+            Simplificador de Textos
+          </h1>
+          <p className="text-sm font-light leading-relaxed text-muted-foreground">
+            Pegá cualquier texto y lo adaptamos para que sea más fácil de leer y entender.
+          </p>
+        </motion.div>
 
         {limitReached && mode === "patient" && (
           <div className="rounded-2xl border border-border/60 bg-card/95 px-4 py-4 shadow-[0_12px_30px_-20px_rgba(0,0,0,0.35)] sm:px-5">
