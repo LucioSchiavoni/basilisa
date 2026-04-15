@@ -13,6 +13,8 @@
 # claude mcp
 /.claude
 
+roadmap.md
+
 # testing
 /coverage
 
