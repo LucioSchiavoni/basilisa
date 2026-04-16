@@ -79,7 +79,7 @@ export async function getSimplificationSessions(): Promise<SessionRow[]> {
     level: row.level,
     idl_score: row.idl_score,
     glossary: (row.glossary as GlossaryEntry[]) ?? [],
-    metrics: row.metrics as { structural: StructuralMetrics; lexical: LexicalMetrics },
+    metrics: row.metrics as unknown as { structural: StructuralMetrics; lexical: LexicalMetrics },
     questions: (row.questions as Question[]) ?? [],
     created_at: row.created_at,
   }))
