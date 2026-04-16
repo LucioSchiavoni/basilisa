@@ -6,8 +6,9 @@ import { GemBadge } from "@/components/gem-badge";
 export function HeaderControls({ totalGems }: { totalGems: number }) {
   const pathname = usePathname();
   const isWorldPage = pathname.startsWith("/ejercicios/mundos/");
+  const isSimplificador = pathname === "/simplificador";
 
-  if (isWorldPage) return null;
+  if (isWorldPage || isSimplificador) return null;
 
   return (
     <>

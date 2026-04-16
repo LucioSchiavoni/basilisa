@@ -1,14 +1,16 @@
 "use client"
 
-import Link from "next/link"
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { createPortal } from "react-dom"
+import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { simplifyText, analyzeTextForFilter } from "@/lib/actions/simplify-text"
+import { generateQuestions } from "@/lib/actions/generate-questions"
+import { saveSimplificationSession, updateSessionQuestions, getSimplificationSessions } from "@/lib/actions/simplification-sessions"
 import type { SimplifyResult, GlossaryEntry } from "@/lib/actions/simplify-text"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 import { TypewriterLoading } from "@/components/typewriter-loading"
-import { motion } from "framer-motion"
+import Link from "next/dist/client/link"
 
 type ResultData = {
   simplified_text: string
@@ -19,10 +21,31 @@ type ResultData = {
 
 type Level = "inicial" | "intermedio" | "avanzado"
 
+type Question = {
+  question: string
+  options: string[]
+  correct_index: number
+}
+
+type RecentEntry = {
+  id: string
+  originalPreview: string
+  originalText: string
+  simplifiedText: string
+  glossary: GlossaryEntry[]
+  idlScore: number
+  metrics: { structural: StructuralMetrics; lexical: LexicalMetrics }
+  level: Level
+  createdAt: number
+  questions?: Question[]
+}
+
 type SimplifierPageProps = {
   mode: "admin" | "patient"
   initialUsageToday: number
   initialDailyLimit: number
+  initialQuestionsUsageToday: number
+  initialQuestionsLimit: number
 }
 
 const LEVELS: { value: Level; label: string; idl: string; max: number }[] = [
@@ -34,6 +57,25 @@ const LEVELS: { value: Level; label: string; idl: string; max: number }[] = [
 const MAX_CHARS = 5000
 const BUTTON_COOLDOWN_MS = 1500
 
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (minutes < 1) return "Ahora"
+  if (minutes < 60) return `Hace ${minutes} min`
+  if (hours < 24) return `Hace ${hours}h`
+  if (days === 1) return "Ayer"
+  return `Hace ${days} días`
+}
+
+function IdlPill({ score }: { score: number }) {
+  if (score <= 30)
+    return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-green-500/10 text-green-600">Inicial</span>
+  if (score <= 55)
+    return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600">Intermedio</span>
+  return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-red-500/10 text-red-600">Avanzado</span>
+}
 
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
@@ -62,55 +104,16 @@ function MetricsCard({ metrics }: { metrics: { structural: StructuralMetrics; le
   )
 }
 
-function UsageCounter({ used, total }: { used: number; total: number }) {
-  return (
-    <span className="text-[11px] tabular-nums text-muted-foreground/60">
-      {used}/{total} hoy
-    </span>
-  )
-}
-
-function LastResultCard({
-  resultData,
-  onOpen,
-}: {
-  resultData: ResultData
-  onOpen: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="hidden w-full cursor-pointer rounded-xl border border-border/60 bg-card px-4 py-4 text-left transition-colors hover:bg-accent/20 sm:block"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">Ultimo resultado</p>
-          <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
-            {resultData.simplified_text}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full bg-[#2E85C8]/10 px-2 py-1 text-[11px] font-medium text-[#2E85C8]">
-            IDL {resultData.idl_score.toFixed(1)}
-          </span>
-          <span className="rounded-md border border-border/60 px-2 py-1 text-[11px] text-muted-foreground">
-            Ver
-          </span>
-        </div>
-      </div>
-    </button>
-  )
-}
-
 function LevelDropdown({
   value,
   onChange,
   originalIdl,
+  direction = "down",
 }: {
   value: Level
   onChange: (v: Level) => void
   originalIdl: number | null
+  direction?: "up" | "down"
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -151,7 +154,7 @@ function LevelDropdown({
       </button>
 
       {open && displayLevels.length > 0 && (
-        <div className="absolute bottom-full right-0 z-50 mb-1.5 min-w-28 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
+        <div className={cn("absolute right-0 z-50 min-w-28 overflow-hidden rounded-xl border border-border bg-popover shadow-xl", direction === "up" ? "bottom-full mb-1.5" : "top-full mt-1.5")}>
           {displayLevels.map((l) => (
             <button
               key={l.value}
@@ -212,7 +215,7 @@ function AnnotatedText({ text, glossary }: { text: string; glossary: GlossaryEnt
 
   return (
     <div ref={containerRef}>
-      <p className="whitespace-pre-wrap text-sm font-light leading-relaxed tracking-wide">
+      <p className="whitespace-pre-wrap text-lg sm:text-xl lg:text-2xl leading-[1.85] font-light">
         {tokens.map((token, i) => {
           const key = normalize(token)
           const entry = glossaryMap.get(key)
@@ -233,7 +236,7 @@ function AnnotatedText({ text, glossary }: { text: string; glossary: GlossaryEnt
       </p>
       {activeEntry && popupPos && createPortal(
         <div
-          className="fixed z-[200] max-w-[220px] rounded-xl border border-border/60 bg-card p-3 shadow-xl"
+          className="fixed z-200 max-w-55 rounded-xl border border-border/60 bg-card p-3 shadow-xl"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
           <p className="text-xs font-semibold text-foreground">{activeEntry.term}</p>
@@ -245,253 +248,218 @@ function AnnotatedText({ text, glossary }: { text: string; glossary: GlossaryEnt
   )
 }
 
-function ResultAside({
-  resultData,
-  error,
-  isPending,
-  open,
-  onClose,
-  onOpen,
-  asideWidth,
-  onWidthChange,
+function HistoryCard({
+  entry,
+  active,
+  onLoad,
 }: {
-  resultData: ResultData | null
-  error: string | null
-  isPending: boolean
-  open: boolean
-  onClose: () => void
-  onOpen: () => void
-  asideWidth: number
-  onWidthChange: (w: number) => void
+  entry: RecentEntry
+  active: boolean
+  onLoad: () => void
 }) {
+  const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [metricsOpen, setMetricsOpen] = useState(false)
-  const visible = open && (isPending || !!resultData || !!error)
-  const isDragging = useRef(false)
-  const dragStartX = useRef(0)
-  const dragStartWidth = useRef(0)
 
-  useEffect(() => {
-    function onMouseMove(e: MouseEvent) {
-      if (!isDragging.current) return
-      const delta = dragStartX.current - e.clientX
-      const newWidth = Math.min(768, Math.max(320, dragStartWidth.current + delta))
-      onWidthChange(newWidth)
-    }
-    function onMouseUp() {
-      isDragging.current = false
-    }
-    document.addEventListener("mousemove", onMouseMove)
-    document.addEventListener("mouseup", onMouseUp)
-    return () => {
-      document.removeEventListener("mousemove", onMouseMove)
-      document.removeEventListener("mouseup", onMouseUp)
-    }
-  }, [onWidthChange])
-
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  )
-
-  function handleCopy() {
-    if (!resultData) return
-    navigator.clipboard.writeText(resultData.simplified_text).then(() => {
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation()
+    navigator.clipboard.writeText(entry.originalText).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
   }
 
-  if (!isClient) return null
-
-  return createPortal(
-    <>
-      <div
-        className={cn(
-          "fixed right-0 top-0 z-65 flex h-full w-full translate-x-full flex-col border-l border-border/60 bg-card transition-transform duration-300 ease-out",
-          visible && "translate-x-0"
-        )}
-        style={{ width: asideWidth, maxWidth: "768px", minWidth: "320px", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }}
-      >
-        <div
-          className="absolute left-0 top-0 h-full w-4 cursor-col-resize z-10 group hidden sm:flex items-center justify-center"
-          onMouseDown={(e) => {
-            isDragging.current = true
-            dragStartX.current = e.clientX
-            dragStartWidth.current = asideWidth
-            e.preventDefault()
-          }}
-        >
-          <div className="h-full w-px bg-border group-hover:bg-[#2E85C8]/40 transition-colors duration-150" />
-          <div className="absolute top-1/2 -translate-y-1/2 flex flex-col gap-1 items-center justify-center">
-            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 group-hover:bg-[#2E85C8] transition-colors duration-150" />
-            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 group-hover:bg-[#2E85C8] transition-colors duration-150" />
-            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 group-hover:bg-[#2E85C8] transition-colors duration-150" />
-          </div>
-        </div>
-        <div className="flex justify-center pt-2 pb-1 sm:hidden">
-          <div className="h-1 w-10 rounded-full bg-border/60" />
-        </div>
-        <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-4">
-          <div className="flex items-center gap-2">
-            {resultData && (
-              <button
-                type="button"
-                onClick={() => setMetricsOpen(true)}
-                className="inline-flex cursor-pointer items-center rounded-md bg-[#2E85C8]/10 px-3 py-1 text-xs font-medium text-[#2E85C8] transition-colors hover:bg-[#2E85C8]/20"
-              >
-                IDL {resultData.idl_score.toFixed(1)}
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {resultData && (
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="flex cursor-pointer items-center gap-1.5 text-xs font-light text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {copied ? (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                    </svg>
-                    Copiar
-                  </>
-                )}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Cerrar"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-5">
-          {isPending ? (
-            <TypewriterLoading />
-          ) : error ? (
-            <p className="text-sm font-light leading-relaxed text-red-500">{error}</p>
-          ) : resultData ? (
-            <>
-              <AnnotatedText text={resultData.simplified_text} glossary={resultData.glossary} />
-              {resultData.glossary.length > 0 && (
-                <div className="mt-6 border-t border-border/40 pt-4">
-                  <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Palabras difíciles</p>
-                  <div className="space-y-2">
-                    {resultData.glossary.map((entry) => (
-                      <div key={entry.term}>
-                        <span className="text-xs font-medium text-[#2E85C8]">{entry.term}</span>
-                        <span className="text-xs text-muted-foreground"> — {entry.definition}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : null}
-        </div>
-      </div>
-
-      {metricsOpen && resultData && (
-        <>
-          <div className="fixed inset-0 z-70 bg-black/40" onClick={() => setMetricsOpen(false)} />
-          <div className="fixed inset-x-2 top-1/2 z-75 -translate-y-1/2 rounded-xl border border-border/60 bg-card p-5 shadow-xl sm:inset-x-auto sm:right-96 sm:w-96">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Métricas</p>
-              <button
-                type="button"
-                onClick={() => setMetricsOpen(false)}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                </svg>
-              </button>
-            </div>
-            <MetricsCard metrics={resultData.metrics} />
-          </div>
-        </>
-      )}
-
-      {!open && resultData && (
+  return (
+    <div className={cn(
+      "w-full rounded-lg border transition-all",
+      active ? "bg-background border-border/50" : "border-transparent hover:bg-background hover:border-border/50"
+    )}>
+      <div className="flex items-start gap-1 px-2.5 pt-2 pb-2">
         <button
           type="button"
-          onClick={onOpen}
-          className="fixed bottom-6 right-0 z-65 flex cursor-pointer items-center gap-2 rounded-l-xl border border-r-0 border-border/60 bg-card px-3 py-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-          style={{ boxShadow: "-3px 2px 16px rgba(0,0,0,0.18)" }}
+          onClick={onLoad}
+          className="flex-1 text-left cursor-pointer min-w-0"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-          Resultado
+          <p className="text-xs font-medium truncate text-foreground/80">{entry.originalPreview}</p>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[10px] text-muted-foreground/60">{formatRelativeTime(entry.createdAt)}</span>
+            <IdlPill score={entry.idlScore} />
+          </div>
         </button>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="shrink-0 mt-0.5 p-0.5 cursor-pointer"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            className={cn("text-muted-foreground/50 transition-transform", expanded && "rotate-180")}
+          >
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-2.5 pb-2 space-y-2">
+          <div className="rounded-md bg-muted/50 border border-border/30 px-3 py-2 max-h-48 overflow-y-auto">
+            <p className="text-[11px] leading-relaxed text-foreground/80 whitespace-pre-wrap">{entry.originalText}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="w-full flex items-center justify-center gap-1.5 rounded-md py-1.5 text-[11px] font-medium border border-border/40 bg-background hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            {copied ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+              </svg>
+            )}
+            {copied ? "Copiado" : "Copiar texto original"}
+          </button>
+        </div>
       )}
-    </>,
-    document.body
+    </div>
   )
 }
 
-export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: SimplifierPageProps) {
+function QuestionsResult({ correct, total, onRetry }: { correct: number; total: number; onRetry: () => void }) {
+  const percentage = Math.round((correct / total) * 100)
+  const radius = 36
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference * (1 - percentage / 100)
+  const message = percentage >= 80 ? "¡Excelente trabajo!" : percentage >= 50 ? "Buen esfuerzo" : "Seguí practicando"
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-5 px-4 py-4">
+      <div className="relative">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/70" />
+          <circle
+            cx="50" cy="50" r={radius}
+            fill="none"
+            stroke="#2E85C8"
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            transform="rotate(-90 50 50)"
+            style={{ transition: "stroke-dashoffset 0.7s ease" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xl font-semibold tabular-nums">{percentage}%</span>
+        </div>
+      </div>
+      <div className="text-center">
+        <p className="text-sm font-medium">{correct} de {total} correctas</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{message}</p>
+      </div>
+      <div className="flex gap-2 w-full">
+        <div className="flex-1 rounded-lg border border-green-500/30 bg-green-500/8 px-3 py-2.5 text-center">
+          <p className="text-lg font-semibold text-green-600">{correct}</p>
+          <p className="text-[10px] text-muted-foreground">Correctas</p>
+        </div>
+        <div className="flex-1 rounded-lg border border-red-400/30 bg-red-400/8 px-3 py-2.5 text-center">
+          <p className="text-lg font-semibold text-red-500">{total - correct}</p>
+          <p className="text-[10px] text-muted-foreground">Incorrectas</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="w-full text-xs py-2 rounded-lg border border-border/50 bg-background hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+      >
+        Intentar de nuevo
+      </button>
+    </div>
+  )
+}
+
+export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, initialQuestionsUsageToday, initialQuestionsLimit }: SimplifierPageProps) {
   const [text, setText] = useState("")
   const [level, setLevel] = useState<Level>("intermedio")
   const [resultData, setResultData] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [asideOpen, setAsideOpen] = useState(false)
-  const [asideWidth, setAsideWidth] = useState(384)
+  const [phase, setPhase] = useState<"input" | "result">("input")
   const [usageToday, setUsageToday] = useState<number | null>(initialUsageToday)
   const [dailyLimit, setDailyLimit] = useState(initialDailyLimit)
   const [originalIdl, setOriginalIdl] = useState<number | null>(null)
   const [clearModalOpen, setClearModalOpen] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState<number>(0)
-  const [expanded, setExpanded] = useState(false)
-  const [expandedHeight] = useState(() =>
-    typeof window !== "undefined" && window.innerWidth < 640 ? 400 : 632
-  )
+  const [history, setHistory] = useState<RecentEntry[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [questionCount, setQuestionCount] = useState(3)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
+  const [showResult, setShowResult] = useState(false)
+  const [generatingQuestions, setGeneratingQuestions] = useState(false)
+  const [questionsError, setQuestionsError] = useState<string | null>(null)
+  const [questionsUsageToday, setQuestionsUsageToday] = useState(initialQuestionsUsageToday)
+  const [questionsLimit, setQuestionsLimit] = useState(initialQuestionsLimit)
+  const [answers, setAnswers] = useState<(number | null)[]>([])
+  const [questionsPhase, setQuestionsPhase] = useState<"playing" | "finished">("playing")
+  const [metricsOpen, setMetricsOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [mobileTab, setMobileTab] = useState<"recientes" | "simplificador" | "preguntas">("simplificador")
+  const [glossaryOpen, setGlossaryOpen] = useState(false)
+  const [displayedText, setDisplayedText] = useState("")
+  const [isPlaying, setIsPlaying] = useState(false)
   const [isPending, startTransition] = useTransition()
   const submitLockRef = useRef(false)
+  const skipAnimationRef = useRef(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
-  const storageKey = mode === "admin" ? "simplificador_admin_last_result" : "simplificador_patient_last_result"
   const draftStorageKey = mode === "admin" ? "simplificador_admin_draft" : "simplificador_patient_draft"
 
+  useEffect(() => { setMounted(true) }, [])
+
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey)
-      if (raw) {
-        const saved = JSON.parse(raw) as Partial<ResultData>
-        setResultData({ ...saved, glossary: saved.glossary ?? [] } as ResultData)
+    getSimplificationSessions().then((rows) => {
+      const mapped = rows.map((r) => ({
+        id: r.id,
+        originalPreview: r.original_text.trim().slice(0, 40),
+        originalText: r.original_text,
+        simplifiedText: r.simplified_text,
+        glossary: r.glossary,
+        idlScore: r.idl_score,
+        metrics: r.metrics,
+        level: r.level as Level,
+        createdAt: new Date(r.created_at).getTime(),
+        questions: r.questions,
+      }))
+      setHistory(mapped)
+      setLoadingHistory(false)
+      if (mapped.length > 0) {
+        const first = mapped[0]
+        skipAnimationRef.current = true
+        setResultData({
+          simplified_text: first.simplifiedText,
+          glossary: first.glossary,
+          idl_score: first.idlScore,
+          metrics: first.metrics,
+        })
+        setActiveHistoryId(first.id)
+        setPhase("result")
+        setQuestions(first.questions ?? [])
+        setAnswers(new Array((first.questions ?? []).length).fill(null))
       }
-    } catch {}
-  }, [storageKey])
+    })
+  }, [])
 
   useEffect(() => {
     try {
-      if (resultData) {
-        localStorage.setItem(storageKey, JSON.stringify(resultData))
-      }
-    } catch {}
-  }, [resultData, storageKey])
-
-  useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem(draftStorageKey)
-      if (savedDraft) setText(savedDraft)
+      const saved = localStorage.getItem(draftStorageKey)
+      if (saved) setText(saved)
     } catch {}
   }, [draftStorageKey])
 
@@ -500,6 +468,33 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
       localStorage.setItem(draftStorageKey, text)
     } catch {}
   }, [draftStorageKey, text])
+
+  useEffect(() => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current)
+    if (!resultData) {
+      setDisplayedText("")
+      return
+    }
+    const full = resultData.simplified_text
+    if (skipAnimationRef.current) {
+      skipAnimationRef.current = false
+      setDisplayedText(full)
+      return
+    }
+    let pos = 0
+    setDisplayedText("")
+    function tick() {
+      pos = Math.min(pos + 5, full.length)
+      setDisplayedText(full.slice(0, pos))
+      if (pos < full.length) {
+        revealTimerRef.current = setTimeout(tick, 18)
+      }
+    }
+    revealTimerRef.current = setTimeout(tick, 80)
+    return () => {
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current)
+    }
+  }, [resultData])
 
   useEffect(() => {
     if (text.trim().length < 50) {
@@ -518,24 +513,121 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   const overLimit = charCount > MAX_CHARS
   const limitReached = usageToday !== null && usageToday >= dailyLimit
   const cooldownActive = cooldownUntil > Date.now()
-
-  const availableLevels = LEVELS.filter(
-    (l) => originalIdl === null || l.max < originalIdl
-  )
+  const availableLevels = LEVELS.filter((l) => originalIdl === null || l.max < originalIdl)
   const noLevelsAvailable = originalIdl !== null && availableLevels.length === 0
+  const selectedLevel = LEVELS.find((l) => l.value === level)!
 
+  function addToHistory(entry: RecentEntry) {
+    setHistory((prev) => [entry, ...prev].slice(0, 20))
+  }
+
+  function updateHistoryQuestions(id: string, qs: Question[]) {
+    setHistory((prev) => prev.map((e) => e.id === id ? { ...e, questions: qs } : e))
+    updateSessionQuestions(id, qs)
+  }
 
   function handleClearAll() {
     setText("")
     setResultData(null)
     setError(null)
-    setAsideOpen(false)
+    setPhase("input")
     setOriginalIdl(null)
+    setActiveHistoryId(null)
+    setQuestions([])
     try {
-      localStorage.removeItem(storageKey)
       localStorage.removeItem(draftStorageKey)
     } catch {}
     setClearModalOpen(false)
+  }
+
+  function handleNewSimplification() {
+    window.speechSynthesis?.cancel()
+    setIsPlaying(false)
+    setText("")
+    setResultData(null)
+    setError(null)
+    setPhase("input")
+    setOriginalIdl(null)
+    setActiveHistoryId(null)
+    setQuestions([])
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    setAnswers([])
+    setQuestionsPhase("playing")
+    setMobileTab("simplificador")
+    try { localStorage.removeItem(draftStorageKey) } catch {}
+    setTimeout(() => textareaRef.current?.focus(), 100)
+  }
+
+  function handleToggleAudio() {
+    if (!resultData) return
+    if (isPlaying) {
+      window.speechSynthesis.cancel()
+      setIsPlaying(false)
+      return
+    }
+    const utterance = new SpeechSynthesisUtterance(resultData.simplified_text)
+    utterance.lang = "es-AR"
+    utterance.rate = 0.82
+    utterance.pitch = 1
+    utterance.onend = () => setIsPlaying(false)
+    utterance.onerror = () => setIsPlaying(false)
+    utteranceRef.current = utterance
+    window.speechSynthesis.speak(utterance)
+    setIsPlaying(true)
+  }
+
+  function handleCopy() {
+    if (!resultData) return
+    navigator.clipboard.writeText(resultData.simplified_text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  function handleLoadHistoryEntry(entry: RecentEntry) {
+    skipAnimationRef.current = true
+    setResultData({
+      simplified_text: entry.simplifiedText,
+      glossary: entry.glossary,
+      idl_score: entry.idlScore,
+      metrics: entry.metrics,
+    })
+    setActiveHistoryId(entry.id)
+    setPhase("result")
+    setQuestions(entry.questions ?? [])
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    setAnswers(new Array((entry.questions ?? []).length).fill(null))
+    setQuestionsPhase("playing")
+    setMobileTab("simplificador")
+  }
+
+  async function handleGenerateQuestions() {
+    const sourceText = resultData?.simplified_text ?? text
+    if (!sourceText.trim()) return
+    setGeneratingQuestions(true)
+    setQuestionsError(null)
+    setQuestions([])
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    const res = await generateQuestions(sourceText, level, questionCount)
+    if (res.success) {
+      setQuestions(res.questions)
+      setAnswers(new Array(res.questions.length).fill(null))
+      setQuestionsPhase("playing")
+      if (activeHistoryId) updateHistoryQuestions(activeHistoryId, res.questions)
+      setQuestionsUsageToday(res.usage_today)
+      setQuestionsLimit(res.daily_limit)
+    } else {
+      if (res.usage_today !== undefined) setQuestionsUsageToday(res.usage_today)
+      if (res.daily_limit !== undefined) setQuestionsLimit(res.daily_limit)
+      if (res.error !== "limit_reached") setQuestionsError(res.error)
+    }
+    setGeneratingQuestions(false)
   }
 
   function handleSimplify() {
@@ -547,7 +639,9 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
     setCooldownUntil(Date.now() + BUTTON_COOLDOWN_MS)
     setError(null)
     setResultData(null)
-    setAsideOpen(true)
+    setPhase("result")
+    setQuestions([])
+    setGlossaryOpen(false)
 
     startTransition(async () => {
       try {
@@ -562,6 +656,28 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
           setResultData(nextResult)
           if (res.usage_today !== undefined) setUsageToday(res.usage_today)
           if (res.daily_limit !== undefined) setDailyLimit(res.daily_limit)
+
+          const savedId = await saveSimplificationSession({
+            original_text: text,
+            simplified_text: res.simplified_text,
+            level,
+            idl_score: res.idl_score,
+            glossary: res.glossary ?? [],
+            metrics: res.metrics,
+          })
+          const newEntry: RecentEntry = {
+            id: savedId ?? crypto.randomUUID(),
+            originalPreview: text.trim().slice(0, 40),
+            originalText: text,
+            simplifiedText: res.simplified_text,
+            glossary: res.glossary ?? [],
+            idlScore: res.idl_score,
+            metrics: res.metrics,
+            level,
+            createdAt: Date.now(),
+          }
+          setActiveHistoryId(newEntry.id)
+          addToHistory(newEntry)
         } else {
           setError(res.error ?? "Error desconocido.")
           if (res.usage_today !== undefined) setUsageToday(res.usage_today)
@@ -574,26 +690,640 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
   }
 
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center",
-        mode === "admin"
-          ? "px-4 py-6 sm:min-h-[calc(100vh-8rem)] sm:justify-center sm:py-12"
-          : "px-0 py-2 sm:min-h-[calc(100vh-8rem)] sm:justify-center sm:py-10"
-      )}
-    >
-      <ResultAside
-        resultData={resultData}
-        error={error}
-        isPending={isPending}
-        open={asideOpen}
-        onClose={() => setAsideOpen(false)}
-        onOpen={() => setAsideOpen(true)}
-        asideWidth={asideWidth}
-        onWidthChange={setAsideWidth}
-      />
+    <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-background lg:flex-row lg:left-14">
 
-      {clearModalOpen && createPortal(
+      <div className="lg:hidden shrink-0 border-b border-border/40 bg-background">
+        <div className="flex flex-col items-center gap-2 pt-2 pb-2 px-14">
+          <p className="text-[11px] font-medium text-foreground text-center leading-snug">Adaptá textos al nivel de lectura adecuado</p>
+          <button
+            type="button"
+            onClick={handleNewSimplification}
+            className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-medium text-white transition-colors cursor-pointer w-full"
+            style={{ backgroundColor: "#2E85C8" }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14" /><path d="M12 5v14" />
+            </svg>
+            Nuevo texto
+          </button>
+        </div>
+        <div className="flex">
+          {([
+            { id: "recientes", label: "Recientes" },
+            { id: "simplificador", label: "Texto" },
+            { id: "preguntas", label: "Preguntas" },
+          ] as const).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setMobileTab(tab.id)}
+              className={cn(
+                "flex-1 py-2 text-[11px] font-medium transition-colors",
+                mobileTab === tab.id
+                  ? "text-foreground border-b-2 border-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <aside className={cn("w-full shrink-0 flex flex-col border-r border-border/50 bg-muted/30 overflow-hidden lg:w-50 lg:flex", mobileTab !== "recientes" ? "hidden lg:flex" : "flex")}>
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 px-4 pt-3 pb-2">Recientes</p>
+
+        <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">
+          {loadingHistory ? (
+            <div className="space-y-1 px-2 pt-2">
+              <div className="animate-pulse h-10 rounded-lg bg-muted" />
+              <div className="animate-pulse h-10 rounded-lg bg-muted" />
+              <div className="animate-pulse h-10 rounded-lg bg-muted" />
+            </div>
+          ) : history.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground/40 px-2 py-2">Sin historial aún</p>
+          ) : (
+            history.map((entry) => (
+              <HistoryCard
+                key={entry.id}
+                entry={entry}
+                active={activeHistoryId === entry.id}
+                onLoad={() => handleLoadHistoryEntry(entry)}
+              />
+            ))
+          )}
+        </div>
+      </aside>
+
+      <main className={cn("flex-1 flex flex-col overflow-hidden", mobileTab !== "simplificador" ? "hidden lg:flex" : "flex")}>
+        <div className={cn("shrink-0 flex items-center justify-between px-6 py-3.5 border-b border-border/40", phase === "result" && "hidden lg:flex")}>
+          <div className="hidden lg:block">
+            <h1 className="text-sm font-medium">Simplificador de textos</h1>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Adaptá textos al nivel de lectura adecuado</p>
+          </div>
+          <div className="flex items-center gap-2 lg:ml-0 ml-auto">
+            {phase === "input" && (
+              <div className="hidden">
+              </div>
+            )}
+            {phase === "result" && !isPending && resultData && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="hidden lg:flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border/50 bg-background hover:bg-accent text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                {copied ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                )}
+                {copied ? "Copiado" : "Copiar"}
+              </button>
+            )}
+            {phase === "result" && !isPending && (
+              <div className="hidden lg:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleAudio}
+                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-border/50 bg-background hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title={isPlaying ? "Pausar audio" : "Escuchar texto"}
+                >
+                  {isPlaying ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNewSimplification}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white transition-colors cursor-pointer hover:opacity-90"
+                  style={{ backgroundColor: "#2E85C8" }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" /><path d="M12 5v14" />
+                  </svg>
+                  Nueva simplificación
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {phase === "input" ? (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 flex flex-col overflow-hidden lg:p-6 lg:gap-4"
+            >
+              {limitReached && mode === "patient" && (
+                <div className="rounded-2xl border border-border/60 bg-card/95 px-4 py-4 shadow-[0_12px_30px_-20px_rgba(0,0,0,0.35)] sm:px-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-foreground">Alcanzaste el límite diario</p>
+                      <p className="text-sm font-light leading-relaxed text-muted-foreground">
+                        Ya usaste tus {dailyLimit} simplificaciones de hoy. Si necesitás más intentos, podés cambiar a un plan superior.
+                      </p>
+                    </div>
+                    <Link
+                      href="/planes"
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-[#2E85C8]/25 bg-[#2E85C8] px-4 text-sm font-medium text-white transition-colors hover:bg-[#276fa7]"
+                    >
+                      Mejorar plan
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {noLevelsAvailable && (!limitReached || mode === "admin") && (
+                <div className="rounded-lg border border-border/60 bg-card px-4 py-3 text-center">
+                  <p className="text-sm font-light text-muted-foreground">
+                    Este texto ya es muy fácil (IDL {originalIdl?.toFixed(1)}).
+                  </p>
+                </div>
+              )}
+
+              <textarea
+                ref={textareaRef}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={
+                  mode === "admin"
+                    ? "Pegá o escribí el texto que querés transformar..."
+                    : "Pegá o escribí el texto que querés simplificar..."
+                }
+                disabled={limitReached && mode === "patient"}
+                className="flex-1 resize-none bg-transparent px-5 py-4 text-base leading-relaxed focus:outline-none placeholder:text-muted-foreground/30 disabled:opacity-50 lg:text-sm"
+              />
+
+              <div className="shrink-0 flex items-center justify-between border-t border-border/40 px-4 py-3 lg:border-0 lg:px-0 lg:py-0">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} direction="up" />
+                  </div>
+                  <span className={cn("text-[10px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/50")}>
+                    {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {text.trim().length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setClearModalOpen(true)}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md border border-red-500 bg-transparent px-2 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-500/8"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
+                      Limpiar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSimplify}
+                    disabled={isPending || cooldownActive || overLimit || limitReached || !text.trim() || noLevelsAvailable}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-lg text-white transition-all hover:opacity-90 active:scale-95",
+                      !text.trim() || overLimit || limitReached || noLevelsAvailable || cooldownActive ? "opacity-40" : "cursor-pointer opacity-100"
+                    )}
+                    style={{ backgroundColor: "#2E85C8" }}
+                    aria-label="Simplificar texto"
+                    title={cooldownActive ? "Esperá un instante antes de volver a simplificar" : "Simplificar texto"}
+                  >
+                    {isPending ? (
+                      <svg className="h-3.5 w-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="hidden lg:flex shrink-0 justify-end">
+                {mode === "admin" ? (
+                  <span className={cn("text-[11px] tabular-nums", limitReached ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
+                    {usageToday ?? 0}/{dailyLimit} hoy
+                  </span>
+                ) : usageToday !== null ? (
+                  <span className="text-[11px] tabular-nums text-muted-foreground/60">{usageToday}/{dailyLimit} hoy</span>
+                ) : null}
+              </div>
+
+            </motion.div>
+          ) : (
+            <motion.div
+              key="result"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col overflow-hidden relative"
+            >
+              <div className="flex-1 overflow-y-auto px-5 pt-2 pb-4 lg:px-12 lg:py-10">
+                {isPending ? (
+                  <TypewriterLoading />
+                ) : error ? (
+                  <p className="text-sm font-light leading-relaxed text-red-500">{error}</p>
+                ) : resultData ? (
+                  <>
+                    <AnnotatedText text={displayedText} glossary={resultData.glossary} />
+                    {resultData.glossary.length > 0 && (
+                      <div className="hidden lg:block mt-6 border-t border-border/40 pt-4">
+                        <p className="mb-3 text-base sm:text-lg lg:text-xl font-medium text-muted-foreground">Palabras difíciles</p>
+                        <div className="space-y-3">
+                          {resultData.glossary.map((entry) => (
+                            <div key={entry.term}>
+                              <span className="text-lg sm:text-xl lg:text-2xl font-medium text-[#2E85C8]">{entry.term}</span>
+                              <span className="text-lg sm:text-xl lg:text-2xl font-light text-muted-foreground leading-relaxed"> — {entry.definition}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </div>
+
+              {!isPending && resultData && (
+                <div className="hidden lg:flex shrink-0 items-center gap-2 px-6 py-2.5 border-t border-border/40 bg-muted/20">
+                  <span className="text-[11px] px-2.5 py-1 rounded-md border border-border/40 bg-background text-muted-foreground">
+                    IDL {resultData.idl_score.toFixed(1)}
+                  </span>
+                  <span className="text-[11px] px-2.5 py-1 rounded-md border border-border/40 bg-background text-muted-foreground">
+                    {selectedLevel.label}
+                  </span>
+                  <span className="text-[11px] px-2.5 py-1 rounded-md border border-border/40 bg-background text-muted-foreground">
+                    {resultData.simplified_text.split(/\s+/).filter(Boolean).length} palabras
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMetricsOpen(true)}
+                    className="text-[11px] text-muted-foreground/60 hover:text-foreground ml-auto cursor-pointer transition-colors"
+                  >
+                    Ver métricas detalladas
+                  </button>
+                </div>
+              )}
+
+              {!isPending && resultData && (
+                <div className="lg:hidden shrink-0 flex items-center justify-between px-4 py-3 border-t border-border/40 bg-background">
+                  {resultData.glossary.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setGlossaryOpen(true)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m18 15-6-6-6 6"/>
+                      </svg>
+                      Ver palabras difíciles
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-background hover:bg-accent px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      {copied ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                      )}
+                      {copied ? "Copiado" : "Copiar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleToggleAudio}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-background hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title={isPlaying ? "Pausar audio" : "Escuchar texto"}
+                    >
+                      {isPlaying ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence>
+                {glossaryOpen && resultData && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-black/20 lg:hidden"
+                      onClick={() => setGlossaryOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ y: "100%" }}
+                      animate={{ y: 0 }}
+                      exit={{ y: "100%" }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className="absolute inset-x-0 bottom-0 z-10 rounded-t-2xl border-t border-border/60 bg-card lg:hidden"
+                    >
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+                        <p className="text-sm font-medium">Palabras difíciles</p>
+                        <button
+                          type="button"
+                          onClick={() => setGlossaryOpen(false)}
+                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m6 9 6 6 6-6"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="overflow-y-auto max-h-72 px-5 py-4 space-y-3">
+                        {resultData.glossary.map((entry) => (
+                          <div key={entry.term}>
+                            <span className="text-sm font-medium text-[#2E85C8]">{entry.term}</span>
+                            <span className="text-sm text-muted-foreground"> — {entry.definition}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      <aside className={cn("shrink-0 flex flex-col border-l border-border/50 bg-muted/30 overflow-hidden lg:w-75 lg:flex", mobileTab !== "preguntas" ? "hidden lg:flex" : "flex flex-1 w-full")}>
+        <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-border/40">
+          <span className="text-[11px] text-muted-foreground">Cantidad de preguntas</span>
+          <select
+            value={questionCount}
+            onChange={(e) => setQuestionCount(Number(e.target.value))}
+            className="text-[11px] rounded-md border border-border/50 bg-background px-2 py-1 focus:outline-none text-muted-foreground cursor-pointer"
+          >
+            {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+              <option key={n} value={n}>{n} preguntas</option>
+            ))}
+          </select>
+        </div>
+
+        {mode === "patient" && questionsLimit > 0 && questionsUsageToday >= questionsLimit ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-5 text-center">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground">Límite diario alcanzado</p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                Usaste tus {questionsLimit} generaciones de hoy. Volvé mañana o mejorá tu plan.
+              </p>
+            </div>
+            <Link
+              href="/planes"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all hover:opacity-90"
+              style={{ backgroundColor: "#2E85C8" }}
+            >
+              Cambiar plan
+            </Link>
+            <p className="text-[10px] text-muted-foreground/50">{questionsUsageToday}/{questionsLimit} hoy</p>
+          </div>
+        ) : !text.trim() && !resultData ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4 text-center">
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground/40 text-sm font-medium">?</div>
+            <p className="text-xs font-medium text-muted-foreground">Sin preguntas aún</p>
+            <p className="text-[11px] text-muted-foreground/60 leading-relaxed">Ingresá un texto para generar preguntas de comprensión</p>
+          </div>
+        ) : generatingQuestions ? (
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+            <div className="animate-pulse rounded-lg bg-muted h-14" />
+            <div className="animate-pulse rounded-lg bg-muted h-14" />
+            <div className="animate-pulse rounded-lg bg-muted h-14" />
+          </div>
+        ) : questions.length > 0 ? (
+          questionsPhase === "finished" ? (
+            <QuestionsResult
+              correct={questions.filter((q, i) => answers[i] === q.correct_index).length}
+              total={questions.length}
+              onRetry={() => {
+                setCurrentQuestionIndex(0)
+                setSelectedAnswer(null)
+                setShowResult(false)
+                setAnswers(new Array(questions.length).fill(null))
+                setQuestionsPhase("playing")
+              }}
+            />
+          ) : (
+          <div className="flex-1 overflow-hidden px-3 py-3 flex flex-col">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentQuestionIndex}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="flex flex-col flex-1"
+              >
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                  Pregunta {currentQuestionIndex + 1} de {questions.length}
+                </p>
+                <div className="mt-2 h-1 rounded-full bg-muted/60">
+                  <div
+                    className="h-1 rounded-full bg-[#2E85C8] transition-all"
+                    style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+                  />
+                </div>
+                <p className="mt-3 mb-4 text-sm font-medium leading-relaxed text-foreground">
+                  {questions[currentQuestionIndex].question}
+                </p>
+                <div className="space-y-2">
+                  {questions[currentQuestionIndex].options.map((option, i) => {
+                    const correct = questions[currentQuestionIndex].correct_index
+                    let cls = "border-border/50 bg-background hover:bg-accent hover:border-border text-foreground/80"
+                    if (showResult) {
+                      if (i === correct) {
+                        cls = selectedAnswer === i
+                          ? "border-green-500/60 bg-green-500/10 text-green-700"
+                          : "border-green-500/40 bg-green-500/6 text-green-600"
+                      } else if (i === selectedAnswer) {
+                        cls = "border-red-400/60 bg-red-400/10 text-red-600"
+                      }
+                    }
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={showResult}
+                        onClick={() => {
+                          setSelectedAnswer(i)
+                          setShowResult(true)
+                          setAnswers((prev) => { const next = [...prev]; next[currentQuestionIndex] = i; return next })
+                        }}
+                        className={cn("w-full text-left rounded-lg border px-3 py-2.5 text-xs leading-relaxed transition-all", cls)}
+                      >
+                        <span className="mr-2 font-medium">{["A", "B", "C", "D"][i]}.</span>
+                        {option}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  {currentQuestionIndex > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newIdx = currentQuestionIndex - 1
+                        setCurrentQuestionIndex(newIdx)
+                        const saved = answers[newIdx]
+                        setSelectedAnswer(saved ?? null)
+                        setShowResult(saved !== null && saved !== undefined)
+                      }}
+                      className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m15 18-6-6 6-6" />
+                      </svg>
+                      Anterior
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  {currentQuestionIndex < questions.length - 1 ? (
+                    <button
+                      type="button"
+                      disabled={!showResult}
+                      onClick={() => {
+                        const newIdx = currentQuestionIndex + 1
+                        setCurrentQuestionIndex(newIdx)
+                        const saved = answers[newIdx]
+                        setSelectedAnswer(saved ?? null)
+                        setShowResult(saved !== null && saved !== undefined)
+                      }}
+                      className="flex items-center gap-1 text-[11px] font-medium text-[#2E85C8] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                    >
+                      Siguiente
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!showResult}
+                      onClick={() => setQuestionsPhase("finished")}
+                      className="text-[11px] font-medium text-[#2E85C8] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                    >
+                      Finalizar
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          )
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+            {questionsError && (
+              <p className="text-[11px] text-red-500 text-center">{questionsError}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleGenerateQuestions}
+              disabled={(!text.trim() && !resultData) || generatingQuestions || isPending}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              style={{ backgroundColor: "#2E85C8" }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+                <path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" />
+              </svg>
+              {questionsError ? "Reintentar" : "Generar preguntas"}
+            </button>
+          </div>
+        )}
+
+        <div className="shrink-0 px-3 py-3 border-t border-border/40 space-y-2">
+          {questions.length > 0 && questionsPhase === "playing" && (
+            <button
+              type="button"
+              onClick={handleGenerateQuestions}
+              disabled={(!text.trim() && !resultData) || generatingQuestions || isPending}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#2E85C8" }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M8 16H3v5" />
+              </svg>
+              Regenerar preguntas
+            </button>
+          )}
+          <div className="flex items-center justify-center">
+            <span className="text-[10px] tabular-nums text-muted-foreground">{questionsUsageToday}/{questionsLimit} generaciones hoy</span>
+          </div>
+        </div>
+      </aside>
+
+      {mounted && metricsOpen && resultData && createPortal(
+        <>
+          <div className="fixed inset-0 z-70 bg-black/40" onClick={() => setMetricsOpen(false)} />
+          <div className="fixed inset-x-2 top-1/2 z-75 -translate-y-1/2 rounded-xl border border-border/60 bg-card p-5 shadow-xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-96">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Métricas</p>
+              <button
+                type="button"
+                onClick={() => setMetricsOpen(false)}
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+            <MetricsCard metrics={resultData.metrics} />
+          </div>
+        </>,
+        document.body
+      )}
+
+      {mounted && clearModalOpen && createPortal(
         <div
           className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 px-4"
           onClick={() => setClearModalOpen(false)}
@@ -626,164 +1356,6 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit }: S
         </div>,
         document.body
       )}
-
-      <div className={cn("w-full space-y-4", mode === "admin" ? "max-w-3xl" : "max-w-2xl")}>
-        <motion.div
-          animate={{
-            height: expanded ? 0 : "auto",
-            opacity: expanded ? 0 : 1,
-          }}
-          transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-          style={{ overflow: "hidden" }}
-          className={cn("space-y-2", mode === "admin" ? "text-center" : "flex flex-col items-center gap-1 text-center")}
-        >
-          <h1 className={cn("font-light uppercase tracking-widest", mode === "admin" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl")}>
-            Simplificador de Textos
-          </h1>
-          <p className="text-sm font-light leading-relaxed text-muted-foreground">
-            Pegá cualquier texto y lo adaptamos para que sea más fácil de leer y entender.
-          </p>
-        </motion.div>
-
-        {limitReached && mode === "patient" && (
-          <div className="rounded-2xl border border-border/60 bg-card/95 px-4 py-4 shadow-[0_12px_30px_-20px_rgba(0,0,0,0.35)] sm:px-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-foreground">
-                  Alcanzaste el límite diario
-                </p>
-                <p className="text-sm font-light leading-relaxed text-muted-foreground">
-                  Ya usaste tus {dailyLimit} simplificaciones de hoy. Si necesitás más intentos, podés cambiar a un plan superior.
-                </p>
-              </div>
-              <Link
-                href="/planes"
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-[#2E85C8]/25 bg-[#2E85C8] px-4 text-sm font-medium text-white transition-colors hover:bg-[#276fa7]"
-              >
-                Mejorar plan
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {noLevelsAvailable && (!limitReached || mode === "admin") && (
-          <div className="rounded-lg border border-border/60 bg-card px-4 py-3 text-center">
-            <p className="text-sm font-light text-muted-foreground">
-              Este texto ya es muy fácil (IDL {originalIdl?.toFixed(1)}).
-            </p>
-          </div>
-        )}
-
-        <div
-          className={cn("flex flex-col border border-border/60 bg-card", mode === "admin" ? "rounded-lg" : "rounded-xl")}
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 20px rgba(0,0,0,0.09), 0 20px 48px -8px rgba(0,0,0,0.14)" }}
-        >
-          <div className="relative">
-            <motion.textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={mode === "admin"
-                ? "Pegá o escribí el texto que querés transformar... cuanto más oscuro el texto, más lo iluminamos."
-                : "Pegá o escribí el texto que querés simplificar..."}
-              disabled={limitReached && mode === "patient"}
-              className={cn(
-                "w-full resize-none bg-transparent px-4 pb-3 pt-4 text-sm leading-relaxed focus:outline-none sm:px-5",
-                mode === "admin"
-                  ? "placeholder:text-muted-foreground/40 sm:pb-4 sm:pt-5"
-                  : "font-light placeholder:text-muted-foreground/40 disabled:opacity-50 sm:pb-4 sm:pt-5"
-              )}
-              style={{ resize: "none" }}
-              animate={{ height: expanded ? expandedHeight : (mode === "admin" ? 210 : 210) }}
-              transition={{ type: "spring", stiffness: 220, damping: 30 }}
-            />
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded text-foreground/75 transition-colors hover:text-foreground"
-              aria-label={expanded ? "Contraer" : "Expandir"}
-            >
-              {expanded ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="10" y1="14" x2="3" y2="21" /><line x1="21" y1="3" x2="14" y2="10" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
-                </svg>
-              )}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 px-4 pb-4">
-            <span className={cn("text-[10px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
-              {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
-            </span>
-            <div className="flex items-center gap-2">
-              <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} />
-              <button
-                type="button"
-                onClick={() => handleSimplify()}
-                disabled={isPending || cooldownActive || overLimit || limitReached || !text.trim() || noLevelsAvailable}
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-lg text-white transition-all hover:opacity-90 active:scale-95",
-                  !text.trim() || overLimit || limitReached || noLevelsAvailable || cooldownActive ? "opacity-40" : "cursor-pointer opacity-100"
-                )}
-                style={{ backgroundColor: "#2E85C8" }}
-                aria-label="Simplificar texto"
-                title={cooldownActive ? "Esperá un instante antes de volver a simplificar" : "Simplificar texto"}
-              >
-                {isPending ? (
-                  <svg className="h-3.5 w-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-3">
-            {(text.trim().length > 0 || resultData !== null) ? (
-              <button
-                type="button"
-                onClick={() => setClearModalOpen(true)}
-                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-red-500 bg-transparent px-2 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-500/8"
-                aria-label="Limpiar"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-                Limpiar
-              </button>
-            ) : cooldownActive ? (
-              <span className="text-[11px] text-muted-foreground/55">
-                Esperá un instante para volver a intentar.
-              </span>
-            ) : null}
-          </div>
-
-          {mode === "admin" ? (
-            <span className={cn("text-[11px] tabular-nums", limitReached ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
-              {usageToday ?? 0}/{dailyLimit} hoy
-            </span>
-          ) : usageToday !== null ? (
-            <UsageCounter used={usageToday} total={dailyLimit} />
-          ) : null}
-        </div>
-
-        {resultData && (
-          <LastResultCard
-            resultData={resultData}
-            onOpen={() => setAsideOpen(true)}
-          />
-        )}
-      </div>
     </div>
   )
 }

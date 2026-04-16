@@ -81,7 +81,7 @@ export function PhaseIntro({
   idlScore,
   onStart,
 }: Props) {
-  const accentColor = worldConfig?.accentColor ?? "#E07820";
+  const accentColor = worldConfig?.accentColor ?? "#C73341";
   const accentFg = worldConfig?.accentFg ?? "#ffffff";
 
   const diffLabel =
@@ -114,54 +114,56 @@ export function PhaseIntro({
             <ArrowLeft className="h-4 w-4" strokeWidth={2} />
             Volver
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-[11px] rounded-full px-3 py-1">
-              <BookOpen className="h-3 w-3" />
-              {diffLabel}
-            </span>
-            <span className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-[11px] rounded-full px-3 py-1">
-              <BarChart3 className="h-3 w-3" />
-              {countLabel}
-            </span>
-          </div>
+          {worldConfig && (
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-[11px] rounded-full px-3 py-1">
+                <BookOpen className="h-3 w-3" />
+                {diffLabel}
+              </span>
+              <span className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-[11px] rounded-full px-3 py-1">
+                <BarChart3 className="h-3 w-3" />
+                {countLabel}
+              </span>
+            </div>
+          )}
         </header>
 
-        <main className="flex-1 flex flex-col min-h-0 px-4 pt-3">
-          <motion.div
-            initial={{ opacity: 0, y: -14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.38, ease: "easeOut", delay: 0.75 }}
-            className="mb-2"
-          >
-            <div
-              className="bg-white rounded-2xl rounded-bl-[3px] p-3.5 border border-neutral-100"
-              style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
+        {worldConfig ? (
+          <main className="flex-1 flex flex-col min-h-0 px-4 pt-3">
+            <motion.div
+              initial={{ opacity: 0, y: -14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.38, ease: "easeOut", delay: 0.75 }}
+              className="mb-2"
             >
-              <p
-                className="text-[10px] font-semibold uppercase tracking-widest mb-1"
-                style={{ color: accentColor }}
+              <div
+                className="bg-white rounded-2xl rounded-bl-[3px] p-3.5 border border-neutral-100"
+                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
               >
-                {exercise.typeDisplayName}
-              </p>
-              <p className="text-[13px] text-neutral-500 leading-relaxed min-h-[38px]">
-                {displayed}
-                {!done && (
-                  <span
-                    className="inline-block w-[2px] h-[13px] ml-[1px] align-middle"
-                    style={{ background: accentColor, animation: "blink 0.7s step-end infinite" }}
-                  />
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-widest mb-1"
+                  style={{ color: accentColor }}
+                >
+                  {exercise.typeDisplayName}
+                </p>
+                <p className="text-[13px] text-neutral-500 leading-relaxed min-h-9.5">
+                  {displayed}
+                  {!done && (
+                    <span
+                      className="inline-block w-0.5 h-3.25 ml-px align-middle"
+                      style={{ background: accentColor, animation: "blink 0.7s step-end infinite" }}
+                    />
+                  )}
+                </p>
+                {exercise.instructionsAudioUrl && done && (
+                  <div className="mt-2">
+                    <AudioPlayer src={exercise.instructionsAudioUrl} />
+                  </div>
                 )}
-              </p>
-              {exercise.instructionsAudioUrl && done && (
-                <div className="mt-2">
-                  <AudioPlayer src={exercise.instructionsAudioUrl} />
-                </div>
-              )}
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
 
-          <div className="flex-1 flex flex-col items-center justify-end min-h-0">
-            {worldConfig && (
+            <div className="flex-1 flex flex-col items-center justify-end min-h-0">
               <motion.div
                 initial={{ scale: 0.7, y: 20, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -178,18 +180,56 @@ export function PhaseIntro({
                   style={{ maxHeight: "100%" }}
                 />
               </motion.div>
-            )}
-            <motion.h1
-              initial={{ opacity: 0, y: 8 }}
+              <motion.h1
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.38, ease: "easeOut", delay: 0.52 }}
+                className="text-[22px] font-bold text-neutral-900 text-center tracking-tight pb-2"
+                style={{ fontFamily: "var(--font-lexend)" }}
+              >
+                {exercise.title}
+              </motion.h1>
+            </div>
+          </main>
+        ) : (
+          <main className="flex-1 flex flex-col min-h-0 px-4 pt-6 gap-3">
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.38, ease: "easeOut", delay: 0.52 }}
-              className="text-[22px] font-bold text-neutral-900 text-center tracking-tight pb-2"
+              transition={{ duration: 0.35, ease: "easeOut", delay: 0.2 }}
+              className="text-[10px] font-semibold uppercase tracking-widest"
+              style={{ color: accentColor }}
+            >
+              {exercise.typeDisplayName}
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0.28 }}
+              className="text-[28px] font-bold text-neutral-900 tracking-tight leading-tight"
               style={{ fontFamily: "var(--font-lexend)" }}
             >
               {exercise.title}
             </motion.h1>
-          </div>
-        </main>
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0.38 }}
+              className="text-[14px] text-neutral-500 leading-relaxed"
+            >
+              {exercise.instructions}
+            </motion.p>
+            {exercise.instructionsAudioUrl && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut", delay: 0.46 }}
+              >
+                <AudioPlayer src={exercise.instructionsAudioUrl} />
+              </motion.div>
+            )}
+          </main>
+        )}
 
         <footer className="shrink-0 px-4 pb-5 pt-2">
           <button
@@ -204,22 +244,21 @@ export function PhaseIntro({
         </footer>
       </div>
 
-      {/* ── DESKTOP layout (hidden below lg) ── */}
-      <div className="hidden lg:flex flex-col h-full">
-        <header className="shrink-0 flex items-center px-8 py-4 border-b border-neutral-100">
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-700 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-            Volver
-          </Link>
-        </header>
+      {/* ── DESKTOP layout — con personaje (hidden below lg) ── */}
+      {worldConfig && (
+        <div className="hidden lg:flex flex-col h-full">
+          <header className="shrink-0 flex items-center px-8 py-4 border-b border-neutral-100">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-700 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+              Volver
+            </Link>
+          </header>
 
-        <main className="flex-1 flex min-h-0">
-          {/* Columna personaje — 50% y sin límite de ancho para que llene */}
-          <div className="w-1/2 flex items-end justify-center overflow-hidden">
-            {worldConfig && (
+          <main className="flex-1 flex min-h-0">
+            <div className="w-1/2 flex items-end justify-center overflow-hidden">
               <motion.div
                 initial={{ x: -40, opacity: 0, scale: 0.92 }}
                 animate={{ x: 0, opacity: 1, scale: 1 }}
@@ -234,101 +273,176 @@ export function PhaseIntro({
                   className="w-full h-full object-contain object-bottom scale-110"
                 />
               </motion.div>
-            )}
-          </div>
-
-          {/* Columna contenido */}
-          <div className="w-1/2 flex flex-col justify-center pr-20 pl-8 py-12 gap-8">
-            <div className="flex flex-col gap-3">
-              <motion.p
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut", delay: 0.25 }}
-                className="text-[11px] font-semibold uppercase tracking-[0.09em]"
-                style={{ color: accentColor }}
-              >
-                {exercise.typeDisplayName}
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.45, ease: "easeOut", delay: 0.3 }}
-                className="text-[54px] font-bold text-neutral-900 leading-none tracking-[-1px]"
-                style={{ fontFamily: "var(--font-lexend)" }}
-              >
-                {exercise.title}
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.45, ease: "easeOut", delay: 0.4 }}
-                className="text-[20px] text-neutral-500 leading-relaxed max-w-95"
-              >
-                {exercise.instructions}
-              </motion.p>
             </div>
 
-            <div className="flex flex-col gap-4">
-              {exercise.instructionsAudioUrl && (
+            <div className="w-1/2 flex flex-col justify-center pr-20 pl-8 py-12 gap-8">
+              <div className="flex flex-col gap-3">
+                <motion.p
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.25 }}
+                  className="text-[11px] font-semibold uppercase tracking-[0.09em]"
+                  style={{ color: accentColor }}
+                >
+                  {exercise.typeDisplayName}
+                </motion.p>
+                <motion.h1
+                  initial={{ opacity: 0, x: -24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.3 }}
+                  className="text-[54px] font-bold text-neutral-900 leading-none tracking-[-1px]"
+                  style={{ fontFamily: "var(--font-lexend)" }}
+                >
+                  {exercise.title}
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, x: -24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.4 }}
+                  className="text-[20px] text-neutral-500 leading-relaxed max-w-95"
+                >
+                  {exercise.instructions}
+                </motion.p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {exercise.instructionsAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.45, ease: "easeOut", delay: 0.45 }}
+                  >
+                    <AudioPlayer src={exercise.instructionsAudioUrl} />
+                  </motion.div>
+                )}
+
                 <motion.div
                   initial={{ opacity: 0, x: -24 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.45 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.5 }}
+                  className="inline-flex flex-col gap-4"
                 >
-                  <AudioPlayer src={exercise.instructionsAudioUrl} />
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${accentColor}18` }}
+                      >
+                        <BookOpen className="h-5 w-5" style={{ color: accentColor }} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-neutral-400 leading-tight">Dificultad</p>
+                        <p className="text-[15px] font-semibold text-neutral-800">{diffLabel}</p>
+                      </div>
+                    </div>
+                    <div className="w-px h-8 bg-neutral-100" />
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${accentColor}18` }}
+                      >
+                        <BarChart3 className="h-5 w-5" style={{ color: accentColor }} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-neutral-400 leading-tight">
+                          {isTimedReading ? "Palabras" : "Preguntas"}
+                        </p>
+                        <p className="text-[15px] font-semibold text-neutral-800">{countLabel}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="self-start rounded-xl px-8 py-3.5 text-[15px] font-semibold flex items-center gap-2 transition-opacity hover:opacity-90 cursor-pointer"
+                    style={{ backgroundColor: accentColor, color: accentFg }}
+                  >
+                    Comenzar
+                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                  </button>
                 </motion.div>
-              )}
-
-              <motion.div
-                initial={{ opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.45, ease: "easeOut", delay: 0.5 }}
-                className="inline-flex flex-col gap-4"
-              >
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${accentColor}18` }}
-                    >
-                      <BookOpen className="h-5 w-5" style={{ color: accentColor }} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-neutral-400 leading-tight">Dificultad</p>
-                      <p className="text-[15px] font-semibold text-neutral-800">{diffLabel}</p>
-                    </div>
-                  </div>
-                  <div className="w-px h-8 bg-neutral-100" />
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${accentColor}18` }}
-                    >
-                      <BarChart3 className="h-5 w-5" style={{ color: accentColor }} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-neutral-400 leading-tight">
-                        {isTimedReading ? "Palabras" : "Preguntas"}
-                      </p>
-                      <p className="text-[15px] font-semibold text-neutral-800">{countLabel}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={onStart}
-                  className="self-start rounded-xl px-8 py-3.5 text-[15px] font-semibold flex items-center gap-2 transition-opacity hover:opacity-90 cursor-pointer"
-                  style={{ backgroundColor: accentColor, color: accentFg }}
-                >
-                  Comenzar
-                  <ChevronRight className="h-5 w-5" strokeWidth={2} />
-                </button>
-              </motion.div>
+              </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
+      )}
+
+      {/* ── DESKTOP layout — sin personaje (hidden below lg) ── */}
+      {!worldConfig && (
+        <div className="hidden lg:flex flex-col h-full">
+          <header className="shrink-0 flex items-center px-8 py-4 border-b border-neutral-100">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-700 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+              Volver
+            </Link>
+          </header>
+
+          <main className="flex-1 flex items-center justify-center py-16">
+            <div className="w-full max-w-xl px-8 flex flex-col gap-8">
+              <div className="flex flex-col gap-3">
+                <motion.p
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+                  className="text-[11px] font-semibold uppercase tracking-[0.09em]"
+                  style={{ color: accentColor }}
+                >
+                  {exercise.typeDisplayName}
+                </motion.p>
+                <motion.h1
+                  initial={{ opacity: 0, y: -16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.28 }}
+                  className="text-[48px] font-bold text-neutral-900 leading-none tracking-[-1px]"
+                  style={{ fontFamily: "var(--font-lexend)" }}
+                >
+                  {exercise.title}
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.36 }}
+                  className="text-[18px] text-neutral-500 leading-relaxed"
+                >
+                  {exercise.instructions}
+                </motion.p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {exercise.instructionsAudioUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, ease: "easeOut", delay: 0.42 }}
+                  >
+                    <AudioPlayer src={exercise.instructionsAudioUrl} />
+                  </motion.div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.48 }}
+                >
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="self-start rounded-xl px-8 py-3.5 text-[15px] font-semibold flex items-center gap-2 transition-opacity hover:opacity-90 cursor-pointer"
+                    style={{ backgroundColor: accentColor, color: accentFg }}
+                  >
+                    Comenzar
+                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                  </button>
+                </motion.div>
+              </div>
+            </div>
+          </main>
+        </div>
+      )}
     </div>
   );
 }

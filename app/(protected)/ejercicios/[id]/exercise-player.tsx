@@ -5,6 +5,7 @@ import { completeExercise, completeTimedReading, getPreviousAttempts } from "./a
 import { calculateMaxReadingTime, getExerciseWordCount, EXPECTED_READING_SPEEDS } from "@/lib/constants/reading-speeds";
 import type { AnswerResult } from "./actions";
 import { LetterGapPlayer } from "./letter-gap-player";
+import { MathExercisePlayer } from "./math-exercise-player";
 import { getWorldConfig } from "@/lib/worlds";
 import { PhaseIntro } from "./phase-intro";
 import { PhaseReading } from "./phase-reading";
@@ -197,6 +198,8 @@ export function ExercisePlayer({ exercise, answerKey, initialGems, gradeYear, wo
     >
       {exercise.typeName === "letter_gap" ? (
         <LetterGapPlayer exercise={exercise} initialGems={initialGems} worldId={worldId} worldName={worldName} backHref={backHref} />
+      ) : exercise.typeName === "math" ? (
+        <MathExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} gradeYear={gradeYear} worldId={worldId} worldName={worldName} backHref={backHref} />
       ) : (
         <BaseExercisePlayer exercise={exercise} answerKey={answerKey} initialGems={initialGems} gradeYear={gradeYear} worldId={worldId} worldName={worldName} backHref={backHref} />
       )}

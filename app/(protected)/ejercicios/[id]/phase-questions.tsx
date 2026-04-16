@@ -300,7 +300,7 @@ function ImageQuestionLayout({
           <div className={cn(optionsGridClass, hasImageOptions && "flex-1")}>
             {activeQuestion?.options.map((option, index) => (
               <OptionButton
-                key={option.id}
+                key={option.id ?? String(index)}
                 option={option}
                 index={index}
                 isSelected={selectedOptionId === option.id}
@@ -401,7 +401,7 @@ function CharacterQuestionLayout({
           <div className={optionsGridClass}>
             {activeQuestion?.options.map((option, index) => (
               <OptionButton
-                key={option.id}
+                key={option.id ?? String(index)}
                 option={option}
                 index={index}
                 isSelected={selectedOptionId === option.id}

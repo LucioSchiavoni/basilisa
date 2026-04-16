@@ -127,6 +127,47 @@ const letterGapContentSchema = z.object({
   shuffle_options: z.boolean().default(true),
 })
 
+const mathInstructionBlockSchema = z.object({
+  id: z.string().uuid(),
+  type: z.enum(["text", "image"]),
+  content: z.string().min(1),
+})
+
+const mathQuestionSchema = z.object({
+  id: z.string().uuid(),
+  stimulus_text: z.string().nullish().transform(v => !v ? null : v).pipe(z.string().nullable()),
+  stimulus_image_url: optionalUrl,
+  answer_type: z.enum(["number_gap_options", "number_gap_input", "multiple_choice"]),
+  expression: z.string().nullish().transform(v => !v ? null : v).pipe(z.string().nullable()),
+  correct_answer: z.string().min(1, "La respuesta correcta es requerida"),
+  options: z.array(z.string().min(1)).nullish().transform(v => !v ? null : v).pipe(z.array(z.string()).nullable()),
+  points: z.coerce.number().int().min(1).default(1),
+}).refine(
+  (data) => data.stimulus_text !== null || data.stimulus_image_url !== null,
+  { message: "La pregunta debe tener texto o imagen", path: ["stimulus_text"] }
+).refine(
+  (data) => {
+    if (data.answer_type === "number_gap_options" || data.answer_type === "multiple_choice") {
+      return Array.isArray(data.options) && data.options.length >= 2
+    }
+    return true
+  },
+  { message: "Este tipo requiere al menos 2 opciones", path: ["options"] }
+).refine(
+  (data) => {
+    if (data.answer_type === "number_gap_options" || data.answer_type === "number_gap_input") {
+      return typeof data.expression === "string" && data.expression.includes("[?]")
+    }
+    return true
+  },
+  { message: "La expresión debe contener [?] para marcar el hueco", path: ["expression"] }
+)
+
+const mathContentSchema = z.object({
+  instruction_blocks: z.array(mathInstructionBlockSchema).min(1, "Agregá al menos un bloque de consigna"),
+  questions: z.array(mathQuestionSchema).min(1, "Agregá al menos una pregunta"),
+})
+
 const baseExerciseSchema = z.object({
   title: z
     .string()
@@ -161,11 +202,18 @@ const createLetterGapSchema = baseExerciseSchema.extend({
   content: letterGapContentSchema,
 })
 
+const createMathSchema = baseExerciseSchema.extend({
+  exercise_type_name: z.literal("math"),
+  instructions: z.string().optional().nullable().transform(v => v ?? null),
+  content: mathContentSchema,
+})
+
 export const createExerciseSchema = z.discriminatedUnion("exercise_type_name", [
   createMultipleChoiceSchema,
   createReadingComprehensionSchema,
   createTimedReadingSchema,
   createLetterGapSchema,
+  createMathSchema,
 ])
 
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>
@@ -173,11 +221,15 @@ export type MultipleChoiceContent = z.infer<typeof multipleChoiceContentSchema>
 export type ReadingComprehensionContent = z.infer<typeof readingComprehensionContentSchema>
 export type TimedReadingContent = z.infer<typeof timedReadingContentSchema>
 export type LetterGapContent = z.infer<typeof letterGapContentSchema>
+export type MathContent = z.infer<typeof mathContentSchema>
+export type MathQuestion = z.infer<typeof mathQuestionSchema>
+export type MathInstructionBlock = z.infer<typeof mathInstructionBlockSchema>
 
 export {
   multipleChoiceContentSchema,
   readingComprehensionContentSchema,
   timedReadingContentSchema,
   letterGapContentSchema,
+  mathContentSchema,
   baseExerciseSchema,
 }

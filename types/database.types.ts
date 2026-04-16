@@ -560,6 +560,79 @@ export type Database = {
           },
         ]
       }
+      simplification_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          original_text: string
+          simplified_text: string
+          level: string
+          idl_score: number
+          glossary: Json
+          metrics: Json
+          questions: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          original_text: string
+          simplified_text: string
+          level: string
+          idl_score: number
+          glossary?: Json
+          metrics?: Json
+          questions?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          original_text?: string
+          simplified_text?: string
+          level?: string
+          idl_score?: number
+          glossary?: Json
+          metrics?: Json
+          questions?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simplification_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_generation_logs: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_generation_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       text_simplification_logs: {
         Row: {
           id: string

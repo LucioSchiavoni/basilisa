@@ -13,15 +13,17 @@ function stripAnswers(content: Record<string, unknown>): Record<string, unknown>
     ...content,
     questions: questions.map(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ correct_option_id, explanation, ...rest }) => rest
+      ({ correct_option_id, explanation, correct_answer, ...rest }) => rest
     ),
   };
 }
 
 function buildAnswerKey(content: Record<string, unknown>): Record<string, string> {
   const questions =
-    (content.questions as Array<{ id: string; correct_option_id: string }>) || [];
-  return Object.fromEntries(questions.map((q) => [q.id, q.correct_option_id]));
+    (content.questions as Array<Record<string, unknown>>) || [];
+  return Object.fromEntries(
+    questions.map((q) => [q.id as string, ((q.correct_option_id ?? q.correct_answer) as string) ?? ""])
+  );
 }
 
 export default async function ExercisePage({
@@ -75,47 +77,51 @@ export default async function ExercisePage({
   const initialGems = userGemsData?.total_gems ?? 0;
   const gradeYear = (profileData as { grade_year?: number | null } | null)?.grade_year ?? null;
 
-  let worldId: string | undefined;
-  let worldName: string | undefined;
-
-  if (worldIdParam) {
-    const { data: worldData } = await supabase
-      .from("worlds")
-      .select("id, name")
-      .eq("id", worldIdParam)
-      .single();
-    if (worldData) {
-      worldId = worldData.id;
-      worldName = worldData.name;
-    }
-  } else if (validExercise.world_id) {
-    const { data: worldData } = await supabase
-      .from("worlds")
-      .select("id, name")
-      .eq("name", validExercise.world_id)
-      .single();
-    if (worldData) {
-      worldId = worldData.id;
-      worldName = worldData.name;
-    }
-  }
-
-  const backHref =
-    from === "asignados"
-      ? "/ejercicios/asignados"
-      : worldId
-      ? `/ejercicios/mundos/${worldId}`
-      : "/ejercicios";
-
   const typeName =
     validExercise.exercise_types && !Array.isArray(validExercise.exercise_types)
       ? validExercise.exercise_types.name
       : "multiple_choice";
 
+  let worldId: string | undefined;
+  let worldName: string | undefined;
+
+  if (typeName !== "math") {
+    if (worldIdParam) {
+      const { data: worldData } = await supabase
+        .from("worlds")
+        .select("id, name")
+        .eq("id", worldIdParam)
+        .single();
+      if (worldData) {
+        worldId = worldData.id;
+        worldName = worldData.name;
+      }
+    } else if (validExercise.world_id) {
+      const { data: worldData } = await supabase
+        .from("worlds")
+        .select("id, name")
+        .eq("name", validExercise.world_id)
+        .single();
+      if (worldData) {
+        worldId = worldData.id;
+        worldName = worldData.name;
+      }
+    }
+  }
+
   const typeDisplayName =
     validExercise.exercise_types && !Array.isArray(validExercise.exercise_types)
       ? validExercise.exercise_types.display_name
       : "";
+
+  const backHref =
+    from === "asignados"
+      ? "/ejercicios/asignados"
+      : typeName === "math"
+      ? "/ejercicios/matematicas"
+      : worldId
+      ? `/ejercicios/mundos/${worldId}`
+      : "/ejercicios";
 
   const rawContent = validExercise.content as Record<string, unknown>;
 
@@ -144,7 +150,7 @@ export default async function ExercisePage({
       exercise={{
         id: validExercise.id,
         title: validExercise.title,
-        instructions: validExercise.instructions ?? "",
+        instructions: typeof validExercise.instructions === "string" ? validExercise.instructions : "",
         instructionsAudioUrl: validExercise.instructions_audio_url,
         difficultyLevel: validExercise.difficulty_level,
         content: stripAnswers(rawContent),

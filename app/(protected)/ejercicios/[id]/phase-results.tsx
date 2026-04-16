@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { fireWinConfetti } from "@/lib/confetti";
 import Link from "next/link";
@@ -76,10 +76,14 @@ function TimeCard({
   readingTimeSeconds,
   totalTimeSeconds,
   wordCount,
+  correct,
+  total,
 }: {
   readingTimeSeconds?: number;
   totalTimeSeconds: number;
   wordCount?: number;
+  correct?: number;
+  total?: number;
 }) {
   const cols = [
     readingTimeSeconds !== undefined && { label: "Lectura", value: fmt(readingTimeSeconds) },
@@ -87,17 +91,29 @@ function TimeCard({
     wordCount && wordCount > 0 && { label: "Palabras", value: String(wordCount) },
   ].filter(Boolean) as { label: string; value: string }[];
 
+  const showScore = correct !== undefined && total !== undefined && total > 0;
+
   return (
-    <div
-      className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 py-3 divide-x divide-stone-200 dark:divide-stone-700"
-      style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
-    >
-      {cols.map((col) => (
-        <div key={col.label} className="flex flex-col items-center gap-0.5 px-2">
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500 truncate">{col.label}</span>
-          <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-tight">{col.value}</span>
+    <div className="flex-1 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 overflow-hidden flex flex-col">
+      <div
+        className="flex-1 flex items-center divide-x divide-stone-200 dark:divide-stone-700"
+        style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
+      >
+        {cols.map((col) => (
+          <div key={col.label} className="flex flex-col items-center justify-center gap-0.5 px-2 py-3">
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500 truncate">{col.label}</span>
+            <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-tight">{col.value}</span>
+          </div>
+        ))}
+      </div>
+      {showScore && (
+        <div className="flex-1 border-t border-stone-200 dark:border-stone-700 flex flex-col items-center justify-center gap-0.5 py-3">
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">Correctas</span>
+          <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-tight">
+            {correct}<span className="text-xs font-semibold text-stone-400 dark:text-stone-500">/{total}</span>
+          </span>
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -185,6 +201,7 @@ function MiniEvolutionChart({ attempts }: { attempts: { score: number; date: str
   return (
     <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-3">
       <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Tu evolución</span>
+      <div className="w-full max-w-[220px] mx-auto">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
         <defs>
           <linearGradient id="evoAreaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -233,6 +250,7 @@ function MiniEvolutionChart({ attempts }: { attempts: { score: number; date: str
           </g>
         ))}
       </svg>
+      </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-bold" style={{ color: delta >= 0 ? "#579F93" : "#fb923c" }}>
           {delta >= 0 ? "+" : ""}{delta}%
@@ -243,69 +261,79 @@ function MiniEvolutionChart({ attempts }: { attempts: { score: number; date: str
   );
 }
 
-function QuestionTimeline({
-  questions,
-  answers,
-  maxSeconds = 30,
-}: {
-  questions: Question[];
-  answers: AnswerResult[];
-  maxSeconds?: number;
-}) {
+function QuestionDotList({ questions, answers }: { questions: Question[]; answers: AnswerResult[] }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [tooltipBottom, setTooltipBottom] = useState(0);
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   const merged = questions.flatMap((q) => {
     const a = answers.find((ans) => ans.questionId === q.id);
     if (!a) return [];
     return [{
       num: questions.indexOf(q) + 1,
       correct: a.isCorrect,
-      timeSeconds: a.timeSpentSeconds,
+      questionText: q.text,
       selectedText: q.options.find((o) => o.id === a.selectedOptionId)?.text ?? "—",
       correctText: q.options.find((o) => o.id === a.correctOptionId)?.text ?? "—",
     }];
   });
 
   if (!merged.length) return null;
-
-  const maxT = Math.max(...merged.map((m) => m.timeSeconds), maxSeconds);
   const correctCount = merged.filter((m) => m.correct).length;
-  const avgTime = merged.reduce((s, m) => s + m.timeSeconds, 0) / merged.length;
-  const slowestIdx = merged.reduce((mi, m, i, arr) => m.timeSeconds > arr[mi].timeSeconds ? i : mi, 0);
+
+  const openTooltip = (i: number) => {
+    const btn = buttonRefs.current[i];
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      setTooltipBottom(window.innerHeight - rect.top + 8);
+    }
+    setHoveredIndex(i);
+  };
+
+  const activeItem = hoveredIndex !== null ? merged[hoveredIndex] : null;
 
   return (
     <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Detalle por pregunta</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Preguntas</span>
         <span className="text-sm font-bold text-stone-900 dark:text-stone-100 tabular-nums">{correctCount}/{merged.length}</span>
       </div>
-      <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
         {merged.map((item, i) => (
-          <div key={item.num} className="flex items-center gap-2">
-            <span className="w-5 text-xs font-semibold text-stone-400 dark:text-stone-500 text-right shrink-0">{item.num}</span>
-            <div className="flex-1 h-5 bg-stone-200 dark:bg-stone-700 rounded-md overflow-hidden relative">
-              <motion.div
-                className="h-full rounded-md flex items-center justify-end pr-1.5"
-                style={{
-                  background: item.correct
-                    ? "linear-gradient(90deg, #7ab8ae, #579F93)"
-                    : "linear-gradient(90deg, #fca5a5, #f87171)",
-                }}
-                initial={{ width: "0%" }}
-                animate={{ width: `${(item.timeSeconds / maxT) * 100}%` }}
-                transition={{ duration: 0.8, ease: "easeOut", delay: i * 0.05 }}
-              >
-                {item.timeSeconds / maxT > 0.25 && (
-                  <span className="text-[10px] font-bold text-white">{item.timeSeconds.toFixed(1)}s</span>
-                )}
-              </motion.div>
-            </div>
-            <span className="w-5 text-center text-sm shrink-0">{item.correct ? "✓" : "✗"}</span>
-          </div>
+          <button
+            key={i}
+            ref={(el) => { buttonRefs.current[i] = el; }}
+            type="button"
+            onMouseEnter={() => openTooltip(i)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            onClick={() => hoveredIndex === i ? setHoveredIndex(null) : openTooltip(i)}
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white transition-transform hover:scale-110 focus:outline-none ${item.correct ? "bg-[#579F93]" : "bg-red-400"}`}
+          >
+            {item.num}
+          </button>
         ))}
       </div>
-      <div className="flex justify-between pt-2 border-t border-stone-200 dark:border-stone-700 text-[11px] text-stone-400 dark:text-stone-500">
-        <span>Promedio: {avgTime.toFixed(1)}s por pregunta</span>
-        <span>Más lenta: P{merged[slowestIdx].num}</span>
-      </div>
+      {activeItem && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-50 w-56 rounded-xl bg-white dark:bg-stone-700 shadow-lg border border-stone-100 dark:border-stone-600 p-3 pointer-events-none"
+          style={{ bottom: tooltipBottom }}
+        >
+          <p className="text-xs font-semibold text-stone-700 dark:text-stone-200 leading-snug mb-2 line-clamp-3">{activeItem.questionText}</p>
+          <div className="space-y-1">
+            <div className="flex items-start gap-1.5">
+              <span className={`text-xs font-bold shrink-0 ${activeItem.correct ? "text-[#579F93]" : "text-red-400"}`}>{activeItem.correct ? "✓" : "✗"}</span>
+              <span className={`text-xs ${activeItem.correct ? "text-[#579F93]" : "text-red-400"}`}>{activeItem.selectedText}</span>
+            </div>
+            {!activeItem.correct && (
+              <div className="flex items-start gap-1.5">
+                <span className="text-xs font-bold text-[#579F93] shrink-0">→</span>
+                <span className="text-xs text-[#579F93]">{activeItem.correctText}</span>
+              </div>
+            )}
+          </div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white dark:border-t-stone-700" />
+        </div>
+      )}
     </div>
   );
 }
@@ -424,63 +452,64 @@ export function PhaseResults({
   return (
     <>
       <GemCounter initialGems={initialGems} gemsAwarded={gemsAwarded} isCompleting={isCompleting} />
-      <div className="min-h-screen bg-gradient-to-b from-[#fefcf8] to-[#f5f0e8] dark:from-stone-900 dark:to-stone-800 flex justify-center px-4 pt-6 pb-36 md:pb-12">
-        <div className="w-full max-w-[420px] md:max-w-[900px] flex flex-col gap-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#fefcf8] to-[#f5f0e8] dark:from-stone-900 dark:to-stone-800 flex justify-center px-5 pt-8 pb-36 md:pb-16 md:px-8">
+        <div className="w-full max-w-[460px] md:max-w-[560px] flex flex-col gap-6">
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="text-center">
-            <div className="text-5xl leading-none mb-1">{msg.emoji}</div>
+            <div className="text-5xl leading-none mb-2">{msg.emoji}</div>
             <h1 className="text-[1.65rem] font-black text-stone-900 dark:text-stone-100 mt-1 leading-tight">{msg.title}</h1>
-            <p className="text-stone-500 dark:text-stone-400 text-sm mt-0.5">{msg.subtitle}</p>
+            <p className="text-stone-500 dark:text-stone-400 text-sm mt-1">{msg.subtitle}</p>
             <p className="text-stone-400 dark:text-stone-500 text-xs mt-1">{exerciseTitle}</p>
           </motion.div>
 
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6">
-            <div className="contents md:flex md:flex-col md:gap-4">
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-5">
+            <div className="flex flex-col gap-3">
               <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className="flex flex-col gap-3">
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-stretch">
                   <div className="shrink-0 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 py-4 px-3 flex flex-col items-center gap-2">
                     <DonutChart percentage={percentage} />
                     <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Aciertos</span>
                   </div>
-                  <ScoreCountCard correct={correctCount} total={totalQuestions} />
+                  <TimeCard
+                    readingTimeSeconds={readingTimeSeconds}
+                    totalTimeSeconds={totalTimeSeconds}
+                    wordCount={readingWordCount && readingWordCount > 0 ? readingWordCount : undefined}
+                    correct={correctCount}
+                    total={totalQuestions}
+                  />
                 </div>
-                <TimeCard
-                  readingTimeSeconds={readingTimeSeconds}
-                  totalTimeSeconds={totalTimeSeconds}
-                  wordCount={readingWordCount && readingWordCount > 0 ? readingWordCount : undefined}
-                />
               </motion.div>
+              {questions.length > 0 && answers.length > 0 && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
+                  <QuestionDotList questions={questions} answers={answers} />
+                </motion.div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {previousAttempts.length > 0 && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.45 : 0.3}>
+                  <MiniEvolutionChart attempts={previousAttempts} />
+                </motion.div>
+              )}
               {hasSpeed && (
                 <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
                   <SpeedMeter actualPPM={actualPPM} expectedPPM={expectedPPM!} />
                 </motion.div>
               )}
             </div>
-
-            <div className="contents md:flex md:flex-col md:gap-4">
-              {previousAttempts.length > 0 && (
-                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.45 : 0.3}>
-                  <MiniEvolutionChart attempts={previousAttempts} />
-                </motion.div>
-              )}
-              {questions.length > 0 && answers.length > 0 && (
-                <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={hasSpeed ? 0.6 : previousAttempts.length > 0 ? 0.45 : 0.3}>
-                  <QuestionTimeline questions={questions} answers={answers} maxSeconds={maxReadingTime} />
-                </motion.div>
-              )}
-            </div>
           </div>
 
-          <div className="hidden md:block mt-2">
-            <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" asChild>
+          <div className="hidden md:flex justify-center mt-2">
+            <Button size="lg" className="h-14 px-12 text-base font-bold" asChild>
               <Link href={backHref}>Volver a ejercicios</Link>
             </Button>
           </div>
 
         </div>
       </div>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-[#f5f0e8] dark:from-stone-800 to-transparent">
-        <Button size="lg" className="w-full max-w-[420px] mx-auto flex h-14 text-base font-bold" asChild>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-[#f5f0e8] dark:from-stone-800 to-transparent">
+        <Button size="lg" className="w-full max-w-[460px] mx-auto flex h-12 text-sm font-semibold" asChild>
           <Link href={backHref}>Volver a ejercicios</Link>
         </Button>
       </div>

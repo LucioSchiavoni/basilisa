@@ -17,9 +17,11 @@ import {
   Menu,
   CreditCard,
   TrendingUp,
+  Calculator,
 } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
@@ -38,11 +40,11 @@ const navItems = [
     icon: ClipboardList,
   },
   {
-    href: "/analizador",
-    label: "Analizador",
+    href: "/ejercicios/matematicas",
+    label: "Matemáticas",
     exact: true,
-    accentColor: "#7C5CBF",
-    icon: ScanText,
+    accentColor: "#C73341",
+    icon: Calculator,
   },
   {
     href: "/simplificador",
@@ -50,6 +52,13 @@ const navItems = [
     exact: true,
     accentColor: "#2E85C8",
     icon: ALargeSmall,
+  },
+  {
+    href: "/analizador",
+    label: "Analizador",
+    exact: true,
+    accentColor: "#7C5CBF",
+    icon: ScanText,
   },
   {
     href: "/progreso",
@@ -84,7 +93,9 @@ const navItems = [
 export function PatientBottomNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const isWorldDetailPage = pathname.startsWith("/ejercicios/mundos/");
+
 
   useEffect(() => {
     if (open) {
@@ -195,18 +206,24 @@ export function PatientBottomNav() {
         </div>
       </aside>
 
-      <nav className="fixed left-0 top-0 bottom-0 z-50 hidden w-56 flex-col border-r border-border bg-card shadow-sm lg:flex">
-        <div className="flex items-center justify-center px-5 py-5">
-          <Image
-            src="/logos/Logotipo Lisa color simple.png"
-            alt="LISA"
-            width={72}
-            height={36}
-            className="object-contain"
-          />
+      <motion.nav
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+        animate={{ width: expanded ? 224 : 64 }}
+        transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+        className="fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col border-r border-border bg-card shadow-sm overflow-hidden"
+      >
+        <div className="flex items-center justify-center px-3 py-5 border-b border-border/50 shrink-0 overflow-hidden">
+          {expanded ? (
+            <Image src="/logos/Logotipo Lisa color simple.png" alt="LISA" width={72} height={36} className="object-contain" />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+              <ALargeSmall className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+            </div>
+          )}
         </div>
         <Separator />
-        <div className="flex flex-1 flex-col gap-1 px-3 py-4">
+        <div className="flex flex-1 flex-col gap-1 px-2 py-4 overflow-hidden">
           {navItems.map((item) => {
             const otherExactMatch = navItems.some(
               (i) => i.href !== item.href && i.exact && pathname === i.href
@@ -221,39 +238,54 @@ export function PatientBottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+                  "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors overflow-hidden",
+                  !expanded && "justify-center px-2 gap-0",
                   isActive ? "text-white shadow-sm" : "hover:bg-muted"
                 )}
                 style={isActive ? { background: item.accentColor } : undefined}
               >
                 <Icon
-                  className={cn("h-5 w-5 transition-transform duration-200", isActive ? "scale-110" : "")}
+                  className={cn("h-5 w-5 shrink-0", isActive ? "scale-110" : "")}
                   style={{ color: isActive ? "white" : item.accentColor }}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
-                <span style={{ color: isActive ? "white" : item.accentColor }}>
+                <motion.span
+                  animate={{ maxWidth: expanded ? 160 : 0, opacity: expanded ? 1 : 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+                  className="overflow-hidden whitespace-nowrap"
+                  style={{ color: isActive ? "white" : item.accentColor }}
+                >
                   {item.label}
-                </span>
+                </motion.span>
               </Link>
             );
           })}
         </div>
         <Separator />
-        <div className="space-y-3 px-3 py-3">
+        <div className="space-y-3 px-2 py-3 shrink-0">
           <div className="flex justify-center">
             <ThemeToggle />
           </div>
           <form action={logout}>
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-border/70 px-4 py-3 text-sm font-semibold text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground"
+              className={cn(
+                "flex w-full items-center justify-center rounded-xl border border-border/70 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground overflow-hidden",
+                expanded ? "gap-3 px-3 py-3" : "gap-0 px-2 py-3"
+              )}
             >
-              <LogOut className="h-5 w-5" strokeWidth={1.8} />
-              Cerrar sesión
+              <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.8} />
+              <motion.span
+                animate={{ maxWidth: expanded ? 160 : 0, opacity: expanded ? 1 : 0 }}
+                transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                Cerrar sesión
+              </motion.span>
             </button>
           </form>
         </div>
-      </nav>
+      </motion.nav>
     </>
   );
 }

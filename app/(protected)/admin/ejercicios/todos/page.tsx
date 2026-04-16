@@ -77,6 +77,7 @@ export default async function AdminAllExercisesPage({
         <ExercisesList
           exercises={(exercises || []).map((e) => ({
             ...e,
+            instructions: typeof e.instructions === "string" ? e.instructions : null,
             world_name: e.world_id ? (WORLDS[e.world_id]?.displayName ?? null) : null,
           }))}
           showDeleted={showDeleted}

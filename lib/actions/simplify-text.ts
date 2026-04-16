@@ -252,7 +252,7 @@ export async function getSimplificationUsage(): Promise<{
 
           return typeof resolvedLimit === "number" &&
             Number.isFinite(resolvedLimit) &&
-            resolvedLimit >= 0
+            resolvedLimit > 0
             ? resolvedLimit
             : DEFAULT_DAILY_LIMIT
         })()
@@ -318,7 +318,7 @@ export async function simplifyText(
       ? ADMIN_DAILY_LIMIT
       : typeof resolvedLimit === "number" &&
           Number.isFinite(resolvedLimit) &&
-          resolvedLimit >= 0
+          resolvedLimit > 0
         ? resolvedLimit
         : DEFAULT_DAILY_LIMIT
 

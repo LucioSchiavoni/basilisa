@@ -27,7 +27,7 @@ import { Trash2, Loader2, RotateCcw, Search, X, Pencil } from "lucide-react";
 type Exercise = {
   id: string;
   title: string;
-  instructions: string | null;
+  instructions: string | object | null;
   difficulty_level: number;
   is_active: boolean;
   created_at: string;
@@ -220,7 +220,7 @@ export function ExercisesList({
                             </span>
                           )}
                         </div>
-                        {exercise.instructions && (
+                        {exercise.instructions && typeof exercise.instructions === "string" && (
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                             {exercise.instructions}
                           </p>

@@ -25,7 +25,7 @@ export default async function WorldDetailPage({
       .single(),
     adminClient
       .from("world_exercises")
-      .select("position, exercises(id, title, instructions, difficulty_level, is_active, deleted_at, exercise_types(display_name))")
+      .select("position, exercises(id, title, instructions, difficulty_level, is_active, deleted_at, exercise_types(name, display_name))")
       .eq("world_id", worldId)
       .order("position"),
   ]);
@@ -33,6 +33,12 @@ export default async function WorldDetailPage({
   if (!world) notFound();
 
   const worldExerciseIds = (worldExercisesData ?? [])
+    .filter((we) => {
+      const ex = we.exercises as { exercise_types: { name: string } | { name: string }[] | null } | null;
+      if (!ex) return false;
+      const t = ex.exercise_types && !Array.isArray(ex.exercise_types) ? ex.exercise_types.name : null;
+      return t !== "math";
+    })
     .map((we) => (we.exercises as { id: string } | null)?.id)
     .filter((id): id is string => id !== undefined);
 
@@ -47,8 +53,10 @@ export default async function WorldDetailPage({
 
   const exercises = (worldExercisesData ?? [])
     .filter((we) => {
-      const ex = we.exercises as { is_active: boolean; deleted_at: string | null } | null;
-      return ex !== null && ex.is_active === true && ex.deleted_at === null;
+      const ex = we.exercises as { is_active: boolean; deleted_at: string | null; exercise_types: { name: string } | { name: string }[] | null } | null;
+      if (!ex || !ex.is_active || ex.deleted_at !== null) return false;
+      const typeName = ex.exercise_types && !Array.isArray(ex.exercise_types) ? ex.exercise_types.name : null;
+      return typeName !== "math";
     })
     .map((we, index) => {
       const ex = we.exercises as {
@@ -58,7 +66,7 @@ export default async function WorldDetailPage({
         difficulty_level: number;
         is_active: boolean;
         deleted_at: string | null;
-        exercise_types: { display_name: string } | { display_name: string }[] | null;
+        exercise_types: { name: string; display_name: string } | { name: string; display_name: string }[] | null;
       };
       const typeName =
         ex.exercise_types && !Array.isArray(ex.exercise_types)

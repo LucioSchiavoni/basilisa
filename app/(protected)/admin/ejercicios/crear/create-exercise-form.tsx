@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import {
   createExerciseSchema,
   type CreateExerciseInput,
+  type MathContent,
 } from "@/lib/schemas/exercise"
 import { createExercise } from "../../actions"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import { MultipleChoiceEditor } from "./multiple-choice-editor"
 import { ReadingComprehensionEditor } from "./reading-comprehension-editor"
 import { TimedReadingEditor } from "./timed-reading-editor"
 import { LetterGapEditor } from "./letter-gap-editor"
+import { MathEditor } from "./math-editor"
 import type { ExerciseType } from "@/types/exercises"
 
 interface CreateExerciseFormProps {
@@ -72,6 +74,14 @@ const letterGapDefaults = {
   },
 }
 
+const mathDefaults = {
+  exercise_type_name: "math" as const,
+  content: {
+    instruction_blocks: [],
+    questions: [],
+  } satisfies MathContent,
+}
+
 export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
   const [status, setStatus] = useState<{ error?: string; success?: string }>({})
   const [currentStep, setCurrentStep] = useState(0)
@@ -116,16 +126,16 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
     } else if (type.name === "letter_gap") {
       form.setValue("exercise_type_name", letterGapDefaults.exercise_type_name)
       form.setValue("content", letterGapDefaults.content as CreateExerciseInput["content"])
+    } else if (type.name === "math") {
+      form.setValue("exercise_type_name", mathDefaults.exercise_type_name)
+      form.setValue("content", mathDefaults.content as CreateExerciseInput["content"])
     }
   }, [selectedTypeId, exerciseTypes, form])
 
   async function handleNext() {
-    const valid = await form.trigger([
-      "title",
-      "instructions",
-      "difficulty_level",
-      "exercise_type_id",
-    ])
+    const fieldsToValidate: string[] = ["title", "difficulty_level", "exercise_type_id"]
+    if (typeName !== "math") fieldsToValidate.push("instructions")
+    const valid = await form.trigger(fieldsToValidate as Parameters<typeof form.trigger>[0])
     if (valid) {
       setStatus({})
       setCurrentStep(1)
@@ -155,9 +165,13 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
     }
 
     const firstKey = Object.keys(errors)[0]
-    const firstError = errors[firstKey] as { message?: string } | undefined
+    const firstError = errors[firstKey]
+    const msg =
+      typeof firstError === "object" && firstError !== null
+        ? (firstError as Record<string, unknown>).message
+        : undefined
     setStatus({
-      error: firstError?.message || "Revisa los campos del formulario",
+      error: typeof msg === "string" && msg ? msg : "Revisa los campos del formulario",
     })
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -234,6 +248,9 @@ export function CreateExerciseForm({ exerciseTypes }: CreateExerciseFormProps) {
             )}
             {typeName === "letter_gap" && (
               <LetterGapEditor form={form} />
+            )}
+            {typeName === "math" && (
+              <MathEditor form={form} />
             )}
           </>
         )}

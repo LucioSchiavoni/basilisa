@@ -40,6 +40,8 @@ interface GeneralDataSectionProps {
 export function GeneralDataSection({ form, exerciseTypes }: GeneralDataSectionProps) {
   const [tagInput, setTagInput] = useState("")
   const tags = (form.watch("tags") as string[]) || []
+  const selectedTypeId = form.watch("exercise_type_id") as string
+  const selectedTypeName = exerciseTypes.find((t) => t.id === selectedTypeId)?.name
 
   function addTag(value: string) {
     const tag = value.trim()
@@ -84,23 +86,26 @@ export function GeneralDataSection({ form, exerciseTypes }: GeneralDataSectionPr
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="instructions"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Instrucciones</FormLabel>
-            <FormControl>
-              <Textarea
-                {...field}
-                placeholder="Instrucciones para el paciente"
-                className="min-h-[80px] resize-y"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {selectedTypeName !== "math" && (
+        <FormField
+          control={form.control}
+          name="instructions"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Instrucciones</FormLabel>
+              <FormControl>
+                <Textarea
+                  {...field}
+                  value={typeof field.value === "string" ? field.value : ""}
+                  placeholder="Instrucciones para el paciente"
+                  className="min-h-[80px] resize-y"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={form.control}
