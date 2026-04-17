@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 type Exercise = {
   id: string;
   title: string;
-  instructions: string | null;
+  instructions: string | object | null;
   difficulty_level: number;
   tags: string[];
   typeName: string | null;
@@ -140,9 +140,11 @@ export function ExercisePath({ exercises }: { exercises: Exercise[] }) {
                         {exercise.title}
                       </h3>
 
-                      <p className="text-sm text-muted-foreground leading-snug">
-                        {exercise.instructions}
-                      </p>
+                      {typeof exercise.instructions === "string" && exercise.instructions && (
+                        <p className="text-sm text-muted-foreground leading-snug">
+                          {exercise.instructions}
+                        </p>
+                      )}
 
                       <div className="flex items-center gap-2 flex-wrap">
                         {exercise.typeName && (

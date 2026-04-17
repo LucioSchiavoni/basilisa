@@ -7,7 +7,7 @@ import { getScheme } from "@/app/(protected)/ejercicios/(browse)/mundos/world-co
 export default async function AdminExercisesPage() {
   const adminClient = createAdminClient();
 
-  const [{ data: worlds }, { data: worldExercises }] = await Promise.all([
+  const [{ data: worlds }, { data: worldExercises }, { data: mathType }] = await Promise.all([
     adminClient
       .from("worlds")
       .select("id, name, display_name, sort_order")
@@ -16,11 +16,26 @@ export default async function AdminExercisesPage() {
     adminClient
       .from("world_exercises")
       .select("world_id"),
+    adminClient
+      .from("exercise_types")
+      .select("id")
+      .eq("name", "math")
+      .maybeSingle(),
   ]);
 
   const totals = new Map<string, number>();
   for (const row of worldExercises ?? []) {
     totals.set(row.world_id, (totals.get(row.world_id) ?? 0) + 1);
+  }
+
+  let mathCount = 0;
+  if (mathType) {
+    const { count } = await adminClient
+      .from("exercises")
+      .select("id", { count: "exact", head: true })
+      .eq("exercise_type_id", mathType.id)
+      .is("deleted_at", null);
+    mathCount = count ?? 0;
   }
 
   return (
@@ -48,47 +63,79 @@ export default async function AdminExercisesPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 pt-3 md:grid-cols-2 xl:grid-cols-3">
-        {(worlds ?? []).map((world) => {
-          const config = getScheme(world.name);
-          return (
-            <div
-              key={world.id}
-              className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary hover:bg-accent/20"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                    Mundo {world.sort_order}
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold">{world.display_name}</h2>
+      <div className="space-y-6 pt-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {(worlds ?? []).map((world) => {
+            const config = getScheme(world.name);
+            return (
+              <div
+                key={world.id}
+                className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary hover:bg-accent/20"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Mundo {world.sort_order}
+                    </p>
+                    <h2 className="mt-1 text-xl font-semibold">{world.display_name}</h2>
+                  </div>
+                  <div
+                    className="h-3 w-3 rounded-full border border-white/30"
+                    style={{ backgroundColor: config.accentColor }}
+                  />
                 </div>
-                <div
-                  className="h-3 w-3 rounded-full border border-white/30"
-                  style={{ backgroundColor: config.accentColor }}
-                />
+
+                <p className="mt-3 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{totals.get(world.id) ?? 0}</span> ejercicios
+                </p>
+
+                <Button className="mt-6 w-full justify-between" asChild>
+                  <Link
+                    href={`/admin/ejercicios/mundos/${world.id}`}
+                    className="group/button shadow-sm transition-all hover:shadow-md"
+                    style={{
+                      background: config.buttonGradient,
+                      color: config.accentFg,
+                    }}
+                  >
+                    <span className="font-semibold">Ver ejercicios del mundo</span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
+                  </Link>
+                </Button>
               </div>
+            );
+          })}
+        </div>
 
-              <p className="mt-3 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{totals.get(world.id) ?? 0}</span> ejercicios
+        <div className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary hover:bg-accent/20 md:max-w-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                Área especial
               </p>
-
-              <Button className="mt-6 w-full justify-between" asChild>
-                <Link
-                  href={`/admin/ejercicios/mundos/${world.id}`}
-                  className="group/button shadow-sm transition-all hover:shadow-md"
-                  style={{
-                    background: config.buttonGradient,
-                    color: config.accentFg,
-                  }}
-                >
-                  <span className="font-semibold">Ver ejercicios del mundo</span>
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
-                </Link>
-              </Button>
+              <h2 className="mt-1 text-xl font-semibold">Matemáticas</h2>
             </div>
-          );
-        })}
+            <div className="h-3 w-3 rounded-full border border-white/30 bg-[#C73341]" />
+          </div>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{mathCount}</span> ejercicios
+          </p>
+
+          <Button className="mt-6 w-full justify-between" asChild>
+            <Link
+              href="/admin/ejercicios/matematicas"
+              className="group/button shadow-sm transition-all hover:shadow-md"
+              style={{
+                background: "linear-gradient(135deg, #C73341 0%, #a0212d 100%)",
+                color: "#ffffff",
+              }}
+            >
+              <span className="font-semibold">Ver ejercicios de matemáticas</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

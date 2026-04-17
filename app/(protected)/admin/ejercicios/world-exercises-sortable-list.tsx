@@ -14,7 +14,7 @@ type WorldExerciseItem = {
   exercise: {
     id: string;
     title: string;
-    instructions: string | null;
+    instructions: string | object | null;
     difficulty_level: number;
     is_active: boolean;
     deleted_at: string | null;
@@ -205,7 +205,7 @@ export function WorldExercisesSortableList({
                         </span>
                       </div>
 
-                      {exercise.instructions && (
+                      {exercise.instructions && typeof exercise.instructions === "string" && (
                         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                           {exercise.instructions}
                         </p>

@@ -18,6 +18,7 @@ import { MultipleChoiceEditor } from "../crear/multiple-choice-editor"
 import { ReadingComprehensionEditor } from "../crear/reading-comprehension-editor"
 import { TimedReadingEditor } from "../crear/timed-reading-editor"
 import { LetterGapEditor } from "../crear/letter-gap-editor"
+import { MathEditor } from "../crear/math-editor"
 import type { ExerciseType } from "@/types/exercises"
 import type { Json } from "@/types/database.types"
 
@@ -58,6 +59,7 @@ export function EditExerciseForm({
     | "reading_comprehension"
     | "timed_reading"
     | "letter_gap"
+    | "math"
 
   const form = useForm<CreateExerciseInput>({
     resolver: zodResolver(createExerciseSchema) as Resolver<CreateExerciseInput>,
@@ -122,6 +124,12 @@ export function EditExerciseForm({
         sentences: [],
         distractors: [],
         shuffle_options: true,
+      } as CreateExerciseInput["content"])
+    } else if (type.name === "math") {
+      form.setValue("exercise_type_name", "math")
+      form.setValue("content", {
+        instruction_blocks: [],
+        questions: [],
       } as CreateExerciseInput["content"])
     }
   }, [selectedTypeId, exerciseTypes, form])
@@ -241,6 +249,9 @@ export function EditExerciseForm({
             )}
             {typeName === "letter_gap" && (
               <LetterGapEditor form={form} exerciseId={exercise.id} />
+            )}
+            {typeName === "math" && (
+              <MathEditor form={form} exerciseId={exercise.id} />
             )}
           </>
         )}

@@ -39,7 +39,7 @@ export default async function TodosEjerciciosPage({
   const mapped = (exercises ?? []).map((exercise) => ({
     id: exercise.id,
     title: exercise.title,
-    instructions: exercise.instructions,
+    instructions: typeof exercise.instructions === "string" ? exercise.instructions : null,
     difficulty_level: exercise.difficulty_level,
     tags: exercise.tags ?? [],
     typeName:
