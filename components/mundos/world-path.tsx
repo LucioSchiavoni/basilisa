@@ -13,12 +13,12 @@ type WorldData = {
 }
 
 const DIFFICULTY_LABELS: Record<number, string> = {
-  1: "Principiante",
-  2: "Fácil",
-  3: "Intermedio",
-  4: "Avanzado",
-  5: "Difícil",
-  6: "Experto",
+  1: "Nivel inicial",
+  2: "Nivel básico",
+  3: "Nivel medio",
+  4: "Nivel avanzado",
+  5: "Nivel superior",
+  6: "Nivel experto",
 }
 
 const ZIG_ZAG_MOBILE = [76, 18, 80, 14, 76, 18]
