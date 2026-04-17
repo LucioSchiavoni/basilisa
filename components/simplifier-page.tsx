@@ -77,11 +77,11 @@ function IdlPill({ score }: { score: number }) {
   return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-red-500/10 text-red-600">Avanzado</span>
 }
 
-function MetricRow({ label, value }: { label: string; value: string }) {
+function MetricTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-0.5">
-      <span className="text-[11px] text-muted-foreground">{label}</span>
-      <span className="text-[11px] font-medium tabular-nums">{value}</span>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-border/40 bg-muted/30 px-3 py-4 gap-1 text-center">
+      <span className="text-2xl font-semibold tabular-nums text-foreground">{value}</span>
+      <span className="text-xs text-muted-foreground leading-tight">{label}</span>
     </div>
   )
 }
@@ -89,16 +89,25 @@ function MetricRow({ label, value }: { label: string; value: string }) {
 function MetricsCard({ metrics }: { metrics: { structural: StructuralMetrics; lexical: LexicalMetrics } }) {
   const { structural, lexical } = metrics
   return (
-    <div className="mt-4 rounded-lg border border-border/40 bg-muted/30 px-4 py-3">
-      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Métricas del texto simplificado</p>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-        <MetricRow label="Palabras por oración" value={structural.avg_words_per_sentence.toFixed(1)} />
-        <MetricRow label="Oraciones largas (>15 pal.)" value={`${(structural.long_sentence_ratio * 100).toFixed(1)}%`} />
-        <MetricRow label="Letras por palabra" value={structural.avg_letters_per_word.toFixed(2)} />
-        <MetricRow label="Palabras medianas (7-8 l.)" value={`${(structural.medium_word_ratio * 100).toFixed(1)}%`} />
-        <MetricRow label="Palabras largas (9+ letras)" value={`${(structural.rare_word_ratio * 100).toFixed(1)}%`} />
-        <MetricRow label="Frecuencia léxica" value={lexical.avg_frequency.toFixed(2)} />
-        <MetricRow label="Imaginabilidad" value={lexical.avg_imageability.toFixed(2)} />
+    <div className="space-y-5">
+      <div>
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">Estructura</p>
+        <div className="grid grid-cols-3 gap-2">
+          <MetricTile label="Palabras por oración" value={structural.avg_words_per_sentence.toFixed(1)} />
+          <MetricTile label="Letras por palabra" value={structural.avg_letters_per_word.toFixed(1)} />
+          <MetricTile label="Oraciones largas" value={`${(structural.long_sentence_ratio * 100).toFixed(0)}%`} />
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <MetricTile label="Palabras medianas" value={`${(structural.medium_word_ratio * 100).toFixed(0)}%`} />
+          <MetricTile label="Palabras largas" value={`${(structural.rare_word_ratio * 100).toFixed(0)}%`} />
+        </div>
+      </div>
+      <div>
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">Léxico</p>
+        <div className="grid grid-cols-2 gap-2">
+          <MetricTile label="Frecuencia léxica" value={lexical.avg_frequency.toFixed(2)} />
+          <MetricTile label="Imaginabilidad" value={lexical.avg_imageability.toFixed(2)} />
+        </div>
       </div>
     </div>
   )
@@ -145,7 +154,7 @@ function LevelDropdown({
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={displayLevels.length === 0}
-        className="flex w-28 items-center justify-between gap-2 whitespace-nowrap rounded-lg border border-border/50 bg-background/40 px-3 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex w-36 items-center justify-between gap-2 whitespace-nowrap rounded-lg border border-border/50 bg-background/40 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
       >
         <span>{selected.label}</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cn("shrink-0 opacity-40 transition-transform", open && "rotate-180")}>
@@ -813,7 +822,8 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
           <p className="hidden lg:block absolute left-1/2 -translate-x-1/2 text-[13px] text-muted-foreground/70 pointer-events-none">Adaptá textos al nivel de lectura adecuado</p>
           <div className="flex items-center gap-2 lg:ml-0 ml-auto">
             {phase === "input" && (
-              <div className="hidden">
+              <div className="hidden lg:flex">
+                <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} direction="down" />
               </div>
             )}
             {phase === "result" && !isPending && resultData && (
@@ -918,12 +928,12 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                     : "Pegá o escribí el texto que querés simplificar..."
                 }
                 disabled={limitReached && mode === "patient"}
-                className="flex-1 resize-none bg-transparent px-5 py-4 text-base leading-relaxed focus:outline-none placeholder:text-muted-foreground/30 disabled:opacity-50 lg:text-sm"
+                className="flex-1 resize-none bg-transparent px-10 py-8 text-base leading-relaxed focus:outline-none placeholder:text-muted-foreground/30 disabled:opacity-50 lg:text-3xl lg:leading-[1.8] font-light"
               />
 
               <div className="shrink-0 flex items-center justify-between border-t border-border/40 px-4 py-3 lg:border-0 lg:px-0 lg:py-0">
                 <div className="flex items-center gap-3">
-                  <div>
+                  <div className="lg:hidden">
                     <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} direction="up" />
                   </div>
                   <span className={cn("text-[10px] tabular-nums", overLimit ? "font-semibold text-red-500" : "text-muted-foreground/50")}>
@@ -1028,9 +1038,10 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                   <button
                     type="button"
                     onClick={() => setMetricsOpen(true)}
-                    className="text-[11px] text-muted-foreground/60 hover:text-foreground ml-auto cursor-pointer transition-colors"
+                    className="ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium text-white cursor-pointer transition-opacity hover:opacity-85"
+                    style={{ backgroundColor: "#2E85C8" }}
                   >
-                    Ver métricas detalladas
+                    Ver métricas
                   </button>
                 </div>
               )}
@@ -1158,11 +1169,11 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
           </div>
         </div>
         <div className="shrink-0 flex items-center justify-between px-4 pr-5 py-3.5 border-b border-border/40">
-          <span className="text-[11px] text-muted-foreground">Cantidad de preguntas</span>
+          <span className="text-sm font-medium text-foreground/80">Cantidad de preguntas</span>
           <select
             value={questionCount}
             onChange={(e) => setQuestionCount(Number(e.target.value))}
-            className="text-[11px] rounded-md border border-border/50 bg-background px-2 py-1 focus:outline-none text-muted-foreground cursor-pointer"
+            className="text-sm rounded-lg border border-border/50 bg-background px-3 py-1.5 focus:outline-none text-foreground cursor-pointer"
           >
             {[1,2,3,4,5,6,7,8,9,10].map((n) => (
               <option key={n} value={n}>{n} preguntas</option>
@@ -1365,23 +1376,26 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
             </button>
           )}
           <div className="flex items-center justify-center">
-            <span className="text-[10px] tabular-nums text-muted-foreground">{questionsUsageToday}/{questionsLimit} generaciones hoy</span>
+            <span className="text-xs tabular-nums text-muted-foreground">{questionsUsageToday}/{questionsLimit} generaciones hoy</span>
           </div>
         </div>
       </aside>
 
       {mounted && metricsOpen && resultData && createPortal(
         <>
-          <div className="fixed inset-0 z-70 bg-black/40" onClick={() => setMetricsOpen(false)} />
-          <div className="fixed inset-x-2 top-1/2 z-75 -translate-y-1/2 rounded-xl border border-border/60 bg-card p-5 shadow-xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-96">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Métricas</p>
+          <div className="fixed inset-0 z-70 bg-black/50 backdrop-blur-sm" onClick={() => setMetricsOpen(false)} />
+          <div className="fixed inset-x-3 top-1/2 z-75 -translate-y-1/2 rounded-2xl border border-border/60 bg-card p-6 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[460px]">
+            <div className="mb-6 flex items-start justify-between">
+              <div>
+                <p className="text-base font-semibold text-foreground">Métricas del texto</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Análisis del texto simplificado</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setMetricsOpen(false)}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 6 6 18" /><path d="m6 6 12 12" />
                 </svg>
               </button>
