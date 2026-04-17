@@ -331,7 +331,7 @@ export function PhaseIntro({
                         <BookOpen className="h-5 w-5" style={{ color: accentColor }} />
                       </div>
                       <div>
-                        <p className="text-[11px] text-neutral-400 leading-tight">Dificultad</p>
+                        <p className="text-[11px] text-neutral-400 leading-tight">Dificultad de lectura</p>
                         <p className="text-[15px] font-semibold text-neutral-800">{diffLabel}</p>
                       </div>
                     </div>

@@ -67,7 +67,7 @@ export default async function AsignadosPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Mis ejercicios</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Actividades que tu profesional preparó para vos
+          Actividades que tu profesional preparó para ti
         </p>
       </div>
 
@@ -77,9 +77,9 @@ export default async function AsignadosPage() {
             <BookOpen className="h-7 w-7 text-muted-foreground" />
           </div>
           <div className="text-center">
-            <p className="font-semibold text-foreground">Por ahora no tenés ejercicios</p>
+            <p className="font-semibold text-foreground">Por ahora no tienes ejercicios</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Cuando tu profesional te asigne actividades, van a aparecer acá.
+              Cuando tu profesional te asigne actividades, aparecerán aquí.
             </p>
           </div>
         </div>
