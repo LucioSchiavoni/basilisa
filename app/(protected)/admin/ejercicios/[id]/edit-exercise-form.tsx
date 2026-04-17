@@ -65,7 +65,14 @@ export function EditExerciseForm({
     resolver: zodResolver(createExerciseSchema) as Resolver<CreateExerciseInput>,
     defaultValues: {
       title: exercise.title,
-      instructions: exercise.instructions,
+      instructions: Array.isArray(exercise.instructions)
+        ? (exercise.instructions as unknown as unknown[]).every((i) => typeof i === "string")
+          ? (exercise.instructions as unknown as string[]).join("\n")
+          : (exercise.instructions as unknown as { type: string; content: string }[])
+              .map((i) => i.content)
+              .filter(Boolean)
+              .join("\n")
+        : (exercise.instructions ?? ""),
       instructions_audio_url: exercise.instructions_audio_url,
       difficulty_level: exercise.difficulty_level,
       estimated_time_seconds: exercise.estimated_time_seconds,

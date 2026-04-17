@@ -150,7 +150,17 @@ export default async function ExercisePage({
       exercise={{
         id: validExercise.id,
         title: validExercise.title,
-        instructions: typeof validExercise.instructions === "string" ? validExercise.instructions : "",
+        instructions: (() => {
+          const raw = validExercise.instructions;
+          if (typeof raw === "string") return raw;
+          if (Array.isArray(raw)) {
+            return (raw as { type: string; content: string }[])
+              .map((i) => i.content)
+              .filter(Boolean)
+              .join("\n");
+          }
+          return "";
+        })(),
         instructionsAudioUrl: validExercise.instructions_audio_url,
         difficultyLevel: validExercise.difficulty_level,
         content: stripAnswers(rawContent),

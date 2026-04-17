@@ -64,7 +64,7 @@ export default function LoginPage() {
             <div className="space-y-6">
               <div className="text-center space-y-2">
                 <h1 className="text-2xl  text-black">
-                  Bienvenido de vuelta
+                  Te damos la bienvenida
                 </h1>
               </div>
 
