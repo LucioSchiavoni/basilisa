@@ -406,6 +406,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   const [answers, setAnswers] = useState<(number | null)[]>([])
   const [questionsPhase, setQuestionsPhase] = useState<"playing" | "finished">("playing")
   const [metricsOpen, setMetricsOpen] = useState(false)
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [mobileTab, setMobileTab] = useState<"recientes" | "simplificador" | "preguntas">("simplificador")
@@ -418,10 +419,33 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const [questionsWidth, setQuestionsWidth] = useState(300)
+  const questionsResizingRef = useRef(false)
+  const questionsResizeStartRef = useRef({ x: 0, width: 0 })
 
   const draftStorageKey = mode === "admin" ? "simplificador_admin_draft" : "simplificador_patient_draft"
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!questionsResizingRef.current) return
+      const diff = questionsResizeStartRef.current.x - e.clientX
+      setQuestionsWidth(Math.max(240, Math.min(560, questionsResizeStartRef.current.width + diff)))
+    }
+    function onUp() {
+      if (!questionsResizingRef.current) return
+      questionsResizingRef.current = false
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
+    }
+    document.addEventListener("mousemove", onMove)
+    document.addEventListener("mouseup", onUp)
+    return () => {
+      document.removeEventListener("mousemove", onMove)
+      document.removeEventListener("mouseup", onUp)
+    }
+  }, [])
 
   useEffect(() => {
     getSimplificationSessions().then((rows) => {
@@ -603,6 +627,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
     setAnswers(new Array((entry.questions ?? []).length).fill(null))
     setQuestionsPhase("playing")
     setMobileTab("simplificador")
+    setHistoryPanelOpen(false)
   }
 
   async function handleGenerateQuestions() {
@@ -693,15 +718,14 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
     <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-background lg:flex-row lg:left-14">
 
       <div className="lg:hidden shrink-0 border-b border-border/40 bg-background">
-        <div className="flex flex-col items-center gap-2 pt-2 pb-2 px-14">
-          <p className="text-[11px] font-medium text-foreground text-center leading-snug">Adaptá textos al nivel de lectura adecuado</p>
+        <div className="flex items-center justify-center px-4 py-2.5">
           <button
             type="button"
             onClick={handleNewSimplification}
-            className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-medium text-white transition-colors cursor-pointer w-full"
+            className="flex items-center justify-center gap-2 rounded-xl px-10 py-1 text-[12px] font-semibold text-white transition-all active:scale-95 cursor-pointer shadow-sm"
             style={{ backgroundColor: "#2E85C8" }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14" /><path d="M12 5v14" />
             </svg>
             Nuevo texto
@@ -730,7 +754,11 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
         </div>
       </div>
 
-      <aside className={cn("w-full shrink-0 flex flex-col border-r border-border/50 bg-muted/30 overflow-hidden lg:w-50 lg:flex", mobileTab !== "recientes" ? "hidden lg:flex" : "flex")}>
+      <aside className={cn(
+        "shrink-0 flex flex-col border-r border-border/50 bg-muted/30 overflow-hidden",
+        mobileTab === "recientes" ? "flex w-full" : "hidden",
+        historyPanelOpen ? "lg:flex lg:w-50" : "lg:hidden"
+      )}>
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 px-4 pt-3 pb-2">Recientes</p>
 
         <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">
@@ -756,11 +784,33 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
       </aside>
 
       <main className={cn("flex-1 flex flex-col overflow-hidden", mobileTab !== "simplificador" ? "hidden lg:flex" : "flex")}>
-        <div className={cn("shrink-0 flex items-center justify-between px-6 py-3.5 border-b border-border/40", phase === "result" && "hidden lg:flex")}>
-          <div className="hidden lg:block">
-            <h1 className="text-sm font-medium">Simplificador de textos</h1>
-            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Adaptá textos al nivel de lectura adecuado</p>
+        <div className={cn("shrink-0 relative flex items-center justify-between px-6 py-3.5 border-b border-border/40", phase === "result" && "hidden lg:flex")}>
+          <div className="hidden lg:flex items-center">
+            {historyPanelOpen ? (
+              <button
+                type="button"
+                onClick={() => setHistoryPanelOpen(false)}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border/50 bg-background hover:bg-accent text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                Ocultar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setHistoryPanelOpen(true)}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border/50 bg-background hover:bg-accent text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Recientes
+              </button>
+            )}
           </div>
+          <p className="hidden lg:block absolute left-1/2 -translate-x-1/2 text-[13px] text-muted-foreground/70 pointer-events-none">Adaptá textos al nivel de lectura adecuado</p>
           <div className="flex items-center gap-2 lg:ml-0 ml-auto">
             {phase === "input" && (
               <div className="hidden">
@@ -1087,8 +1137,27 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
         </AnimatePresence>
       </main>
 
-      <aside className={cn("shrink-0 flex flex-col border-l border-border/50 bg-muted/30 overflow-hidden lg:w-75 lg:flex", mobileTab !== "preguntas" ? "hidden lg:flex" : "flex flex-1 w-full")}>
-        <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-border/40">
+      <aside
+        className={cn("relative shrink-0 flex flex-col border-l border-border/50 bg-muted/30 overflow-hidden lg:flex", mobileTab !== "preguntas" ? "hidden lg:flex" : "flex flex-1 w-full")}
+        style={mobileTab === "preguntas" ? undefined : { width: questionsWidth }}
+      >
+        <div
+          className="hidden lg:flex absolute left-0 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center group z-10"
+          onMouseDown={(e) => {
+            questionsResizingRef.current = true
+            questionsResizeStartRef.current = { x: e.clientX, width: questionsWidth }
+            document.body.style.cursor = "col-resize"
+            document.body.style.userSelect = "none"
+          }}
+        >
+          <div className="w-px h-full bg-border/30 group-hover:bg-border/60 transition-colors" />
+          <div className="absolute flex items-center justify-center bg-background border border-border/50 rounded-full w-4 h-4 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </div>
+        </div>
+        <div className="shrink-0 flex items-center justify-between px-4 pr-5 py-3.5 border-b border-border/40">
           <span className="text-[11px] text-muted-foreground">Cantidad de preguntas</span>
           <select
             value={questionCount}
@@ -1159,19 +1228,19 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="flex flex-col flex-1"
               >
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground/60">
                   Pregunta {currentQuestionIndex + 1} de {questions.length}
                 </p>
-                <div className="mt-2 h-1 rounded-full bg-muted/60">
+                <div className="mt-2 h-1.5 rounded-full bg-muted/60">
                   <div
-                    className="h-1 rounded-full bg-[#2E85C8] transition-all"
+                    className="h-1.5 rounded-full bg-[#2E85C8] transition-all"
                     style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                   />
                 </div>
-                <p className="mt-3 mb-4 text-sm font-medium leading-relaxed text-foreground">
+                <p className="mt-4 mb-5 text-md font-medium leading-relaxed text-foreground">
                   {questions[currentQuestionIndex].question}
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {questions[currentQuestionIndex].options.map((option, i) => {
                     const correct = questions[currentQuestionIndex].correct_index
                     let cls = "border-border/50 bg-background hover:bg-accent hover:border-border text-foreground/80"
@@ -1194,15 +1263,15 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                           setShowResult(true)
                           setAnswers((prev) => { const next = [...prev]; next[currentQuestionIndex] = i; return next })
                         }}
-                        className={cn("w-full text-left rounded-lg border px-3 py-2.5 text-xs leading-relaxed transition-all", cls)}
+                        className={cn("w-full text-left rounded-xl border px-4 py-3 text-sm leading-relaxed transition-all cursor-pointer disabled:cursor-default", cls)}
                       >
-                        <span className="mr-2 font-medium">{["A", "B", "C", "D"][i]}.</span>
+                        <span className="mr-2 font-semibold">{["A", "B", "C", "D"][i]}.</span>
                         {option}
                       </button>
                     )
                   })}
                 </div>
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-5 flex items-center justify-between">
                   {currentQuestionIndex > 0 ? (
                     <button
                       type="button"
@@ -1213,9 +1282,9 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                         setSelectedAnswer(saved ?? null)
                         setShowResult(saved !== null && saved !== undefined)
                       }}
-                      className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m15 18-6-6 6-6" />
                       </svg>
                       Anterior
@@ -1234,10 +1303,10 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                         setSelectedAnswer(saved ?? null)
                         setShowResult(saved !== null && saved !== undefined)
                       }}
-                      className="flex items-center gap-1 text-[11px] font-medium text-[#2E85C8] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                      className="flex items-center gap-1 text-sm font-medium text-[#2E85C8] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity cursor-pointer"
                     >
                       Siguiente
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m9 18 6-6-6-6" />
                       </svg>
                     </button>
@@ -1246,7 +1315,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                       type="button"
                       disabled={!showResult}
                       onClick={() => setQuestionsPhase("finished")}
-                      className="text-[11px] font-medium text-[#2E85C8] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                      className="text-sm font-medium text-[#2E85C8] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity cursor-pointer"
                     >
                       Finalizar
                     </button>

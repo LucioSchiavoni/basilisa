@@ -52,8 +52,8 @@ export default function LoginPage() {
               <Image
                 src="/logos/Logotipo Lisa color simple.png"
                 alt="LISA"
-                width={160}
-                height={80}
+                width={220}
+                height={110}
                 className="object-contain"
               />
             </div>
@@ -74,19 +74,6 @@ export default function LoginPage() {
                   {state.error}
                 </div>
               )}
-
-              <GoogleOAuthButton />
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-[#579F93]/20" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-3 text-black/60 font-medium">
-                    o con tu email o usuario
-                  </span>
-                </div>
-              </div>
 
               <form action={formAction} className="space-y-4">
                 <div className="space-y-2">
@@ -137,7 +124,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full h-12 rounded-xl text-base font-bold bg-[#C73341] hover:bg-[#b02d3a] text-white shadow-lg shadow-[#C73341]/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 border-0"
+                  className="w-full h-12 rounded-xl text-base font-bold bg-[#C73341] hover:bg-[#b02d3a] text-white shadow-lg shadow-[#C73341]/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 border-0 cursor-pointer"
                 >
                   {pending ? (
                     <span className="flex items-center gap-2">
@@ -155,6 +142,19 @@ export default function LoginPage() {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-[#579F93]/20" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-3 text-black/60 font-medium">
+                    o continuá con
+                  </span>
+                </div>
+              </div>
+
+              <GoogleOAuthButton />
             </div>
           </div>
         </div>
