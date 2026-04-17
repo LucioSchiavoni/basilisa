@@ -51,7 +51,7 @@ export function PhaseQuestions({
 }: Props) {
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
   const [speakingOptionId, setSpeakingOptionId] = useState<string | null>(null);
-  const { speak, stop, isSpeaking, isSupported } = useSpeech();
+  const { speakSpelled, stop, isSpeaking, isSupported } = useSpeech();
 
   function handleAudioClick(e: React.MouseEvent, option: Option, index: number) {
     e.stopPropagation();
@@ -61,7 +61,7 @@ export function PhaseQuestions({
       setSpeakingOptionId(null);
     } else {
       setSpeakingOptionId(option.id);
-      speak(text);
+      speakSpelled(text);
     }
   }
 

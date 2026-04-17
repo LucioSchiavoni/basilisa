@@ -388,7 +388,7 @@ export function LetterGapPlayer({ exercise, initialGems, worldId, worldName, bac
         worldConfig={worldConfig}
         activeParagraph={activeParagraph}
         onActiveParagraphChange={setActiveParagraph}
-        onBack={() => setPhase("intro")}
+        backHref={backHref}
         onDone={() => {
           readingTimeRef.current = Math.round((Date.now() - readingStartRef.current) / 1000);
           questionStartRef.current = Date.now();

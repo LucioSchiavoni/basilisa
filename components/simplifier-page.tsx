@@ -419,6 +419,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [mobileTab, setMobileTab] = useState<"recientes" | "simplificador" | "preguntas">("simplificador")
+  const [isLg, setIsLg] = useState(false)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
   const [displayedText, setDisplayedText] = useState("")
   const [isPlaying, setIsPlaying] = useState(false)
@@ -435,6 +436,14 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   const draftStorageKey = mode === "admin" ? "simplificador_admin_draft" : "simplificador_patient_draft"
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)")
+    setIsLg(mq.matches)
+    const onChange = () => setIsLg(mq.matches)
+    mq.addEventListener("change", onChange)
+    return () => mq.removeEventListener("change", onChange)
+  }, [])
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
@@ -602,7 +611,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
     }
     const utterance = new SpeechSynthesisUtterance(resultData.simplified_text)
     utterance.lang = "es-AR"
-    utterance.rate = 0.82
+    utterance.rate = 0.70
     utterance.pitch = 1
     utterance.onend = () => setIsPlaying(false)
     utterance.onerror = () => setIsPlaying(false)
@@ -724,7 +733,13 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-background lg:flex-row lg:left-14">
+    <div
+      className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-background lg:flex-row"
+      style={{
+        left: isLg ? "var(--sidebar-width, 56px)" : 0,
+        transition: "left 0.35s cubic-bezier(0.33, 1, 0.68, 1)",
+      }}
+    >
 
       <div className="lg:hidden shrink-0 border-b border-border/40 bg-background">
         <div className="flex items-center justify-center px-4 py-2.5">

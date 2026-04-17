@@ -18,6 +18,8 @@ import {
   CreditCard,
   TrendingUp,
   Calculator,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useEffect } from "react";
@@ -96,6 +98,10 @@ export function PatientBottomNav() {
   const [expanded, setExpanded] = useState(false);
   const isWorldDetailPage = pathname.startsWith("/ejercicios/mundos/");
 
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-width", expanded ? "224px" : "64px");
+  }, [expanded]);
+
 
   useEffect(() => {
     if (open) {
@@ -137,18 +143,18 @@ export function PatientBottomNav() {
         )}
         style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.18)" }}
       >
-        <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+        <div className="relative flex items-center justify-center border-b border-border/40 px-5 py-5">
           <Image
             src="/logos/Logotipo Lisa color simple.png"
             alt="LISA"
-            width={60}
-            height={30}
+            width={90}
+            height={45}
             className="object-contain"
           />
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="absolute right-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             aria-label="Cerrar menú"
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -207,19 +213,35 @@ export function PatientBottomNav() {
       </aside>
 
       <motion.nav
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
         animate={{ width: expanded ? 224 : 64 }}
-        transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+        transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.75 }}
+        style={{ willChange: "width" }}
         className="fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col border-r border-border bg-card shadow-sm overflow-hidden"
       >
-        <div className="flex items-center justify-center px-3 py-5 border-b border-border/50 shrink-0 overflow-hidden">
+        <div className="relative flex items-center justify-center border-b border-border/50 shrink-0 overflow-hidden px-2 py-3">
           {expanded ? (
-            <Image src="/logos/Logotipo Lisa color simple.png" alt="LISA" width={72} height={36} className="object-contain" />
+            <>
+              <Image src="/logos/Logotipo Lisa color simple.png" alt="LISA" width={90} height={45} className="object-contain" />
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                title="Cerrar barra lateral"
+                aria-label="Cerrar barra lateral"
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground active:scale-95 transition-all duration-150 cursor-pointer"
+              >
+                <PanelLeftClose className="h-5 w-5" strokeWidth={1.6} />
+              </button>
+            </>
           ) : (
-            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-              <ALargeSmall className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
-            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              title="Abrir barra lateral"
+              aria-label="Abrir barra lateral"
+              className="w-full flex items-center justify-center h-full cursor-pointer text-muted-foreground hover:text-foreground active:scale-95 transition-all duration-150"
+            >
+              <PanelLeftOpen className="h-5 w-5" strokeWidth={1.6} />
+            </button>
           )}
         </div>
         <Separator />

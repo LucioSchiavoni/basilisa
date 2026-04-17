@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { cn } from "@/lib/utils";
@@ -56,7 +57,7 @@ type Props = {
   worldConfig: WorldConfig | null;
   activeParagraph: number | null;
   onActiveParagraphChange: (idx: number | null) => void;
-  onBack: () => void;
+  backHref: string;
   onDone: () => void;
 };
 
@@ -69,12 +70,12 @@ export function PhaseReading({
   worldConfig,
   activeParagraph,
   onActiveParagraphChange,
-  onBack,
+  backHref,
   onDone,
 }: Props) {
   const accentColor = worldConfig?.accentColor ?? "#2E85C8";
   const accentFg = worldConfig?.accentFg ?? "#ffffff";
-  const { speak, stop, isSpeaking, isSupported } = useSpeech();
+  const { speak, speakSpelled, stop, isSpeaking, isSupported } = useSpeech();
   const [speakingMode, setSpeakingMode] = useState<"all" | "paragraph" | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -131,9 +132,10 @@ export function PhaseReading({
     } else {
       stop();
       setSpeakingMode("all");
-      speak(paragraphs.join(" "));
+      if (isWordList) speakSpelled(wordListItems.join(" "));
+      else speak(paragraphs.join(" "));
     }
-  }, [speakingMode, isSpeaking, stop, speak, paragraphs]);
+  }, [speakingMode, isSpeaking, stop, speak, speakSpelled, paragraphs, isWordList, wordListItems]);
 
   const handleSpeakParagraph = useCallback(() => {
     if (activeParagraph === null) return;
@@ -153,14 +155,13 @@ export function PhaseReading({
       style={{ background: "#ffffff", color: "#1a1a1a", fontFamily: "'Lexend', sans-serif" }}
     >
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-neutral-100 z-10">
-        <button
-          type="button"
-          onClick={onBack}
+        <Link
+          href={backHref}
           aria-label="Volver"
-          className="p-2 -ml-2 rounded-lg text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50 transition-colors cursor-pointer"
+          className="p-2 -ml-2 rounded-lg text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50 transition-colors"
         >
           <ArrowLeft className="h-6 w-6" strokeWidth={2.5} />
-        </button>
+        </Link>
 
         <div className="flex items-center gap-2">
           {isSupported && activeParagraph !== null && (

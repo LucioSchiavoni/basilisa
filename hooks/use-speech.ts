@@ -51,14 +51,17 @@ export function useSpeech() {
     }
   }, [isSupported])
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const stop = useCallback(() => {
     if (!isSupported) return
+    if (timerRef.current) clearTimeout(timerRef.current)
     window.speechSynthesis.cancel()
     setIsSpeaking(false)
   }, [isSupported])
 
   const speak = useCallback(
-    (text: string, rate: number = 0.85) => {
+    (text: string, rate: number = 0.72) => {
       if (!isSupported) return
 
       window.speechSynthesis.cancel()
@@ -76,5 +79,36 @@ export function useSpeech() {
     [isSupported]
   )
 
-  return { speak, stop, isSpeaking, isSupported }
+  const speakSpelled = useCallback(
+    (text: string) => {
+      if (!isSupported) return
+      if (timerRef.current) clearTimeout(timerRef.current)
+      window.speechSynthesis.cancel()
+
+      const tokens = text.trim().split(/\s+/)
+      let idx = 0
+
+      const speakNext = () => {
+        if (idx >= tokens.length) {
+          setIsSpeaking(false)
+          return
+        }
+        const utterance = new SpeechSynthesisUtterance(tokens[idx])
+        utterance.rate = 0.55
+        if (voiceRef.current) utterance.voice = voiceRef.current
+        utterance.onend = () => {
+          idx++
+          timerRef.current = setTimeout(speakNext, 420)
+        }
+        utterance.onerror = () => setIsSpeaking(false)
+        window.speechSynthesis.speak(utterance)
+      }
+
+      setIsSpeaking(true)
+      speakNext()
+    },
+    [isSupported]
+  )
+
+  return { speak, speakSpelled, stop, isSpeaking, isSupported }
 }

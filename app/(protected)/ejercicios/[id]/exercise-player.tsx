@@ -397,7 +397,7 @@ function BaseExercisePlayer({ exercise, answerKey, initialGems, gradeYear, world
             worldConfig={worldConfig}
             activeParagraph={activeParagraph}
             onActiveParagraphChange={(p) => dispatch({ type: "SET_ACTIVE_PARAGRAPH", paragraph: p })}
-            onBack={() => dispatch({ type: "BACK_TO_INTRO" })}
+            backHref={backHref}
             onDone={isTimedReading ? handleFinishReading : () => {
               const readingTime = Math.round((Date.now() - readingStartRef.current) / 1000);
               readingTimeRef.current = readingTime;

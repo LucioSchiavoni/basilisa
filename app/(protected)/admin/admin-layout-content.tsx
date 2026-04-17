@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { logout } from "@/app/(auth)/actions";
 import { AdminBottomNav } from "@/components/admin-bottom-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface AdminLayoutContentProps {
   children: React.ReactNode;
@@ -106,29 +107,57 @@ export function AdminLayoutContent({ children, profile, user }: AdminLayoutConte
   const [expanded, setExpanded] = useState(false);
   const isPatientDetailPage = pathname.match(/^\/admin\/pacientes\/[a-zA-Z0-9-]+$/);
   const isSimplificador = pathname.startsWith("/admin/simplificador");
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-width", expanded ? "256px" : "56px");
+  }, [expanded]);
   const displayName = profile?.full_name || user?.email || "?";
   const initial = displayName[0].toUpperCase();
 
   return (
     <div className="admin-layout min-h-screen lg:flex bg-background">
       <motion.aside
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
         animate={{ width: expanded ? 256 : 56 }}
-        transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+        transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.75 }}
+        style={{ willChange: "width" }}
         className="hidden lg:flex lg:flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen bg-card border-r z-50 overflow-hidden"
       >
-        <div className="shrink-0 border-b border-border/50 px-3 py-4 flex items-center gap-3 overflow-hidden">
-          <div className="shrink-0 h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">
-            {initial}
-          </div>
-          <motion.div
-            animate={{ maxWidth: expanded ? 192 : 0, opacity: expanded ? 1 : 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
-            className="overflow-hidden whitespace-nowrap"
-          >
-            <p className="text-sm font-semibold text-foreground truncate leading-tight">{displayName}</p>
-          </motion.div>
+        <div className="shrink-0 border-b border-border/50 flex items-center overflow-hidden px-3 py-4">
+          {expanded ? (
+            <>
+              <div className="shrink-0 h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                {initial}
+              </div>
+              <motion.div
+                animate={{ maxWidth: expanded ? 140 : 0, opacity: expanded ? 1 : 0 }}
+                transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.75 }}
+                className="overflow-hidden whitespace-nowrap flex-1 ml-2"
+              >
+                <p className="text-sm font-semibold text-foreground truncate leading-tight">{displayName}</p>
+              </motion.div>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                title="Cerrar barra lateral"
+                aria-label="Cerrar barra lateral"
+                className="shrink-0 ml-2 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground active:scale-95 transition-all duration-150 cursor-pointer"
+              >
+                <PanelLeftClose className="h-4 w-4" strokeWidth={1.8} />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              title="Abrir barra lateral"
+              aria-label="Abrir barra lateral"
+              className="w-full flex items-center justify-center cursor-pointer"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground active:scale-95 transition-all duration-150">
+                <PanelLeftOpen className="h-4 w-4" strokeWidth={1.8} />
+              </div>
+            </button>
+          )}
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-hidden">
