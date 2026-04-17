@@ -192,8 +192,9 @@ Restricciones:
 
 
 ## GLOSARIO
-Identificá entre 3 y 5 palabras del texto simplificado que puedan ser difíciles para un niño del perfil indicado. Para el perfil Inicial, cualquier palabra de más de 6 letras o de uso poco frecuente en niños de 6 a 8 años es candidata. Para Intermedio, palabras de más de 8 letras o vocabulario especializado. Para Avanzado, solo términos técnicos o muy infrecuentes. Siempre incluí al menos 3 términos salvo que el texto sea extremadamente simple.
+Identificá 5 palabras del texto simplificado que puedan ser difíciles para un niño del perfil indicado. Para el perfil Inicial, cualquier palabra de más de 6 letras o de uso poco frecuente en niños de 6 a 8 años es candidata. Para Intermedio, palabras de más de 8 letras o vocabulario especializado. Para Avanzado, solo términos técnicos o muy infrecuentes.
 Para cada término escribí una definición que explique qué es realmente, con contexto suficiente para entender su significado en el texto. Clara y directa, en vocabulario simple, pero no superficial.
+Cada término debe ser diferente. No repitas la misma palabra ni variantes morfológicas de ella (plurales, conjugaciones, derivados). Seleccioná siempre exactamente 5 términos distintos entre sí.
 
 ## FORMATO DE RESPUESTA
 JSON puro, sin markdown, sin backticks:
@@ -401,6 +402,13 @@ export async function simplifyText(
   }
 
   let idlResult: { structural: StructuralMetrics; lexical: LexicalMetrics; score: number | null }
+  const seenTerms = new Set<string>()
+    const uniqueGlossary = parsedGlossary.filter(({ term }) => {
+    const normalized = term.trim().toLowerCase()
+  if (seenTerms.has(normalized)) return false
+    seenTerms.add(normalized)
+    return true
+})
 
   try {
     idlResult = await analyzeText(claudeText)
@@ -429,7 +437,7 @@ export async function simplifyText(
     simplified_text: claudeText,
     idl_score: idlResult.score ?? 0,
     metrics: { structural: idlResult.structural, lexical: idlResult.lexical },
-    glossary: parsedGlossary,
+    glossary: uniqueGlossary,
     usage_today: updatedUsage ?? currentUsage + 1,
     daily_limit: dailyLimit,
   }
