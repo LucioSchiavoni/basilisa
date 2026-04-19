@@ -5,11 +5,13 @@ import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { simplifyText, analyzeTextForFilter } from "@/lib/actions/simplify-text"
+import { extractDocumentAction } from "@/app/(protected)/(patient)/simplificador/actions"
 import { generateQuestions } from "@/lib/actions/generate-questions"
 import { saveSimplificationSession, updateSessionQuestions, getSimplificationSessions } from "@/lib/actions/simplification-sessions"
 import type { SimplifyResult, GlossaryEntry } from "@/lib/actions/simplify-text"
 import type { StructuralMetrics, LexicalMetrics } from "@/lib/services/idl"
 import { TypewriterLoading } from "@/components/typewriter-loading"
+import { SimplifierPdfModal } from "@/components/simplifier-pdf-modal"
 import Link from "next/dist/client/link"
 
 type ResultData = {
@@ -421,6 +423,12 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   const [mobileTab, setMobileTab] = useState<"recientes" | "simplificador" | "preguntas">("simplificador")
   const [isLg, setIsLg] = useState(false)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
+  const [pdfModalOpen, setPdfModalOpen] = useState(false)
+  const [inputMode, setInputMode] = useState<"write" | "upload">("write")
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [uploadError, setUploadError] = useState<{ type: "limit" | "error"; message: string } | null>(null)
+  const [extractionNotice, setExtractionNotice] = useState<"parser" | "vision" | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const [displayedText, setDisplayedText] = useState("")
   const [isPlaying, setIsPlaying] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -673,7 +681,25 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
     setGeneratingQuestions(false)
   }
 
-  function handleSimplify() {
+  async function handleFileExtract(file: File) {
+    setUploadLoading(true)
+    setUploadError(null)
+    const formData = new FormData()
+    formData.append("file", file)
+    const result = await extractDocumentAction(formData)
+    setUploadLoading(false)
+    if (result.success) {
+      setText(result.text)
+      setInputMode("write")
+      setExtractionNotice(result.extractionMethod)
+    } else if (result.code === "EXCEEDS_LIMIT") {
+      setUploadError({ type: "limit", message: result.message })
+    } else {
+      setUploadError({ type: "error", message: "No se pudo procesar el archivo. Intentá de nuevo." })
+    }
+  }
+
+function handleSimplify() {
     if (submitLockRef.current || cooldownActive || isPending || !text.trim() || overLimit || limitReached || noLevelsAvailable) {
       return
     }
@@ -836,7 +862,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
           </div>
           <p className="hidden lg:block absolute left-1/2 -translate-x-1/2 text-[13px] text-muted-foreground/70 pointer-events-none">Adaptá textos al nivel de lectura adecuado</p>
           <div className="flex items-center gap-2 lg:ml-0 ml-auto">
-            {phase === "input" && (
+            {phase === "input" && inputMode === "write" && (
               <div className="hidden lg:flex">
                 <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} direction="down" />
               </div>
@@ -858,6 +884,20 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                   </svg>
                 )}
                 {copied ? "Copiado" : "Copiar"}
+              </button>
+            )}
+            {phase === "result" && !isPending && resultData && (
+              <button
+                type="button"
+                onClick={() => setPdfModalOpen(true)}
+                className="hidden lg:flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border/50 bg-background hover:bg-accent text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" x2="12" y1="15" y2="3" />
+                </svg>
+                Exportar PDF
               </button>
             )}
             {phase === "result" && !isPending && (
@@ -933,20 +973,144 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                 </div>
               )}
 
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={
-                  mode === "admin"
-                    ? "Pegá o escribí el texto que querés transformar..."
-                    : "Pegá o escribí el texto que querés simplificar..."
-                }
-                disabled={limitReached && mode === "patient"}
-                className="flex-1 resize-none bg-transparent px-10 py-8 text-base leading-relaxed focus:outline-none placeholder:text-muted-foreground/30 disabled:opacity-50 lg:text-3xl lg:leading-[1.8] font-light"
-              />
+              <div className="shrink-0 flex items-center gap-3 px-4 pt-3 lg:px-10 lg:pt-5">
+                <div className="inline-flex rounded-lg border border-border/50 bg-muted/40 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => { setInputMode("write"); setUploadError(null) }}
+                    className={cn(
+                      "px-3 py-1 rounded-md text-xs font-medium transition-colors",
+                      inputMode === "write" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Escribir texto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setInputMode("upload"); setUploadError(null) }}
+                    className={cn(
+                      "px-3 py-1 rounded-md text-xs font-medium transition-colors",
+                      inputMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Subir archivo
+                  </button>
+                </div>
+              </div>
 
-              <div className="shrink-0 flex items-center justify-between border-t border-border/40 px-4 py-3 lg:border-0 lg:px-0 lg:py-0">
+              {extractionNotice && inputMode === "write" && (
+                <div className="shrink-0 mx-4 lg:mx-10 mt-3 flex items-center justify-between gap-2">
+                  <span className={cn(
+                    "text-[11px] flex items-center gap-1.5",
+                    extractionNotice === "vision" ? "text-amber-500" : "text-green-600"
+                  )}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      {extractionNotice === "vision"
+                        ? <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        : <polyline points="20 6 9 17 4 12"/>}
+                    </svg>
+                    {extractionNotice === "vision"
+                      ? "Extraído con IA — revisá el contenido antes de continuar"
+                      : "Texto extraído correctamente"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setExtractionNotice(null)}
+                    className="text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-pointer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              {inputMode === "write" ? (
+                <textarea
+                  ref={textareaRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={
+                    mode === "admin"
+                      ? "Pegá o escribí el texto que querés transformar..."
+                      : "Pegá o escribí el texto que querés simplificar..."
+                  }
+                  disabled={limitReached && mode === "patient"}
+                  className="flex-1 resize-none bg-transparent px-10 py-8 text-base leading-relaxed focus:outline-none placeholder:text-muted-foreground/30 disabled:opacity-50 lg:text-3xl lg:leading-[1.8] font-light"
+                />
+              ) : (
+                <div className="flex-1 flex flex-col gap-3 px-4 py-4 lg:px-10 lg:py-6 min-h-0">
+                  {uploadError && (
+                    <div className={cn(
+                      "shrink-0 rounded-xl border px-4 py-3 text-xs leading-relaxed",
+                      uploadError.type === "error"
+                        ? "border-red-400/40 bg-red-400/8 text-red-600"
+                        : "border-amber-400/40 bg-amber-400/8 text-amber-700"
+                    )}>
+                      {uploadError.message}
+                    </div>
+                  )}
+                  <label
+                    className={cn(
+                      "flex-1 flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed transition-colors cursor-pointer",
+                      uploadLoading
+                        ? "border-border/40 bg-muted/20 cursor-default"
+                        : isDragging
+                          ? "border-[#2E85C8] bg-[#2E85C8]/5"
+                          : "border-border/40 hover:border-border/70 bg-muted/20 hover:bg-muted/30"
+                    )}
+                    onDragOver={(e) => { e.preventDefault(); if (!uploadLoading) setIsDragging(true) }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setIsDragging(false)
+                      if (uploadLoading) return
+                      const file = e.dataTransfer.files[0]
+                      if (file) handleFileExtract(file)
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      className="sr-only"
+                      disabled={uploadLoading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleFileExtract(file)
+                        e.target.value = ""
+                      }}
+                    />
+                    {uploadLoading ? (
+                      <>
+                        <svg className="h-5 w-5 animate-spin text-[#2E85C8]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        <p className="text-sm text-muted-foreground">Procesando archivo...</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/50 bg-background">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60">
+                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="12" x2="12" y1="18" y2="12" />
+                            <line x1="9" x2="15" y1="15" y2="15" />
+                          </svg>
+                        </div>
+                        <div className="text-center space-y-1.5">
+                          <p className="text-sm font-medium text-foreground">
+                            {isDragging ? "Soltá el archivo aquí" : "Arrastrá un archivo o hacé clic para seleccionar"}
+                          </p>
+                          <p className="text-xs text-muted-foreground/60">PDF, DOCX o TXT · Máximo 10 MB</p>
+                        </div>
+                      </>
+                    )}
+                  </label>
+                </div>
+              )}
+
+              <div className={cn("shrink-0 flex items-center justify-between border-t border-border/40 px-4 py-3 lg:border-0 lg:px-0 lg:py-0", inputMode === "upload" && "hidden")}>
                 <div className="flex items-center gap-3">
                   <div className="lg:hidden">
                     <LevelDropdown value={level} onChange={setLevel} originalIdl={originalIdl} direction="up" />
@@ -994,7 +1158,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                 </div>
               </div>
 
-              <div className="hidden lg:flex shrink-0 justify-end">
+              <div className={cn("hidden shrink-0 justify-end", inputMode === "write" && "lg:flex")}>
                 {mode === "admin" ? (
                   <span className={cn("text-[11px] tabular-nums", limitReached ? "font-semibold text-red-500" : "text-muted-foreground/55")}>
                     {usageToday ?? 0}/{dailyLimit} hoy
@@ -1094,6 +1258,18 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
                         </svg>
                       )}
                       {copied ? "Copiado" : "Copiar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPdfModalOpen(true)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-background hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="Exportar PDF"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" x2="12" y1="15" y2="3" />
+                      </svg>
                     </button>
                     <button
                       type="button"
@@ -1453,6 +1629,15 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
           </div>
         </div>,
         document.body
+      )}
+
+      {mounted && pdfModalOpen && resultData && (
+        <SimplifierPdfModal
+          resultData={resultData}
+          questions={questions}
+          level={level}
+          onClose={() => setPdfModalOpen(false)}
+        />
       )}
     </div>
   )
