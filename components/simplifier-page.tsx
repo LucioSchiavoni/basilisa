@@ -473,7 +473,7 @@ export function SimplifierPage({ mode, initialUsageToday, initialDailyLimit, ini
   }, [])
 
   useEffect(() => {
-    getSimplificationSessions().then((rows) => {
+    getSimplificationSessions().catch(() => [] as never[]).then((rows) => {
       const mapped = rows.map((r) => ({
         id: r.id,
         originalPreview: r.original_text.trim().slice(0, 40),

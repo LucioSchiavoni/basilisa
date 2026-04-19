@@ -64,23 +64,31 @@ export async function updateSessionQuestions(id: string, questions: Question[]):
 }
 
 export async function getSimplificationSessions(): Promise<SessionRow[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from("simplification_sessions")
-    .select("id, original_text, simplified_text, level, idl_score, glossary, metrics, questions, created_at")
-    .order("created_at", { ascending: false })
-    .limit(20)
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
 
-  if (!data) return []
-  return data.map((row) => ({
-    id: row.id,
-    original_text: row.original_text,
-    simplified_text: row.simplified_text,
-    level: row.level,
-    idl_score: row.idl_score,
-    glossary: (row.glossary as GlossaryEntry[]) ?? [],
-    metrics: row.metrics as unknown as { structural: StructuralMetrics; lexical: LexicalMetrics },
-    questions: (row.questions as Question[]) ?? [],
-    created_at: row.created_at,
-  }))
+    const { data, error } = await supabase
+      .from("simplification_sessions")
+      .select("id, original_text, simplified_text, level, idl_score, glossary, metrics, questions, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+
+    if (error || !data) return []
+    return data.map((row) => ({
+      id: row.id,
+      original_text: row.original_text,
+      simplified_text: row.simplified_text,
+      level: row.level,
+      idl_score: row.idl_score,
+      glossary: (row.glossary as GlossaryEntry[]) ?? [],
+      metrics: row.metrics as unknown as { structural: StructuralMetrics; lexical: LexicalMetrics },
+      questions: (row.questions as Question[]) ?? [],
+      created_at: row.created_at,
+    }))
+  } catch {
+    return []
+  }
 }
