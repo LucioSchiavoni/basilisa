@@ -118,7 +118,7 @@ export function PhaseIntro({
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-[11px] rounded-full px-3 py-1">
                 <BookOpen className="h-3 w-3" />
-                {diffLabel}
+                Dificultad del texto: {diffLabel}
               </span>
               <span className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-[11px] rounded-full px-3 py-1">
                 <BarChart3 className="h-3 w-3" />
@@ -272,7 +272,7 @@ export function PhaseIntro({
             >
               <span className="flex items-center gap-2 bg-neutral-100 text-neutral-600 text-[14px] rounded-full px-4 py-2">
                 <BookOpen className="h-4 w-4" />
-                {diffLabel}
+                Dificultad del texto: {diffLabel}
               </span>
               <span className="flex items-center gap-2 bg-neutral-100 text-neutral-600 text-[14px] rounded-full px-4 py-2">
                 <BarChart3 className="h-4 w-4" />
@@ -282,29 +282,30 @@ export function PhaseIntro({
           </header>
 
           <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1], delay: 0.1 }}
-              className="relative min-h-0 w-full"
-              style={{ flex: "1 1 0" }}
-            >
-              <Image
-                src={worldConfig.characterImage}
-                alt=""
-                fill
-                priority
-                className="object-contain object-bottom"
-              />
-            </motion.div>
+            <div className="relative w-full" style={{ height: "65vh" }}>
+              <motion.div
+                initial={{ scale: 0.88, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1], delay: 0.1 }}
+                className="absolute inset-0"
+              >
+                <Image
+                  src={worldConfig.characterImage}
+                  alt=""
+                  fill
+                  priority
+                  className="object-contain object-bottom"
+                />
+              </motion.div>
+            </div>
 
-            <div className="shrink-0 flex flex-col items-center gap-2 text-center px-8 pt-4 pb-10">
+            <div className="shrink-0 flex flex-col items-center gap-2 text-center px-8 pb-10 pt-4">
               <motion.h1
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, ease: "easeOut", delay: 0.3 }}
                 className="font-bold text-neutral-900 leading-tight tracking-[-0.02em]"
-                style={{ fontFamily: "var(--font-lexend)", fontSize: "clamp(32px, 2.8vw, 52px)" }}
+                style={{ fontFamily: "var(--font-lexend)", fontSize: "clamp(36px, 3.2vw, 56px)" }}
               >
                 {exercise.title}
               </motion.h1>
@@ -312,8 +313,8 @@ export function PhaseIntro({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut", delay: 0.38 }}
-                className="text-neutral-600 leading-snug max-w-xl"
-                style={{ fontSize: "clamp(15px, 1.1vw, 19px)" }}
+                className="text-neutral-500 leading-snug max-w-xl"
+                style={{ fontSize: "clamp(16px, 1.15vw, 20px)" }}
               >
                 {exercise.instructions}
               </motion.p>
@@ -333,11 +334,11 @@ export function PhaseIntro({
                 transition={{ duration: 0.4, ease: "easeOut", delay: 0.5 }}
                 type="button"
                 onClick={onStart}
-                className="mt-3 rounded-2xl px-10 py-3.5 text-[15px] font-semibold inline-flex items-center gap-2 transition-opacity hover:opacity-90 cursor-pointer"
+                className="mt-4 rounded-2xl px-12 py-4 text-[16px] font-semibold inline-flex items-center gap-2 transition-opacity hover:opacity-90 cursor-pointer"
                 style={{
                   backgroundColor: accentColor,
                   color: accentFg,
-                  boxShadow: `0 12px 28px -10px ${accentColor}8c`,
+                  boxShadow: `0 16px 32px -10px ${accentColor}80`,
                 }}
               >
                 Comenzar

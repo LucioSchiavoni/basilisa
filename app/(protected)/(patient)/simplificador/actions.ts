@@ -113,7 +113,7 @@ export async function extractDocumentWithVisionAction(formData: FormData): Promi
       }
     }
 
-    return { success: true, text, characterCount }
+    return { success: true, text, characterCount, extractionMethod: "vision" as const }
   } catch {
     return { success: false, code: "ERROR", message: "No se pudo procesar el archivo con IA. Intentá de nuevo." }
   }

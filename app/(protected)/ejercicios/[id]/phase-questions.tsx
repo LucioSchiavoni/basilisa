@@ -34,6 +34,18 @@ type Props = {
   onOptionClick: (optionId: string) => void;
 };
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
 export function PhaseQuestions({
   worldConfig,
   audioContainerRef,
@@ -52,6 +64,7 @@ export function PhaseQuestions({
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
   const [speakingOptionId, setSpeakingOptionId] = useState<string | null>(null);
   const { speakSpelled, stop, isSpeaking, isSupported } = useSpeech();
+  const isDesktop = useIsDesktop();
 
   function handleAudioClick(e: React.MouseEvent, option: Option, index: number) {
     e.stopPropagation();
@@ -86,81 +99,149 @@ export function PhaseQuestions({
   const allImagesReady = questionImageUrls.every((url) => loadedUrls.has(url));
   const hasImageOptions = activeQuestion?.options.some((o) => o.image_url) ?? false;
   const hasQuestionImage = Boolean(activeQuestion?.question_image_url);
+  const optionsGridClass = hasImageOptions ? "grid grid-cols-2 gap-2 sm:gap-3" : "flex flex-col gap-2";
 
-  const optionsGridClass = hasImageOptions
-    ? "grid grid-cols-2 gap-2 sm:gap-3"
-    : "flex flex-col gap-2";
+  const sheetContent = (
+    <SheetContent
+      side="right"
+      className="w-full sm:max-w-md flex flex-col p-0"
+      style={{ background: "#ffffff", color: "#1a1a1a" }}
+    >
+      <SheetHeader className="shrink-0 px-6 py-4 border-b border-neutral-100">
+        <SheetTitle style={{ color: "#1a1a1a" }}>Texto de lectura</SheetTitle>
+      </SheetHeader>
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 py-6 sm:px-10 sm:py-8">
+        <div className="max-w-[540px] mx-auto space-y-4">
+          {readingText.split(/\n+/).filter((p) => p.trim()).map((paragraph, idx) => (
+            <p
+              key={idx}
+              className="text-[19px] sm:text-[22px] leading-[1.85] tracking-[0.01em]"
+              style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300, color: "#374151" }}
+            >
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      </div>
+    </SheetContent>
+  );
 
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
-      <header className="shrink-0 bg-background/95 backdrop-blur-sm border-b">
-        <div className="max-w-2xl mx-auto px-4 pt-3 pb-2 space-y-2">
-          <div className="flex items-center justify-between">
-            <Link
-              href={backHref}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Salir del ejercicio"
-            >
-              <XCircle className="h-6 w-6" />
-            </Link>
-            <div className="flex items-center gap-3">
+      {/* Header — condicional por JS igual que el layout */}
+      <header className="shrink-0 bg-background/95 backdrop-blur-sm border-b border-neutral-100">
+        {isDesktop ? (
+          <div style={{ display: "grid", gridTemplateColumns: "30% 1fr", minHeight: 60 }}>
+            {/* Columna izquierda — alineada con panel del personaje */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid #f0f0f0" }}>
+              <Link
+                href={backHref}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Salir del ejercicio"
+              >
+                <XCircle className="h-5 w-5" />
+              </Link>
+            </div>
+
+            {/* Columna derecha — segmentos + contador + ver texto */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 32px" }}>
+              {/* Segmentos de progreso */}
+              <div
+                style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}
+                role="progressbar"
+                aria-valuenow={activeProgress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                {Array.from({ length: activeTotal }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    style={{ flex: 1, height: 7, borderRadius: 999 }}
+                    initial={false}
+                    animate={{
+                      backgroundColor:
+                        i < activeIndex
+                          ? "var(--primary)"
+                          : i === activeIndex
+                          ? "color-mix(in srgb, var(--primary) 35%, transparent)"
+                          : "var(--muted)",
+                    }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                  />
+                ))}
+              </div>
+
+              {/* Contador */}
+              <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", color: "var(--foreground)", opacity: 0.7 }}>
+                {activeIndex + 1}
+                <span style={{ fontWeight: 400, opacity: 0.5 }}> / {activeTotal}</span>
+              </span>
+
+              {/* Ver texto */}
               {isReadingComprehension && !hideTextDuringQuestions && (
                 <Sheet>
                   <SheetTrigger asChild>
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20 active:scale-95 transition-all"
+                      className="shrink-0 flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20 active:scale-95 transition-all"
                       aria-label="Ver texto de lectura"
                     >
                       <BookOpen className="h-4 w-4" />
                       Ver texto
                     </button>
                   </SheetTrigger>
-                  <SheetContent
-                    side="right"
-                    className="w-full sm:max-w-md flex flex-col p-0"
-                    style={{ background: "#ffffff", color: "#1a1a1a" }}
-                  >
-                    <SheetHeader className="flex-shrink-0 px-6 py-4 border-b border-neutral-100">
-                      <SheetTitle style={{ color: "#1a1a1a" }}>Texto de lectura</SheetTitle>
-                    </SheetHeader>
-                    <div className="flex-1 overflow-y-auto min-h-0 px-6 py-6 sm:px-10 sm:py-8">
-                      <div className="max-w-[540px] mx-auto space-y-4">
-                        {readingText.split(/\n+/).filter((p) => p.trim()).map((paragraph, idx) => (
-                          <p
-                            key={idx}
-                            className="text-[19px] sm:text-[22px] leading-[1.85] tracking-[0.01em]"
-                            style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 300, color: "#374151" }}
-                          >
-                            {paragraph}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  </SheetContent>
+                  {sheetContent}
                 </Sheet>
               )}
-              <span className="text-sm font-medium tabular-nums text-muted-foreground">
-                {activeIndex + 1} / {activeTotal}
-              </span>
             </div>
           </div>
-
-          <div
-            className="h-1.5 rounded-full bg-muted overflow-hidden"
-            role="progressbar"
-            aria-valuenow={activeProgress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <motion.div
-              className="h-full rounded-full bg-primary"
-              initial={false}
-              animate={{ width: `${activeProgress}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
+        ) : (
+          <div className="max-w-2xl mx-auto px-4 pt-3 pb-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <Link
+                href={backHref}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Salir del ejercicio"
+              >
+                <XCircle className="h-6 w-6" />
+              </Link>
+              <div className="flex items-center gap-3">
+                {isReadingComprehension && !hideTextDuringQuestions && (
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20 active:scale-95 transition-all"
+                        aria-label="Ver texto de lectura"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Ver texto
+                      </button>
+                    </SheetTrigger>
+                    {sheetContent}
+                  </Sheet>
+                )}
+                <span className="text-sm font-medium tabular-nums text-muted-foreground">
+                  {activeIndex + 1} / {activeTotal}
+                </span>
+              </div>
+            </div>
+            <div
+              className="h-1.5 rounded-full bg-muted overflow-hidden"
+              role="progressbar"
+              aria-valuenow={activeProgress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <motion.div
+                className="h-full rounded-full bg-primary"
+                initial={false}
+                animate={{ width: `${activeProgress}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       <main className="flex-1 min-h-0 flex flex-col">
@@ -171,7 +252,7 @@ export function PhaseQuestions({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -40, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="flex-1 min-h-0 flex flex-col"
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
           >
             {hasQuestionImage ? (
               <ImageQuestionLayout
@@ -203,6 +284,7 @@ export function PhaseQuestions({
                 isSupported={isSupported}
                 onOptionClick={onOptionClick}
                 onAudioClick={handleAudioClick}
+                isDesktop={isDesktop}
               />
             )}
           </motion.div>
@@ -233,6 +315,7 @@ type LayoutProps = {
   isSupported: boolean;
   onOptionClick: (id: string) => void;
   onAudioClick: (e: React.MouseEvent, option: Option, index: number) => void;
+  isDesktop?: boolean;
 };
 
 function ImageQuestionLayout({
@@ -266,7 +349,10 @@ function ImageQuestionLayout({
       </div>
 
       {activeQuestion?.question_image_url && (
-        <div className="shrink-0 rounded-xl bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border border-white/60 dark:border-stone-700/60 shadow-sm overflow-hidden" style={{ height: "clamp(100px, 28vh, 220px)" }}>
+        <div
+          className="shrink-0 rounded-xl bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border border-white/60 dark:border-stone-700/60 shadow-sm overflow-hidden"
+          style={{ height: "clamp(100px, 28vh, 220px)" }}
+        >
           <div className="relative w-full h-full">
             <Image
               src={activeQuestion.question_image_url}
@@ -334,16 +420,159 @@ function CharacterQuestionLayout({
   isSupported,
   onOptionClick,
   onAudioClick,
+  isDesktop,
 }: LayoutProps) {
+  const options = !allImagesReady ? (
+    <div className={optionsGridClass}>
+      {activeQuestion?.options.map((_, index) => (
+        <div
+          key={index}
+          className={cn("w-full rounded-2xl bg-muted animate-pulse", hasImageOptions ? "aspect-[4/3]" : "h-14")}
+          style={{ animationDelay: `${index * 80}ms` }}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className={optionsGridClass}>
+      {activeQuestion?.options.map((option, index) => (
+        <OptionButton
+          key={option.id ?? String(index)}
+          option={option}
+          index={index}
+          isSelected={selectedOptionId === option.id}
+          isPending={isPending}
+          isSpeaking={isSpeaking}
+          speakingOptionId={speakingOptionId}
+          isSupported={isSupported}
+          onOptionClick={onOptionClick}
+          onAudioClick={onAudioClick}
+        />
+      ))}
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden", alignItems: "stretch" }}>
+        {/* Panel izquierdo — personaje + bocadillo */}
+        <div
+          style={{
+            width: "30%",
+            flexShrink: 0,
+            borderRight: "1px solid #f0f0f0",
+            background: "rgba(250,250,250,0.6)",
+            overflow: "hidden",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            paddingBottom: 0,
+          }}
+        >
+          {/* Bocadillo de diálogo */}
+          {activeQuestion?.text && (
+            <motion.div
+              key={activeQuestion.text}
+              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{
+                position: "absolute",
+                top: 24,
+                left: 16,
+                right: 16,
+                background: "#ffffff",
+                borderRadius: 16,
+                padding: "14px 18px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {/* Triángulo apuntando abajo hacia el personaje */}
+              <div style={{
+                position: "absolute",
+                bottom: -10,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 0,
+                height: 0,
+                borderLeft: "10px solid transparent",
+                borderRight: "10px solid transparent",
+                borderTop: "10px solid #ffffff",
+                filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.06))",
+              }} />
+              <p style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#1f2937",
+                lineHeight: 1.5,
+                margin: 0,
+                textAlign: "center",
+              }}>
+                {activeQuestion.text}
+              </p>
+              {activeQuestion.description && (
+                <p style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  marginTop: 6,
+                  lineHeight: 1.4,
+                  textAlign: "center",
+                }}>
+                  {activeQuestion.description}
+                </p>
+              )}
+              {activeQuestion.question_audio_url && (
+                <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
+                  <AudioPlayer src={activeQuestion.question_audio_url} />
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Personaje */}
+          {worldConfig && (
+            <img
+              src={worldConfig.characterImage}
+              alt="personaje"
+              style={{
+                width: "85%",
+                height: "55%",
+                objectFit: "contain",
+                objectPosition: "center bottom",
+                flexShrink: 0,
+              }}
+            />
+          )}
+        </div>
+
+        {/* Panel derecho — solo opciones */}
+        <div
+          ref={audioContainerRef}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 16,
+            padding: "48px 56px",
+            overflowY: "auto",
+          }}
+        >
+          {options}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      ref={audioContainerRef}
-      className="flex-1 min-h-0 flex flex-col max-w-lg mx-auto w-full px-4 py-6 gap-6"
-    >
+    <div className="flex-1 min-h-0 flex flex-col max-w-lg mx-auto w-full px-4 py-6 gap-6">
       <div className="shrink-0 flex flex-col items-center gap-4">
         {worldConfig ? (
           <>
-            <div className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-52 lg:h-52">
+            <div className="relative w-36 h-36 sm:w-44 sm:h-44">
               <Image
                 src={worldConfig.characterImage}
                 alt="personaje"
@@ -375,7 +604,6 @@ function CharacterQuestionLayout({
             )}
           </div>
         )}
-
         {activeQuestion?.question_audio_url && (
           <div className="flex justify-center">
             <AudioPlayer src={activeQuestion.question_audio_url} />
@@ -383,38 +611,8 @@ function CharacterQuestionLayout({
         )}
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col justify-center">
-        {!allImagesReady ? (
-          <div className={optionsGridClass}>
-            {activeQuestion?.options.map((_, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "w-full rounded-2xl bg-muted animate-pulse",
-                  hasImageOptions ? "aspect-[4/3]" : "h-14"
-                )}
-                style={{ animationDelay: `${index * 80}ms` }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className={optionsGridClass}>
-            {activeQuestion?.options.map((option, index) => (
-              <OptionButton
-                key={option.id ?? String(index)}
-                option={option}
-                index={index}
-                isSelected={selectedOptionId === option.id}
-                isPending={isPending}
-                isSpeaking={isSpeaking}
-                speakingOptionId={speakingOptionId}
-                isSupported={isSupported}
-                onOptionClick={onOptionClick}
-                onAudioClick={onAudioClick}
-              />
-            ))}
-          </div>
-        )}
+      <div ref={audioContainerRef} className="flex-1 min-h-0 flex flex-col justify-center">
+        {options}
       </div>
     </div>
   );

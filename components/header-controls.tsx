@@ -7,8 +7,9 @@ export function HeaderControls({ totalGems }: { totalGems: number }) {
   const pathname = usePathname();
   const isWorldPage = pathname.startsWith("/ejercicios/mundos/");
   const isSimplificador = pathname === "/simplificador";
+  const isMatematicas = pathname === "/ejercicios/matematicas";
 
-  if (isWorldPage || isSimplificador) return null;
+  if (isWorldPage || isSimplificador || isMatematicas) return null;
 
   return (
     <>

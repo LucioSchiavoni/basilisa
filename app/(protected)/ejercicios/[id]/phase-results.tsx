@@ -72,59 +72,11 @@ function DonutChart({ percentage }: { percentage: number }) {
   );
 }
 
-function TimeCard({
-  readingTimeSeconds,
-  totalTimeSeconds,
-  wordCount,
-  correct,
-  total,
-}: {
-  readingTimeSeconds?: number;
-  totalTimeSeconds: number;
-  wordCount?: number;
-  correct?: number;
-  total?: number;
-}) {
-  const cols = [
-    readingTimeSeconds !== undefined && { label: "Lectura", value: fmt(readingTimeSeconds) },
-    { label: "Total", value: fmt(totalTimeSeconds) },
-    wordCount && wordCount > 0 && { label: "Palabras", value: String(wordCount) },
-  ].filter(Boolean) as { label: string; value: string }[];
-
-  const showScore = correct !== undefined && total !== undefined && total > 0;
-
+function StatMiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex-1 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 overflow-hidden flex flex-col">
-      <div
-        className="flex-1 flex items-center divide-x divide-stone-200 dark:divide-stone-700"
-        style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
-      >
-        {cols.map((col) => (
-          <div key={col.label} className="flex flex-col items-center justify-center gap-0.5 px-2 py-3">
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500 truncate">{col.label}</span>
-            <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-tight">{col.value}</span>
-          </div>
-        ))}
-      </div>
-      {showScore && (
-        <div className="flex-1 border-t border-stone-200 dark:border-stone-700 flex flex-col items-center justify-center gap-0.5 py-3">
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">Correctas</span>
-          <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-tight">
-            {correct}<span className="text-xs font-semibold text-stone-400 dark:text-stone-500">/{total}</span>
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ScoreCountCard({ correct, total }: { correct: number; total: number }) {
-  return (
-    <div className="flex-1 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 px-4 py-3 flex flex-col items-center justify-center gap-0.5">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">Correctas</span>
-      <span className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-none">
-        {correct}<span className="text-base font-semibold text-stone-400 dark:text-stone-500">/{total}</span>
-      </span>
+    <div className="flex-1 min-w-0 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 flex flex-col items-center justify-center gap-0.5 py-4 px-2">
+      <span className="text-[9px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500 whitespace-nowrap">{label}</span>
+      <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100 tabular-nums leading-tight whitespace-nowrap">{value}</span>
     </div>
   );
 }
@@ -202,54 +154,54 @@ function MiniEvolutionChart({ attempts }: { attempts: { score: number; date: str
     <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-5 space-y-3">
       <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Tu evolución</span>
       <div className="w-full max-w-[220px] mx-auto">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
-        <defs>
-          <linearGradient id="evoAreaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#579F93" stopOpacity={0.28} />
-            <stop offset="100%" stopColor="#579F93" stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <motion.path
-          d={areaD}
-          fill="url(#evoAreaGrad)"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-        />
-        <motion.path
-          d={pathD}
-          fill="none"
-          stroke="#579F93"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        />
-        {pts.map((p, i) => (
-          <g key={i}>
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={i === pts.length - 1 ? 5 : 3}
-              fill={i === pts.length - 1 ? "#457f75" : "#579F93"}
-              stroke="white"
-              strokeWidth={2}
-            />
-            <text
-              x={p.x}
-              y={H - 4}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#a8a29e"
-              fontFamily="inherit"
-            >
-              {p.date}
-            </text>
-          </g>
-        ))}
-      </svg>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+          <defs>
+            <linearGradient id="evoAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#579F93" stopOpacity={0.28} />
+              <stop offset="100%" stopColor="#579F93" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <motion.path
+            d={areaD}
+            fill="url(#evoAreaGrad)"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+          />
+          <motion.path
+            d={pathD}
+            fill="none"
+            stroke="#579F93"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+          {pts.map((p, i) => (
+            <g key={i}>
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={i === pts.length - 1 ? 5 : 3}
+                fill={i === pts.length - 1 ? "#457f75" : "#579F93"}
+                stroke="white"
+                strokeWidth={2}
+              />
+              <text
+                x={p.x}
+                y={H - 4}
+                textAnchor="middle"
+                fontSize={10}
+                fill="#a8a29e"
+                fontFamily="inherit"
+              >
+                {p.date}
+              </text>
+            </g>
+          ))}
+        </svg>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-bold" style={{ color: delta >= 0 ? "#579F93" : "#fb923c" }}>
@@ -415,7 +367,7 @@ export function PhaseResults({
             </motion.div>
             <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6">
               <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className={!hasSpeed ? "md:col-span-2" : ""}>
-                <TimeCard totalTimeSeconds={finalTimeSeconds} wordCount={readingWordCount ?? wordCount} />
+                <StatMiniCard label="Total" value={fmt(finalTimeSeconds)} />
               </motion.div>
               {hasSpeed && (
                 <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.3}>
@@ -464,19 +416,22 @@ export function PhaseResults({
 
           <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-5">
             <div className="flex flex-col gap-3">
-              <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15} className="flex flex-col gap-3">
-                <div className="flex gap-3 items-stretch">
-                  <div className="shrink-0 rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 py-4 px-3 flex flex-col items-center gap-2">
-                    <DonutChart percentage={percentage} />
-                    <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Aciertos</span>
+              <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0.15}>
+                {/* Card superior izquierda: donut + stats en grid */}
+                <div className="rounded-2xl bg-[#f3f4f6] dark:bg-stone-800 p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Donut */}
+                    <div className="shrink-0 flex flex-col items-center gap-1">
+                      <DonutChart percentage={percentage} />
+                      <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Aciertos</span>
+                    </div>
+                    {/* Stats en columna */}
+                    <div className="flex-1 min-w-0 flex flex-col gap-2">
+                      <StatMiniCard label="Lectura" value={fmt(readingTimeSeconds ?? 0)} />
+                      <StatMiniCard label="Total" value={fmt(totalTimeSeconds)} />
+                      <StatMiniCard label="Correctas" value={`${correctCount}/${totalQuestions}`} />
+                    </div>
                   </div>
-                  <TimeCard
-                    readingTimeSeconds={readingTimeSeconds}
-                    totalTimeSeconds={totalTimeSeconds}
-                    wordCount={readingWordCount && readingWordCount > 0 ? readingWordCount : undefined}
-                    correct={correctCount}
-                    total={totalQuestions}
-                  />
                 </div>
               </motion.div>
               {questions.length > 0 && answers.length > 0 && (
